@@ -24,6 +24,9 @@ function getServerSnapshot() {
 /**
  * Diz se o site está aberto como app instalado (Tela de Início no iOS, "Adicionar ao Dock" no Mac,
  * instalação no Chrome). Nesse modo não há barra de endereço nem botão voltar do navegador.
+ *
+ * Ainda sem consumidor na Fase 0. Entra com o cartão "Instale o Entre Capítulos", que só aparece
+ * no Safari fora do modo instalado (Fase 1).
  */
 export function useIsStandalone(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);

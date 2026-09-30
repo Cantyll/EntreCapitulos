@@ -15,7 +15,7 @@ type AdminPageProps = {
 export function AdminPage({ back, children }: AdminPageProps) {
   return (
     <div className={styles.page}>
-      {back && <BackButton fallbackHref={back.href}>{back.label}</BackButton>}
+      {back && <BackButton href={back.href}>{back.label}</BackButton>}
       {children}
     </div>
   );
