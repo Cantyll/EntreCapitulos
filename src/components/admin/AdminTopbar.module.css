@@ -51,12 +51,15 @@
 }
 
 @media (pointer: coarse) {
+  /* O próprio campo preenche a pílula, com 44px de altura útil (mais a borda). */
   .search {
-    min-height: var(--tap);
+    min-height: calc(var(--tap) + 2px);
+    padding-block: 0;
   }
 
-  /* Abaixo de 16px o iOS dá zoom ao focar o campo. */
   .search input {
+    align-self: stretch;
+    /* Abaixo de 16px o iOS dá zoom ao focar o campo. */
     font-size: var(--field-font-size);
   }
 }
