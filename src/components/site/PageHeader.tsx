@@ -21,7 +21,7 @@ export function PageHeader({ title, eyebrow, live, lead, back }: PageHeaderProps
     <header className={cx(styles.header, back && styles.hasBack)}>
       {back && (
         <div className={styles.back}>
-          <BackButton fallbackHref={back.href}>{back.label}</BackButton>
+          <BackButton href={back.href}>{back.label}</BackButton>
         </div>
       )}
       {eyebrow && (
