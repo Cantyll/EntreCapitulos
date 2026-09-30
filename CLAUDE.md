@@ -144,6 +144,8 @@ Este motor precisa de testes unitários: capas coloridas, capa preto e branco e 
 ## Fases
 
 - [ ] **Fase 0, base:** projeto Next.js, lint, formatação, tokens, fontes, layout público e do painel (no celular, o painel usa barra inferior), itens 1 a 3 do bloco PWA (manifest, ícones, metadados Apple, viewport, safe areas, alvos de toque, `useIsStandalone`, botão "Voltar"), deploy de pré-visualização na Vercel com proteção de deploy.
+  - [x] Código: projeto, lint, formatação, tokens, fontes, os dois layouts com páginas-esqueleto e os itens 1 a 3 do bloco PWA. Os ícones do app são provisórios.
+  - [ ] Deploy de pré-visualização na Vercel publicado; falta testar a instalação no iPhone.
 - [ ] **Fase 1, MVP:** Supabase ligado; auth (Google e código por e-mail); home; página do livro; página da sessão com relato; comentários com respostas; filtro de spoiler; painel com editor de sessão, livros (com upload de capa e tema automático) e moderação; itens 4 a 7 do bloco PWA (login por código no app instalado, service worker com `/offline`, cartão de instalação, editor no celular).
 - [ ] **Fase 2:** reações, curtidas, votação do próximo livro, estante, envio por e-mail, agendamento, membros e papéis; push (item 8 do bloco PWA) na Fase 2 ou 3.
 - [ ] **Fase 3:** busca, estatísticas do painel, SEO e compartilhamento (imagem de prévia por sessão), leitura offline de sessões já abertas.
@@ -153,3 +155,30 @@ Os itens 9 e 10 do bloco PWA (desempenho e critérios de aceite) valem ao longo 
 ## Dados de exemplo
 
 O livro atual é **O Livro de Azrael**, de Amber V. Nicole. O total de capítulos (52) é uma estimativa a confirmar. Os outros livros e membros do protótipo são fictícios e servem só como seed de desenvolvimento. **Nunca inventar citações do livro:** trechos reais são inseridos pela Agatha no editor.
+
+## Comandos
+
+- `npm run dev`: servidor de desenvolvimento em http://localhost:3000. O painel fica em `/painel`.
+- `npm run build` e `npm run start`: build e servidor de produção.
+- `npm run lint`: ESLint (config do Next, com as regras de hooks e de acessibilidade).
+- `npm run typecheck`: gera os tipos das rotas (`next typegen`) e roda o `tsc`.
+- `npm run format` e `npm run format:check`: Prettier. Os `.md` ficam de fora, porque são escritos à mão.
+- Antes de commitar, `lint`, `typecheck`, `format:check` e `build` precisam passar.
+
+Versões fixadas por compatibilidade: TypeScript em 6.0 (o `typescript-eslint` não aceita 6.1 ou superior) e ESLint em 9 (os plugins do `eslint-config-next` ainda não suportam o 10). O `next.config.ts` tem `agentRules: false`: desde o Next 16.3 o `next dev` escreveria um bloco próprio neste arquivo.
+
+## Estrutura do projeto
+
+- `src/app/`: rotas. `layout.tsx` (fontes, metadados, viewport), `manifest.ts`, `icon.tsx`, `apple-icon.tsx` e `icons/[file]/route.tsx` (ícones do app, gerados com `ImageResponse`). `(public)/` é o site e `painel/` é o painel da Agatha.
+- `src/components/`: `ui/` (Icon, Logo, Avatar, Button, IconButton, BackButton, SkipLink...), `site/` (cabeçalho, menu, rodapé) e `admin/` (barra lateral, barra inferior, topo).
+- `src/lib/`: `navigation.ts` (menus e regra de item ativo), `routes.ts` (URLs dinâmicas), `sample-data.ts` (dados de exemplo, saem com o Supabase), `brand.ts` (nome e cores que vivem fora do CSS).
+- `src/hooks/`: `useIsStandalone.ts`.
+- `src/styles/`: `tokens.css` (variáveis de design) e `base.css`.
+
+Regras que valem daqui em diante:
+
+- Links para rotas dinâmicas usam `bookHref()` e `sessionHref()` de `lib/routes.ts`: os tipos das rotas do Next só conhecem as estáticas.
+- Em CSS Modules, dois módulos não definem a mesma propriedade no mesmo elemento (a ordem do CSS no bundle não é garantida). Use um elemento interno, como fazem `SiteHeader` e `SiteFooter` com o `Container`.
+- O botão "Voltar" (`BackButton`) é sempre um link para a página pai, nunca `history.back()`: o histórico pode ter páginas de fora (login com o Google) e âncoras `#capitulo`.
+- Componentes só com ícone usam `IconButton`/`IconLink`, que exigem `label`.
+- As páginas-esqueleto mostram um `StubNotice`. Ele sai quando a página ganha o conteúdo do protótipo.
