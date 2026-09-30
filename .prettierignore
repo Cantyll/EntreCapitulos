@@ -7,3 +7,5 @@ package-lock.json
 next-env.d.ts
 # Os .md são escritos à mão (tabelas alinhadas à mão no CLAUDE.md); o Prettier não reformata.
 *.md
+# Cópias de referência dos e-mails, escritas à mão (o HTML inline não deve ser reformatado).
+supabase/templates
