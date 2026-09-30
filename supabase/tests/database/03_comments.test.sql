@@ -17,6 +17,8 @@ insert into auth.users (id, email) values
 update public.profiles set role = 'admin' where id = '00000000-0000-4000-8000-0000000000a1';
 update public.profiles set role = 'moderator' where id = '00000000-0000-4000-8000-0000000000a2';
 update public.profiles set approved_comment_count = 3 where id = '00000000-0000-4000-8000-0000000000b2';
+-- Everybody has confirmed the public name (the name check has its own test file).
+update public.profiles set display_name_confirmed_at = now();
 
 insert into public.books (id, slug, title, author, total_chapters, status) values
   ('10000000-0000-4000-8000-000000000001', 'livro', 'Livro', 'Autora', 52, 'reading');
