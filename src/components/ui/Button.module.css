@@ -1,0 +1,77 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  padding: 10px 18px;
+  font-weight: 500;
+  font-size: 14px;
+  background: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  white-space: nowrap;
+}
+
+.primary {
+  background: var(--rose-2);
+  color: #fff;
+}
+
+.soft {
+  background: var(--rose-tint);
+  color: var(--rose-deep);
+}
+
+.ghost {
+  border-color: var(--line-2);
+  background: var(--surface);
+}
+
+.ghost.danger {
+  color: var(--danger);
+}
+
+.sm {
+  padding: 6px 13px;
+  font-size: 13px;
+}
+
+.block {
+  width: 100%;
+}
+
+/* Hover só onde existe mouse; no toque, o estado pressionado dá o retorno. */
+@media (hover: hover) {
+  .primary:hover {
+    background: var(--rose-deep);
+  }
+
+  .soft:hover {
+    background: var(--soft-2);
+  }
+
+  .ghost:hover {
+    border-color: var(--rose);
+  }
+}
+
+.primary:active {
+  background: var(--rose-deep);
+}
+
+.soft:active {
+  background: var(--soft-2);
+}
+
+.ghost:active {
+  border-color: var(--rose);
+}
+
+@media (pointer: coarse) {
+  .btn {
+    min-height: var(--tap);
+  }
+}
