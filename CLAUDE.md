@@ -7,7 +7,7 @@ O protótipo aprovado está em `docs/prototype/entre-capitulos.html`. Ele é a *
 ## Stack
 
 - **Next.js** (App Router) com **TypeScript** estrito.
-- **Supabase**: Postgres, Auth (Google e código de 6 dígitos por e-mail), Storage (capas) e Row Level Security.
+- **Supabase**: Postgres, Auth (Google e código de 6 dígitos por e-mail via OTP, sem link mágico: ver item 4 da seção PWA), Storage (capas) e Row Level Security.
 - **Vercel** para hospedagem.
 - **Estilo:** CSS com variáveis (tokens abaixo) e CSS Modules. Não usar bibliotecas de componentes prontas; os componentes seguem o protótipo.
 - **Editor do relato:** Tiptap, com um nó próprio de "divisória de capítulo".
@@ -18,6 +18,7 @@ O protótipo aprovado está em `docs/prototype/entre-capitulos.html`. Ele é a *
 ## Convenções
 
 - Interface em **português do Brasil**. Código, nomes de tabelas e commits em inglês.
+- URLs em português, e as pastas de rota seguem a URL: `/sessoes`, `/estante`, `/sobre`, `/entrar`, `/painel/...`. Conteúdo: `/livro` (atalho para o livro atual), `/livros/[slug]` (página do livro) e `/livros/[slug]/sessoes/[numero]` (sessão; a numeração reinicia a cada livro).
 - Commits no padrão Conventional Commits (`feat:`, `fix:`, `chore:`…).
 - Server Components por padrão; Client Components só onde houver interação.
 - Acessibilidade: contraste **WCAG AA** em todo texto, foco visível, navegação por teclado, `aria-label` em botões só com ícone.
@@ -118,7 +119,7 @@ Este motor precisa de testes unitários: capas coloridas, capa preto e branco e 
 ## Modelo de dados (Supabase)
 
 - `profiles`: id (= auth.users), display_name, avatar_url, role (`admin` | `moderator` | `member`), created_at, comment_count, is_trusted.
-- `books`: id, title, author, synopsis, total_chapters, current_chapter, status (`reading` | `finished` | `queued`), rating, cover_path, palette jsonb, theme_tokens jsonb, theme_auto bool, started_at, finished_at.
+- `books`: id, slug (único, usado na URL `/livros/[slug]`), title, author, synopsis, total_chapters, current_chapter, status (`reading` | `finished` | `queued`), rating, cover_path, palette jsonb, theme_tokens jsonb, theme_auto bool, started_at, finished_at.
 - `reading_sessions`: id, book_id, number, chapter_from, chapter_to, title, body (JSON do Tiptap), excerpt, rating, visibility (`public` | `members`), status (`draft` | `scheduled` | `published`), publish_at, read_minutes, comments_open.
 - `session_notes`: id, session_id, kind (`quote` | `note`), text, reference (ex.: "Capítulo 10, página 162"), position.
 - `session_questions`: id, session_id, text, position.
@@ -142,10 +143,12 @@ Este motor precisa de testes unitários: capas coloridas, capa preto e branco e 
 
 ## Fases
 
-- [ ] **Fase 0, base:** projeto Next.js, lint, formatação, tokens, fontes, layout público e do painel, Supabase ligado, deploy na Vercel.
-- [ ] **Fase 1, MVP:** auth; home; página do livro; página da sessão com relato; comentários com respostas; filtro de spoiler; painel com editor de sessão, livros (com upload de capa e tema automático) e moderação.
-- [ ] **Fase 2:** reações, curtidas, votação do próximo livro, estante, envio por e-mail, agendamento, membros e papéis.
-- [ ] **Fase 3:** busca, estatísticas do painel, SEO e compartilhamento (imagem de prévia por sessão), PWA.
+- [ ] **Fase 0, base:** projeto Next.js, lint, formatação, tokens, fontes, layout público e do painel (no celular, o painel usa barra inferior), itens 1 a 3 do bloco PWA (manifest, ícones, metadados Apple, viewport, safe areas, alvos de toque, `useIsStandalone`, botão "Voltar"), deploy de pré-visualização na Vercel com proteção de deploy.
+- [ ] **Fase 1, MVP:** Supabase ligado; auth (Google e código por e-mail); home; página do livro; página da sessão com relato; comentários com respostas; filtro de spoiler; painel com editor de sessão, livros (com upload de capa e tema automático) e moderação; itens 4 a 7 do bloco PWA (login por código no app instalado, service worker com `/offline`, cartão de instalação, editor no celular).
+- [ ] **Fase 2:** reações, curtidas, votação do próximo livro, estante, envio por e-mail, agendamento, membros e papéis; push (item 8 do bloco PWA) na Fase 2 ou 3.
+- [ ] **Fase 3:** busca, estatísticas do painel, SEO e compartilhamento (imagem de prévia por sessão), leitura offline de sessões já abertas.
+
+Os itens 9 e 10 do bloco PWA (desempenho e critérios de aceite) valem ao longo de todas as fases.
 
 ## Dados de exemplo
 
