@@ -1,0 +1,59 @@
+name: Database deploy
+
+# Aplica as migrations de supabase/migrations no projeto Supabase da nuvem.
+# Só roda à mão (Actions → Database deploy → Run workflow) e só a partir da main.
+# Nunca envia o seed: o seed é só para desenvolvimento local.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Só mostrar o que seria aplicado, sem alterar o banco (dry run)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# Uma execução por vez, e sem cancelar uma que já esteja aplicando migrations.
+concurrency:
+  group: database-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: ${{ inputs.dry_run && 'Dry run' || 'Aplicar migrations' }}
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secrets
+        run: |
+          missing=0
+          for name in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_REF; do
+            if [ -z "${!name}" ]; then
+              echo "::error::O secret $name não está configurado (Settings → Secrets and variables → Actions)."
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      # A senha do banco e o token são lidos das variáveis de ambiente, nunca de argumentos.
+      - name: Link project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Dry run
+        if: ${{ inputs.dry_run }}
+        run: supabase db push --dry-run
+
+      - name: Apply migrations
+        if: ${{ !inputs.dry_run }}
+        run: supabase db push --yes

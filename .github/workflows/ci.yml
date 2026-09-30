@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Sem nenhum secret: tudo roda contra um banco Supabase local, descartável.
+jobs:
+  app:
+    name: Lint, tipos, formatação e build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run format:check
+      - run: npm run build
+
+  database:
+    name: Banco (pgTAP e tipos)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      # Aplica as migrations e o seed num Postgres local (o seed só existe para desenvolvimento).
+      - name: Start local Supabase
+        run: supabase start
+
+      - name: Run pgTAP tests
+        run: supabase test db
+
+      - name: Generate types
+        run: npm run db:types
+
+      - name: Fail if database.types.ts is out of date
+        run: |
+          if ! git diff --exit-code -- src/lib/supabase/database.types.ts; then
+            echo "::error file=src/lib/supabase/database.types.ts::database.types.ts não bate com as migrations. Gere os tipos de novo (npm run db:types) numa sessão de nuvem e faça o commit."
+            exit 1
+          fi
