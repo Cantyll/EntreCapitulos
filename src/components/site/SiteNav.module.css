@@ -1,0 +1,53 @@
+.nav {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
+}
+
+.link {
+  padding: 8px 13px;
+  border-radius: var(--r-pill);
+  color: var(--ink-2);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* A faixa rola na horizontal e cortaria um anel de foco por fora, então o anel fica por dentro. */
+.link:focus-visible {
+  outline-offset: -2px;
+}
+
+@media (hover: hover) {
+  .link:hover {
+    color: var(--ink);
+  }
+}
+
+.link.on {
+  background: var(--rose-tint);
+  color: var(--rose-deep);
+  font-weight: 500;
+}
+
+@media (pointer: coarse) {
+  .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+  }
+}
+
+@media (max-width: 760px) {
+  .nav {
+    order: 3;
+    flex-basis: 100%;
+    margin: 0 -18px;
+    padding: 0 18px 10px;
+  }
+}

@@ -49,6 +49,8 @@
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
+  /* Altura útil da tela: o padding do <html> já reserva as safe areas, então elas saem da conta. */
+  --app-height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
 
   color-scheme: light;
 }

@@ -1,0 +1,10 @@
+/* Rodapé sempre no fim da tela, mesmo em páginas curtas. */
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: var(--app-height);
+}
+
+.main {
+  flex: 1;
+}

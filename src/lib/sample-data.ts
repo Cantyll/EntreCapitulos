@@ -1,0 +1,9 @@
+/**
+ * Dados de exemplo da Fase 0. Saem quando o Supabase entrar (Fase 1).
+ * O livro atual é real; os demais livros e os membros do protótipo são fictícios.
+ */
+export const currentBook = {
+  slug: 'o-livro-de-azrael',
+  title: 'O Livro de Azrael',
+  author: 'Amber V. Nicole',
+} as const;
