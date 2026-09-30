@@ -37,9 +37,18 @@ select is((select status from public.comments where id = '30000000-0000-4000-800
 select throws_ok($$insert into public.comments (session_id, author_id, body, status) values
   ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000b1', 'x', 'approved')$$,
   '42501', null, 'a member cannot send status');
-select throws_ok($$insert into public.comments (session_id, author_id, body, flag_reason) values
-  ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000b1', 'x', 'y')$$,
-  '42501', null, 'a member cannot send flag_reason');
+select throws_ok($$insert into public.comments (session_id, author_id, body, read_up_to) values
+  ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000b1', 'x', 1001)$$,
+  '23514', null, 'read_up_to above 1000 is rejected');
+select throws_ok($$insert into public.comments (session_id, author_id, body, spoiler_up_to) values
+  ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000b1', 'x', 1001)$$,
+  '23514', null, 'spoiler_up_to above 1000 is rejected');
+select throws_ok($$insert into public.comments (session_id, author_id, body, spoiler_up_to) values
+  ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000b1', 'x', 0)$$,
+  '23514', null, 'spoiler_up_to 0 is rejected');
+select lives_ok($$insert into public.comments (session_id, author_id, body, read_up_to, spoiler_up_to) values
+  ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000b1', 'no limite', 1000, 1000)$$,
+  'read_up_to and spoiler_up_to accept exactly 1000');
 select throws_like($$insert into public.comments (session_id, author_id, body) values
   ('20000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-0000000000b1', 'x')$$,
   'session_not_published%', 'no comment on a draft session');
@@ -63,7 +72,7 @@ select throws_ok($$delete from public.comments$$, '42501', null, 'members cannot
 update public.comments set status = 'approved';
 select is((select count(*)::int from public.comments where status = 'approved'), 0,
   'members cannot approve, even their own comments');
-select is((select count(*)::int from public.comments), 2, 'the author sees own pending comments');
+select is((select count(*)::int from public.comments), 3, 'the author sees own pending comments');
 reset role;
 select is((select approved_comment_count from public.profiles where id = '00000000-0000-4000-8000-0000000000b1'), 0,
   'pending comments do not count');
@@ -100,9 +109,19 @@ insert into public.comments (id, session_id, author_id, body) values
    '00000000-0000-4000-8000-0000000000a2', 'Da moderação');
 select is((select status from public.comments where id = '30000000-0000-4000-8000-000000000003'), 'approved',
   'staff comments are approved');
-select is((select count(*)::int from public.comments), 4, 'staff sees every comment');
-select is((select flag_reason from public.comments where id = '30000000-0000-4000-8000-000000000001'), null,
-  'staff can read flag_reason');
+select is((select count(*)::int from public.comments), 5, 'staff sees every comment');
+select lives_ok($$insert into public.comment_flags (comment_id, reason)
+  values ('30000000-0000-4000-8000-000000000001', 'Possível spoiler')$$, 'staff creates a flag');
+select is((select reason from public.comment_flags where comment_id = '30000000-0000-4000-8000-000000000001'),
+  'Possível spoiler', 'staff reads a flag');
+select lives_ok($$update public.comment_flags set reason = 'Spoiler do cap. 15'
+  where comment_id = '30000000-0000-4000-8000-000000000001'$$, 'staff edits a flag');
+select throws_ok($$insert into public.comment_flags (comment_id, reason)
+  values ('30000000-0000-4000-8000-000000000003', repeat('x', 201))$$, '23514', null, 'a flag reason has at most 200 characters');
+select lives_ok($$delete from public.comment_flags where comment_id = '30000000-0000-4000-8000-000000000001'$$,
+  'staff deletes a flag');
+select lives_ok($$insert into public.comment_flags (comment_id, reason)
+  values ('30000000-0000-4000-8000-000000000001', 'Possível spoiler')$$, 'staff flags it again');
 select lives_ok($$update public.comments set status = 'approved', spoiler_up_to = 28
   where id = '30000000-0000-4000-8000-000000000001'$$, 'staff approves as spoiler');
 select throws_ok($$update public.comments set body = 'x'$$, '42501', null, 'staff cannot edit bodies');
@@ -137,14 +156,36 @@ select throws_like($$insert into public.comments (session_id, author_id, parent_
 reset role;
 
 -- Anonymous visibility of approved comments and flag_reason
-update public.comments set flag_reason = 'Possível spoiler' where id = '30000000-0000-4000-8000-000000000001';
 set local role anon;
 select set_config('request.jwt.claims', '{"role": "anon"}', true);
 select is((select count(*)::int from public.comments), 4, 'anon sees approved comments of public sessions');
-select throws_ok($$select flag_reason from public.comments$$, '42501', null, 'anon cannot read flag_reason');
+select lives_ok($$select * from public.comments$$, 'a select * on comments works for anon');
+select throws_ok($$select * from public.comment_flags$$, '42501', null, 'anon cannot read comment_flags');
+select throws_ok($$insert into public.comment_flags (comment_id, reason)
+  values ('30000000-0000-4000-8000-000000000003', 'x')$$, '42501', null, 'anon cannot write comment_flags');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000b3", "role": "authenticated"}', true);
+select is((select count(*)::int from public.comment_flags), 0, 'a member reads no comment_flags');
+select throws_ok($$insert into public.comment_flags (comment_id, reason)
+  values ('30000000-0000-4000-8000-000000000003', 'x')$$, '42501', null, 'a member cannot create a flag');
+update public.comment_flags set reason = 'hacked';
+delete from public.comment_flags;
+reset role;
+select is((select reason from public.comment_flags where comment_id = '30000000-0000-4000-8000-000000000001'),
+  'Possível spoiler', 'a member cannot change or delete flags');
+
+-- An anonymous sign-in has the authenticated role but cannot comment
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub": "00000000-0000-4000-8000-0000000000b3", "role": "authenticated", "is_anonymous": true}', true);
+select throws_ok($$insert into public.comments (session_id, author_id, body) values
+  ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000b3', 'anon')$$,
+  '42501', null, 'an anonymous user cannot comment');
 reset role;
 
 -- Members-only session: comments follow the session visibility
+select set_config('request.jwt.claims', '', true);  -- fixtures below run as the owner role, with no user
 insert into public.comments (session_id, author_id, body, status) values
   ('20000000-0000-4000-8000-000000000004', '00000000-0000-4000-8000-0000000000a2', 'Só para membros', 'approved');
 set local role anon;

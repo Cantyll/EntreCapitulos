@@ -93,6 +93,17 @@ select is((select count(*)::int from public.reading_sessions), 2, 'member sees p
 select is((select count(*)::int from public.session_notes), 2, 'member sees notes of visible sessions');
 select throws_ok($$insert into public.books (slug, title, author, total_chapters) values ('m', 'T', 'X', 1)$$,
   '42501', null, 'member cannot insert books');
+select set_config('request.jwt.claims',
+  '{"sub": "00000000-0000-4000-8000-0000000000b1", "role": "authenticated", "is_anonymous": false}', true);
+select is((select count(*)::int from public.reading_sessions), 2, 'is_anonymous = false still reads members sessions');
+-- An anonymous sign-in also has the authenticated role, but is not a member.
+select set_config('request.jwt.claims',
+  '{"sub": "00000000-0000-4000-8000-0000000000b1", "role": "authenticated", "is_anonymous": true}', true);
+select is((select count(*)::int from public.reading_sessions), 1,
+  'an anonymous user does not read members-only sessions');
+select is((select count(*)::int from public.session_notes), 1,
+  'nor the notes of members-only sessions');
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000b1", "role": "authenticated"}', true);
 select throws_ok($$insert into public.reading_sessions (book_id, number, chapter_from, chapter_to, title)
   values ('10000000-0000-4000-8000-000000000002', 5, 20, 21, 'x')$$, '42501', null, 'member cannot insert sessions');
 select throws_ok($$insert into public.session_notes (session_id, kind, text)

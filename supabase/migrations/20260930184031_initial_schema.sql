@@ -49,8 +49,9 @@ create trigger profiles_set_updated_at
 
 -- Derives the public profile fields from signup metadata. The metadata is client-controlled, so
 -- it is only used for display fields: never for the role. It truncates instead of raising, so a
--- strange name can never block a signup.
-create function public.derive_display_name(meta jsonb, email text)
+-- strange name can never block a signup. The e-mail is never used as a fallback: profiles are
+-- publicly readable, so the public name must not leak any part of the address.
+create function public.derive_display_name(meta jsonb)
 returns text
 language sql
 immutable
@@ -61,7 +62,6 @@ as $$
       nullif(btrim(coalesce(meta ->> 'display_name', '')), ''),
       nullif(btrim(coalesce(meta ->> 'full_name', '')), ''),
       nullif(btrim(coalesce(meta ->> 'name', '')), ''),
-      nullif(btrim(split_part(coalesce(email, ''), '@', 1)), ''),
       'Leitor'
     ),
     60
@@ -92,14 +92,14 @@ begin
   insert into public.profiles (id, display_name, avatar_url)
   values (
     new.id,
-    public.derive_display_name(new.raw_user_meta_data, new.email),
+    public.derive_display_name(new.raw_user_meta_data),
     public.derive_avatar_url(new.raw_user_meta_data)
   );
   return new;
 end;
 $$;
 
-revoke execute on function public.derive_display_name(jsonb, text) from public, anon, authenticated;
+revoke execute on function public.derive_display_name(jsonb) from public, anon, authenticated;
 revoke execute on function public.derive_avatar_url(jsonb) from public, anon, authenticated;
 revoke execute on function public.handle_new_user() from public, anon, authenticated;
 
@@ -109,7 +109,7 @@ create trigger on_auth_user_created
 
 -- Users that already exist (for example test logins made before this migration) get a profile.
 insert into public.profiles (id, display_name, avatar_url)
-select u.id, public.derive_display_name(u.raw_user_meta_data, u.email), public.derive_avatar_url(u.raw_user_meta_data)
+select u.id, public.derive_display_name(u.raw_user_meta_data), public.derive_avatar_url(u.raw_user_meta_data)
 from auth.users u
 on conflict (id) do nothing;
 
@@ -284,12 +284,17 @@ grant select on public.reading_sessions to anon, authenticated;
 grant insert, update, delete on public.reading_sessions to authenticated;
 
 -- Published+public for everyone, published+members for signed-in users, drafts only for admins.
--- (Anonymous sign-ins are disabled in config.toml: an anonymous user would also be `authenticated`.)
+-- Anonymous users (Supabase anonymous sign-ins) also carry the `authenticated` role, so the
+-- members-only branch checks the `is_anonymous` claim too. Whether anonymous sign-ins are enabled
+-- is a project setting (a dashboard option in the cloud; config.toml only affects the local
+-- stack), so the database does not rely on it being off.
 create policy reading_sessions_select on public.reading_sessions
   for select to anon, authenticated
   using (
     (status = 'published' and visibility = 'public')
-    or (status = 'published' and visibility = 'members' and (select auth.uid()) is not null)
+    or (status = 'published' and visibility = 'members'
+      and (select auth.uid()) is not null
+      and (select auth.jwt() ->> 'is_anonymous') is distinct from 'true')
     or (select public.is_admin())
   );
 
@@ -399,11 +404,9 @@ create table public.comments (
   author_id uuid not null references public.profiles (id) on delete cascade,
   parent_id uuid references public.comments (id) on delete cascade,
   body text not null check (char_length(btrim(body)) >= 1 and char_length(body) <= 2000),
-  read_up_to integer check (read_up_to is null or read_up_to >= 0),
-  spoiler_up_to integer check (spoiler_up_to is null or spoiler_up_to >= 1),
+  read_up_to integer check (read_up_to is null or read_up_to between 0 and 1000),
+  spoiler_up_to integer check (spoiler_up_to is null or spoiler_up_to between 1 and 1000),
   status text not null default 'pending' check (status in ('pending', 'approved', 'removed')),
-  -- Moderation-only; written by the server side (automatic flags), never by a client.
-  flag_reason text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -469,7 +472,6 @@ begin
       from public.profiles p
      where p.id = v_uid;
 
-    new.flag_reason := null;
     if v_role in ('admin', 'moderator') or coalesce(v_approved, 0) >= 3 then
       new.status := 'approved';
     else
@@ -526,10 +528,7 @@ create trigger comments_sync_approved_count
 alter table public.comments enable row level security;
 
 revoke all on public.comments from anon, authenticated;
--- flag_reason is moderation metadata: not readable by visitors.
-grant select (id, session_id, author_id, parent_id, body, read_up_to, spoiler_up_to, status, created_at, updated_at)
-  on public.comments to anon;
-grant select on public.comments to authenticated;
+grant select on public.comments to anon, authenticated;
 -- Members can only choose the fields they legitimately write; status is decided by the trigger.
 grant insert (id, session_id, author_id, parent_id, body, read_up_to, spoiler_up_to)
   on public.comments to authenticated;
@@ -547,12 +546,52 @@ create policy comments_select on public.comments
 
 create policy comments_insert_own on public.comments
   for insert to authenticated
-  with check (author_id = (select auth.uid()));
+  with check (
+    author_id = (select auth.uid())
+    and (select auth.jwt() ->> 'is_anonymous') is distinct from 'true'
+  );
 
 create policy comments_update_staff on public.comments
   for update to authenticated
   using ((select public.is_staff()))
   with check ((select public.is_staff()));
+
+-- ---------------------------------------------------------------------------------------------
+-- comment_flags
+-- Moderation metadata (why a comment was flagged, for example an automatic spoiler or spam
+-- warning). Kept out of comments so that comments can be read in full by anyone who may read the
+-- comment; only staff can see or touch a flag.
+-- ---------------------------------------------------------------------------------------------
+
+create table public.comment_flags (
+  comment_id uuid primary key references public.comments (id) on delete cascade,
+  reason text not null check (char_length(reason) between 1 and 200),
+  created_at timestamptz not null default now()
+);
+
+alter table public.comment_flags enable row level security;
+
+revoke all on public.comment_flags from anon, authenticated;
+grant select, delete on public.comment_flags to authenticated;
+grant insert (comment_id, reason) on public.comment_flags to authenticated;
+grant update (reason) on public.comment_flags to authenticated;
+
+create policy comment_flags_select_staff on public.comment_flags
+  for select to authenticated
+  using ((select public.is_staff()));
+
+create policy comment_flags_insert_staff on public.comment_flags
+  for insert to authenticated
+  with check ((select public.is_staff()));
+
+create policy comment_flags_update_staff on public.comment_flags
+  for update to authenticated
+  using ((select public.is_staff()))
+  with check ((select public.is_staff()));
+
+create policy comment_flags_delete_staff on public.comment_flags
+  for delete to authenticated
+  using ((select public.is_staff()));
 
 -- ---------------------------------------------------------------------------------------------
 -- reading_progress
