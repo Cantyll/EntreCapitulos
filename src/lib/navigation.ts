@@ -2,6 +2,7 @@ import type { Route } from 'next';
 
 import type { IconName } from '@/components/ui/Icon';
 
+import { hasRole, type Role, type RoleRequirement } from './auth/roles';
 import { bookHref } from './routes';
 
 function inSegment(pathname: string, segment: string) {
@@ -55,33 +56,77 @@ export type AdminNavItem = {
   match: 'exact' | 'prefix';
   /** Na barra inferior do celular: direto na barra ('tab') ou dentro da folha "Mais" ('more'). */
   placement: 'tab' | 'more';
+  /** Quem pode abrir: só a administradora ('admin') ou também a moderadora ('staff'). */
+  access: RoleRequirement;
   /** Mostra o contador de comentários esperando aprovação. */
   pendingBadge?: boolean;
 };
 
 /** Menu do painel, igual ao do protótipo. A ordem aqui é a ordem da barra lateral. */
 export const adminNav: readonly AdminNavItem[] = [
-  { label: 'Visão geral', href: '/painel', icon: 'home', match: 'exact', placement: 'tab' },
-  { label: 'Sessões', href: '/painel/sessoes', icon: 'list', match: 'prefix', placement: 'tab' },
-  { label: 'Livros', href: '/painel/livros', icon: 'book', match: 'prefix', placement: 'more' },
+  {
+    label: 'Visão geral',
+    href: '/painel',
+    icon: 'home',
+    access: 'admin',
+    match: 'exact',
+    placement: 'tab',
+  },
+  {
+    label: 'Sessões',
+    href: '/painel/sessoes',
+    icon: 'list',
+    access: 'admin',
+    match: 'prefix',
+    placement: 'tab',
+  },
+  {
+    label: 'Livros',
+    href: '/painel/livros',
+    icon: 'book',
+    access: 'admin',
+    match: 'prefix',
+    placement: 'more',
+  },
   {
     label: 'Comentários',
     href: '/painel/comentarios',
     icon: 'chat',
+    access: 'staff',
     match: 'prefix',
     placement: 'tab',
     pendingBadge: true,
   },
-  { label: 'Membros', href: '/painel/membros', icon: 'users', match: 'prefix', placement: 'more' },
-  { label: 'Votações', href: '/painel/votacoes', icon: 'vote', match: 'prefix', placement: 'more' },
+  {
+    label: 'Membros',
+    href: '/painel/membros',
+    icon: 'users',
+    access: 'admin',
+    match: 'prefix',
+    placement: 'more',
+  },
+  {
+    label: 'Votações',
+    href: '/painel/votacoes',
+    icon: 'vote',
+    access: 'admin',
+    match: 'prefix',
+    placement: 'more',
+  },
   {
     label: 'Configurações',
     href: '/painel/configuracoes',
     icon: 'settings',
+    access: 'admin',
     match: 'prefix',
     placement: 'more',
   },
 ];
+
+/** Só os itens que o papel pode abrir: a moderadora vê apenas Comentários. */
+export function getAdminNavFor(role: Role): AdminNavItem[] {
+  return adminNav.filter((item) => hasRole(role, item.access));
+}
 
 export function isAdminNavActive(item: AdminNavItem, pathname: string) {
   if (item.match === 'exact') return pathname === item.href;
@@ -92,12 +137,14 @@ export function isAdminNavActive(item: AdminNavItem, pathname: string) {
  * Barra inferior do celular: duas abas, o botão central "Nova sessão", as demais abas e "Mais".
  * `left` e `right` ficam de cada lado do botão central; `more` vai para dentro da folha "Mais".
  */
-export function getAdminTabbar() {
-  const tabs = adminNav.filter((item) => item.placement === 'tab');
+export function getAdminTabbar(role: Role) {
+  const items = getAdminNavFor(role);
+  const tabs = items.filter((item) => item.placement === 'tab');
   return {
     left: tabs.slice(0, 2),
     right: tabs.slice(2),
-    more: adminNav.filter((item) => item.placement === 'more'),
+    more: items.filter((item) => item.placement === 'more'),
+    canCreateSession: hasRole(role, 'admin'),
   };
 }
 
