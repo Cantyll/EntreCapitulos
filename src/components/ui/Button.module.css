@@ -43,9 +43,14 @@
   width: 100%;
 }
 
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Hover só onde existe mouse; no toque, o estado pressionado dá o retorno. */
 @media (hover: hover) {
-  .primary:hover {
+  .primary:hover:not(:disabled) {
     background: var(--rose-deep);
   }
 

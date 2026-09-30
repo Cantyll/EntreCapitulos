@@ -1,0 +1,44 @@
+.box {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 48px 0;
+  text-align: center;
+}
+
+.icon {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--rose-tint);
+  color: var(--rose-deep);
+  margin-bottom: 14px;
+}
+
+.code {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+
+.title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(28px, 4vw, 38px);
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+
+.text {
+  color: var(--ink-2);
+  margin-bottom: 24px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
