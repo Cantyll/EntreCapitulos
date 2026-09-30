@@ -1,8 +1,8 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Instrument_Sans, Newsreader } from 'next/font/google';
 import type { ReactNode } from 'react';
 
-import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/brand';
+import { BRAND_COLORS, SITE_DESCRIPTION, SITE_NAME } from '@/lib/brand';
 
 import '@/styles/tokens.css';
 import '@/styles/base.css';
@@ -29,6 +29,20 @@ export const metadata: Metadata = {
   title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
+  // Tela de Início do iOS: "default" (e não "black-translucent") porque o tema é claro.
+  appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: 'default' },
+  // O Next 16 só emite <meta name="mobile-web-app-capable">. O Safari do iOS/iPadOS sempre leu a
+  // versão com prefixo, então ela vai junto para o app abrir em tela cheia sem depender do manifest.
+  other: { 'apple-mobile-web-app-capable': 'yes' },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  // Sem maximumScale nem userScalable: o zoom por pinça precisa continuar livre (acessibilidade).
+  // Hoje é o --rose-deep do tema padrão; com o tema automático (Fase 1) passa a ser o do livro atual.
+  themeColor: BRAND_COLORS.roseDeep,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
