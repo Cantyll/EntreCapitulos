@@ -47,7 +47,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${newsreader.variable} ${instrumentSans.variable}`}>
+    // data-scroll-behavior: o CSS tem scroll-behavior smooth (âncoras); com isso o Next desliga a
+    // rolagem suave só durante a troca de página, para ela não "deslizar" até o topo.
+    <html
+      lang="pt-BR"
+      data-scroll-behavior="smooth"
+      className={`${newsreader.variable} ${instrumentSans.variable}`}
+    >
       <body>{children}</body>
     </html>
   );
