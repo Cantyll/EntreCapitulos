@@ -1,0 +1,35 @@
+.header {
+  position: sticky;
+  top: var(--safe-top);
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 70px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 760px) {
+  .inner {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: 12px;
+    gap: 10px 16px;
+  }
+
+  .logo {
+    flex: 1;
+  }
+}

@@ -1,0 +1,34 @@
+.footer {
+  border-top: 1px solid var(--line);
+  padding: 34px 0;
+  color: var(--ink-3);
+  font-size: 13.5px;
+}
+
+.inner {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.nav {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+@media (hover: hover) {
+  .nav a:hover {
+    color: var(--rose-2);
+  }
+}
+
+@media (pointer: coarse) {
+  .nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+  }
+}
