@@ -30,6 +30,8 @@ insert into auth.users (id, email, raw_user_meta_data) values
 
 update public.profiles set role = 'admin' where id = '00000001-0000-4000-8000-000000000001';
 update public.profiles set role = 'moderator' where id = '00000001-0000-4000-8000-000000000002';
+-- Seed members already chose their names (no /boas-vindas step for them).
+update public.profiles set display_name_confirmed_at = now();
 
 insert into public.books (id, slug, title, author, synopsis, genres, total_chapters, current_chapter, status, rating, started_at, finished_at) values
   ('00000002-0000-4000-8000-000000000001', 'o-livro-de-azrael', 'O Livro de Azrael', 'Amber V. Nicole', 'Há mil anos, Dianna entregou a própria vida a Kaden, um monstro pior que qualquer pesadelo, para salvar a irmã. Desde então ela cumpre as ordens dele, inclusive caçar uma relíquia antiga. Do outro lado está Liam, o rei que um dia foi chamado de Samkiel e que deu as costas à própria coroa. Inimigos mais velhos que o tempo, os dois vão precisar um do outro.', array['Fantasia sombria','Romantasia','Inimigos para amantes']::text[], 52, 12, 'reading', null, '2026-09-02', null),
