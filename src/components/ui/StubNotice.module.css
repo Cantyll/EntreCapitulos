@@ -1,0 +1,22 @@
+.notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 28px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--soft);
+  font-size: 14px;
+  color: var(--ink-2);
+  max-width: 62ch;
+}
+
+.notice svg {
+  color: var(--rose-2);
+  margin-top: 2px;
+}
+
+.notice b {
+  color: var(--ink);
+  font-weight: 600;
+}
