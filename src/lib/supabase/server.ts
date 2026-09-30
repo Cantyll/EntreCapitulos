@@ -29,7 +29,7 @@ export async function createClient() {
           }
         } catch {
           // Em Server Components o Next não deixa gravar cookies. O refresh da sessão fica no
-          // proxy (etapa 2 da Fase 1), então ignorar aqui é seguro.
+          // proxy (src/proxy.ts), então ignorar aqui é seguro.
         }
       },
     },

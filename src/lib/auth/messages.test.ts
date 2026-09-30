@@ -1,0 +1,40 @@
+import { describe, expect, it } from 'vitest';
+
+import { classifyOtpSendError, classifyOtpVerifyError, loginErrorMessage } from './messages';
+
+describe('loginErrorMessage', () => {
+  it('só aceita códigos da lista fixa', () => {
+    expect(loginErrorMessage('oauth')).toContain('Google');
+    expect(loginErrorMessage('acesso_negado')).not.toBeNull();
+  });
+
+  it.each(['<script>alert(1)</script>', 'constructor', '__proto__', 'toString', '', undefined, 5])(
+    'ignora %j',
+    (value) => {
+      expect(loginErrorMessage(value)).toBeNull();
+    },
+  );
+});
+
+describe('classificação dos erros do Auth', () => {
+  it('reconhece limite de envio', () => {
+    expect(classifyOtpSendError({ code: 'over_email_send_rate_limit', status: 429 })).toBe(
+      'rate_limited',
+    );
+  });
+
+  it('reconhece e-mail inválido', () => {
+    expect(classifyOtpSendError({ code: 'email_address_invalid', status: 400 })).toBe(
+      'email_invalid',
+    );
+  });
+
+  it('código errado ou expirado', () => {
+    expect(classifyOtpVerifyError({ code: 'otp_expired', status: 403 })).toBe('code_invalid');
+  });
+
+  it('o resto vira mensagem genérica', () => {
+    expect(classifyOtpSendError({ code: 'algo_novo', status: 400 })).toBe('generic');
+    expect(classifyOtpVerifyError({})).toBe('generic');
+  });
+});
