@@ -1,7 +1,15 @@
+import { redirect } from 'next/navigation';
+
 import { AdminPage } from '@/components/admin/AdminPage';
 import { StubNotice } from '@/components/ui/StubNotice';
+import { hasRole, panelHomeFor } from '@/lib/auth/roles';
+import { requireRole } from '@/lib/auth/session';
 
-export default function OverviewPage() {
+export default async function OverviewPage() {
+  const user = await requireRole('staff');
+  // A moderadora só usa Comentários.
+  if (!hasRole(user.role, 'admin')) redirect(panelHomeFor(user.role));
+
   return (
     <AdminPage>
       <StubNotice flush>

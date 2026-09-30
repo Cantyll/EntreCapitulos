@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { IconButton } from '@/components/ui/IconButton';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
+import type { Role } from '@/lib/auth/roles';
 import { cx } from '@/lib/cx';
 import {
   NEW_SESSION_HREF,
@@ -22,9 +23,9 @@ import styles from './AdminTabBar.module.css';
  * central "Nova sessão", Comentários (com contador) e "Mais", que abre uma folha com o resto.
  * Acima de 1020px ela some e vale a barra lateral.
  */
-export function AdminTabBar({ pendingComments }: { pendingComments: number }) {
+export function AdminTabBar({ pendingComments, role }: { pendingComments: number; role: Role }) {
   const pathname = usePathname();
-  const { left, right, more } = getAdminTabbar();
+  const { left, right, more, canCreateSession } = getAdminTabbar(role);
   const sheetRef = useRef<HTMLDialogElement>(null);
   const sheetTitleId = useId();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -78,29 +79,33 @@ export function AdminTabBar({ pendingComments }: { pendingComments: number }) {
       <nav className={styles.bar} aria-label="Painel">
         <ul className={styles.list}>
           {left.map(renderTab)}
-          <li className={styles.cell}>
-            <Link href={NEW_SESSION_HREF} className={styles.create}>
-              <span className={styles.createIcon}>
-                <Icon name="pen" size="lg" />
-              </span>
-              <span>Nova sessão</span>
-            </Link>
-          </li>
+          {canCreateSession && (
+            <li className={styles.cell}>
+              <Link href={NEW_SESSION_HREF} className={styles.create}>
+                <span className={styles.createIcon}>
+                  <Icon name="pen" size="lg" />
+                </span>
+                <span>Nova sessão</span>
+              </Link>
+            </li>
+          )}
           {right.map(renderTab)}
-          <li className={styles.cell}>
-            <button
-              type="button"
-              className={cx(styles.tab, moreActive && styles.on)}
-              aria-haspopup="dialog"
-              aria-expanded={sheetOpen}
-              onClick={openSheet}
-            >
-              <span className={styles.pill}>
-                <Icon name="more" size="lg" />
-              </span>
-              <span>Mais</span>
-            </button>
-          </li>
+          {more.length > 0 && (
+            <li className={styles.cell}>
+              <button
+                type="button"
+                className={cx(styles.tab, moreActive && styles.on)}
+                aria-haspopup="dialog"
+                aria-expanded={sheetOpen}
+                onClick={openSheet}
+              >
+                <span className={styles.pill}>
+                  <Icon name="more" size="lg" />
+                </span>
+                <span>Mais</span>
+              </button>
+            </li>
+          )}
         </ul>
       </nav>
 

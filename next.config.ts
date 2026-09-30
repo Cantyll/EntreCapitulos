@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
   // Desde o Next 16.3 o `next dev` escreve um bloco de instruções para agentes de IA no CLAUDE.md.
   // O CLAUDE.md deste projeto é mantido à mão, então a geração fica desligada.
   agentRules: false,
+  experimental: {
+    // Habilita forbidden() e app/forbidden.tsx: página 403 de verdade para quem não tem papel.
+    authInterrupts: true,
+  },
 };
 
 export default nextConfig;
