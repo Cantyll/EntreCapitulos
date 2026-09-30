@@ -1,6 +1,7 @@
 import type { Route } from 'next';
 
 import type { IconName } from '@/components/ui/Icon';
+import { canAccessPanelPath, hasRole, type Role } from '@/lib/auth/roles';
 
 import { bookHref } from './routes';
 
@@ -83,6 +84,16 @@ export const adminNav: readonly AdminNavItem[] = [
   },
 ];
 
+/** Só o que o papel pode abrir: a moderadora vê apenas Comentários. A interface só esconde. */
+export function getAdminNav(role: Role): AdminNavItem[] {
+  return adminNav.filter((item) => canAccessPanelPath(role, item.href));
+}
+
+/** "Nova sessão" é só da administradora. */
+export function canCreateSession(role: Role) {
+  return hasRole(role, 'admin');
+}
+
 export function isAdminNavActive(item: AdminNavItem, pathname: string) {
   if (item.match === 'exact') return pathname === item.href;
   return inSegment(pathname, item.href);
@@ -92,12 +103,13 @@ export function isAdminNavActive(item: AdminNavItem, pathname: string) {
  * Barra inferior do celular: duas abas, o botão central "Nova sessão", as demais abas e "Mais".
  * `left` e `right` ficam de cada lado do botão central; `more` vai para dentro da folha "Mais".
  */
-export function getAdminTabbar() {
-  const tabs = adminNav.filter((item) => item.placement === 'tab');
+export function getAdminTabbar(role: Role) {
+  const items = getAdminNav(role);
+  const tabs = items.filter((item) => item.placement === 'tab');
   return {
     left: tabs.slice(0, 2),
     right: tabs.slice(2),
-    more: adminNav.filter((item) => item.placement === 'more'),
+    more: items.filter((item) => item.placement === 'more'),
   };
 }
 

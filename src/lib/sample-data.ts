@@ -8,10 +8,5 @@ export const currentBook = {
   author: 'Amber V. Nicole',
 } as const;
 
-export const adminProfile = {
-  name: 'Agatha Montinelli',
-  role: 'Administradora',
-} as const;
-
 /** Comentários esperando aprovação: alimenta o contador do menu e o ponto do sino no painel. */
 export const pendingCommentsCount = 5;

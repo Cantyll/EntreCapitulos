@@ -6,17 +6,18 @@ import { usePathname } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { cx } from '@/lib/cx';
-import { adminNav, isAdminNavActive } from '@/lib/navigation';
+import type { Role } from '@/lib/auth/roles';
+import { getAdminNav, isAdminNavActive } from '@/lib/navigation';
 
 import styles from './AdminNav.module.css';
 
 /** Menu da barra lateral (telas largas). No celular o painel usa a AdminTabBar. */
-export function AdminNav({ pendingComments }: { pendingComments: number }) {
+export function AdminNav({ role, pendingComments }: { role: Role; pendingComments: number }) {
   const pathname = usePathname();
 
   return (
     <nav className={styles.nav} aria-label="Painel">
-      {adminNav.map((item) => {
+      {getAdminNav(role).map((item) => {
         const active = isAdminNavActive(item, pathname);
         return (
           <Link

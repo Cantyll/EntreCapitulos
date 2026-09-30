@@ -7,9 +7,12 @@ import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { IconButton } from '@/components/ui/IconButton';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
+import { signOut } from '@/lib/auth/actions';
+import type { Role } from '@/lib/auth/roles';
 import { cx } from '@/lib/cx';
 import {
   NEW_SESSION_HREF,
+  canCreateSession,
   getAdminTabbar,
   isAdminNavActive,
   type AdminNavItem,
@@ -22,9 +25,9 @@ import styles from './AdminTabBar.module.css';
  * central "Nova sessão", Comentários (com contador) e "Mais", que abre uma folha com o resto.
  * Acima de 1020px ela some e vale a barra lateral.
  */
-export function AdminTabBar({ pendingComments }: { pendingComments: number }) {
+export function AdminTabBar({ role, pendingComments }: { role: Role; pendingComments: number }) {
   const pathname = usePathname();
-  const { left, right, more } = getAdminTabbar();
+  const { left, right, more } = getAdminTabbar(role);
   const sheetRef = useRef<HTMLDialogElement>(null);
   const sheetTitleId = useId();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -78,14 +81,16 @@ export function AdminTabBar({ pendingComments }: { pendingComments: number }) {
       <nav className={styles.bar} aria-label="Painel">
         <ul className={styles.list}>
           {left.map(renderTab)}
-          <li className={styles.cell}>
-            <Link href={NEW_SESSION_HREF} className={styles.create}>
-              <span className={styles.createIcon}>
-                <Icon name="pen" size="lg" />
-              </span>
-              <span>Nova sessão</span>
-            </Link>
-          </li>
+          {canCreateSession(role) && (
+            <li className={styles.cell}>
+              <Link href={NEW_SESSION_HREF} className={styles.create}>
+                <span className={styles.createIcon}>
+                  <Icon name="pen" size="lg" />
+                </span>
+                <span>Nova sessão</span>
+              </Link>
+            </li>
+          )}
           {right.map(renderTab)}
           <li className={styles.cell}>
             <button
@@ -141,6 +146,14 @@ export function AdminTabBar({ pendingComments }: { pendingComments: number }) {
                 <Icon name="eye" />
                 Ver o site
               </Link>
+            </li>
+            <li>
+              <form action={signOut}>
+                <button type="submit" className={styles.sheetLink}>
+                  <Icon name="logout" />
+                  Sair
+                </button>
+              </form>
             </li>
           </ul>
         </div>

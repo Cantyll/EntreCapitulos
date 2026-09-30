@@ -1,0 +1,9 @@
+.page {
+  min-height: var(--app-height);
+  padding-top: 28px;
+}
+
+.logo {
+  display: flex;
+  justify-content: center;
+}
