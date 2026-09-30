@@ -1,0 +1,9 @@
+.next
+node_modules
+coverage
+docs
+public
+package-lock.json
+next-env.d.ts
+# Os .md são escritos à mão (tabelas alinhadas à mão no CLAUDE.md); o Prettier não reformata.
+*.md
