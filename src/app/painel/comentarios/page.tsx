@@ -2,10 +2,13 @@ import type { Metadata } from 'next';
 
 import { AdminPage } from '@/components/admin/AdminPage';
 import { StubNotice } from '@/components/ui/StubNotice';
+import { requireRole } from '@/lib/auth/session';
 
 export const metadata: Metadata = { title: 'Comentários' };
 
-export default function CommentsAdminPage() {
+export default async function CommentsAdminPage() {
+  await requireRole('staff');
+
   return (
     <AdminPage>
       <StubNotice flush>

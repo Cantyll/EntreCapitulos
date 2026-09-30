@@ -1,0 +1,28 @@
+.page {
+  min-height: var(--app-height);
+  display: grid;
+  align-items: center;
+  padding: 40px 0;
+}
+
+.box {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  max-width: 520px;
+}
+
+.box h1 {
+  font-family: var(--serif);
+  font-size: clamp(28px, 5vw, 36px);
+  line-height: 1.15;
+  color: var(--rose-deep);
+}
+
+.box p {
+  color: var(--ink-2);
+}
+
+.actions {
+  margin-top: 8px;
+}
