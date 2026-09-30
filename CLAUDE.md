@@ -120,7 +120,7 @@ Este motor precisa de testes unitários: capas coloridas, capa preto e branco e 
 
 O que já está migrado (Fase 1, etapa 1) fica em `supabase/migrations/`. As tabelas marcadas como Fase 2 ainda não existem.
 
-- `profiles`: id (= auth.users), display_name, avatar_url (só `https`), role (`admin` | `moderator` | `member`), approved_comment_count, created_at, updated_at. Sem e-mail. Um trigger em `auth.users` cria o perfil (o nome vem do metadata — `display_name`, `full_name` ou `name` — e, sem ele, é `Leitor`: nenhum trecho do e-mail vai para o perfil; o papel nunca vem do metadata). **Leitura pública**: nomes e avatares de todos os membros são legíveis por qualquer visitante (entra na política de privacidade, etapa 7); o usuário só atualiza `display_name` e `avatar_url` (grant por coluna).
+- `profiles`: id (= auth.users), display_name, avatar_url (só `https`), role (`admin` | `moderator` | `member`), approved_comment_count, display_name_confirmed_at (nulo até a pessoa escolher o nome público em `/boas-vindas`; a pessoa grava a própria coluna), created_at, updated_at. Sem e-mail. Um trigger em `auth.users` cria o perfil (o nome vem do metadata — `display_name`, `full_name` ou `name` — e, sem ele, é `Leitor`: nenhum trecho do e-mail vai para o perfil; o papel nunca vem do metadata). **Leitura pública**: nomes e avatares de todos os membros são legíveis por qualquer visitante (entra na política de privacidade, etapa 7); o usuário só atualiza `display_name` e `avatar_url` (grant por coluna).
 - `books`: id, slug (único, usado na URL `/livros/[slug]`), title, author, synopsis, genres (`text[]`), total_chapters (estimativa, sem trava contra as sessões), current_chapter (entre 0 e total_chapters), status (`reading` | `finished` | `queued`; no máximo um `reading`), rating (0 a 5 em passos de 0,5), cover_path, palette jsonb, theme_tokens jsonb, theme_auto bool, started_at, finished_at.
 - `reading_sessions`: id, book_id, number (único por livro), chapter_from, chapter_to (sem sobreposição entre sessões do mesmo livro, rascunhos incluídos), title, body (JSON do Tiptap; o nó de divisória se chama `chapterDivider`, com `attrs.chapter`), excerpt, rating, visibility (`public` | `members`), status (`draft` | `published`; `scheduled` chega na Fase 2 com `publish_at`), published_at (preenchido ao publicar), read_minutes, comments_open.
 - `session_notes`: id, session_id, kind (`quote` | `note`), text, reference (ex.: "Capítulo 10, página 162"), position.
@@ -134,7 +134,7 @@ O que já está migrado (Fase 1, etapa 1) fica em `supabase/migrations/`. As tab
 **RLS** (o banco é a fonte de verdade das permissões; a interface só esconde):
 
 - Sessões: `published` + `public` para todos; `published` + `members` para quem está logado; rascunhos só para `admin`. Notas e perguntas seguem a visibilidade da sessão-pai. Escrita de livros, sessões, notas e perguntas só para `admin`.
-- Comentários: um trigger `BEFORE INSERT` ignora o status enviado. `admin` e `moderator` entram `approved`; membro com 3 ou mais comentários aprovados entra `approved`; os demais entram `pending`. Só aceita comentário em sessão `published` com `comments_open`. Anônimos (login anônimo do Supabase, que também tem o papel `authenticated`) não comentam nem leem sessões `members`: o RLS confere a claim `is_anonymous`. Leitura: `approved` para quem pode ler a sessão, o autor vê os próprios `pending`, a moderação vê tudo. A moderação só altera `status` e `spoiler_up_to`; ninguém apaga (`removed` é exclusão lógica). `approved_comment_count` é mantido por trigger e sempre igual ao número de comentários `approved` da pessoa (sobe e desce).
+- Comentários: um trigger `BEFORE INSERT` ignora o status enviado. o trigger também recusa (`profile_incomplete:`, errcode 23514) o comentário de quem ainda não confirmou o nome, quando há usuário logado (seed e SQL Editor seguem livres); `admin` e `moderator` entram `approved`; membro com 3 ou mais comentários aprovados entra `approved`; os demais entram `pending`. Só aceita comentário em sessão `published` com `comments_open`. Anônimos (login anônimo do Supabase, que também tem o papel `authenticated`) não comentam nem leem sessões `members`: o RLS confere a claim `is_anonymous`. Leitura: `approved` para quem pode ler a sessão, o autor vê os próprios `pending`, a moderação vê tudo. A moderação só altera `status` e `spoiler_up_to`; ninguém apaga (`removed` é exclusão lógica). `approved_comment_count` é mantido por trigger e sempre igual ao número de comentários `approved` da pessoa (sobe e desce).
 - Exclusões: `books → reading_sessions` e `reading_sessions → comments` são `RESTRICT`. Excluir uma conta apaga em cascata os comentários da pessoa e, por consequência, as respostas de outras pessoas a eles (decisão conhecida).
 - Nenhum fluxo de cadastro concede admin. O papel só muda pelo SQL Editor do Supabase (ver README).
 - Login anônimo: o banco não depende dele estar desligado. Na nuvem, ligar ou desligar é uma opção do painel do Supabase (o `config.toml` só vale para o banco local); o RLS trata o usuário anônimo como não-membro de qualquer forma.
@@ -143,6 +143,15 @@ O que já está migrado (Fase 1, etapa 1) fica em `supabase/migrations/`. As tab
 
 - Toda Server Action e route handler revalida no servidor quem é a pessoa e qual o papel dela. Nunca use `getSession()` para autorizar: use `getClaims()` (ou `getUser()`). O papel vem do banco (`is_admin()`/`is_staff()` no RLS), nunca do JWT.
 - A chave `service_role`/secret nunca entra no app (há uma regra de lint). Só existem `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Segredos nunca entram no git; o `.env.example` só tem os nomes.
+
+**Autenticação e painel (Fase 1, etapa 2):**
+
+- `src/proxy.ts` renova a sessão (`@supabase/ssr`) e redireciona `/painel/*` sem sessão para `/entrar?next=…`. É só conveniência.
+- `src/lib/auth/`: `session.ts` (`getCurrentUser`, `requireUser`, `requireRole('admin' | 'staff')`), `roles.ts`, `safe-next.ts` (o `next` só aceita caminho interno), `messages.ts` (erros em pt-BR; `?erro=` só aceita códigos de uma lista fixa). A identidade vem de `getClaims()` e o papel de `profiles.role`, nunca do JWT.
+- **Todo layout, página e Server Action do painel chama `requireRole`.** O teste `tests/painel-guards.test.ts` falha se um arquivo novo esquecer. Sem permissão, `forbidden()` responde 403 (`experimental.authInterrupts`, `src/app/forbidden.tsx`). A moderadora só acessa Comentários.
+- Login: código de 6 dígitos por e-mail (Server Actions `sendCode`/`verifyCode` em `/entrar`) e Google (`/auth/callback`). O destino do login pelo Google vai num cookie httpOnly de 10 min, não na URL. Nunca logar e-mail, código ou token; em erro, só `error.code`.
+- Primeiro acesso: `/boas-vindas` grava `display_name` e `display_name_confirmed_at`. Enquanto a coluna não existe na nuvem (42703), `isNameConfirmed` trata como confirmado.
+- A configuração do painel do Supabase (URLs, SMTP, modelos, Google) é manual e está no README; os modelos de e-mail ficam em `supabase/templates/` como referência.
 
 ## Regras de spoiler
 
@@ -159,6 +168,7 @@ O que já está migrado (Fase 1, etapa 1) fica em `supabase/migrations/`. As tab
   - [x] Deploy de pré-visualização na Vercel publicado e instalação no iPhone testada.
 - [ ] **Fase 1, MVP** (uma etapa por sessão, cada uma numa branch e num PR pequeno em rascunho): Supabase ligado; auth (Google e código por e-mail); home; página do livro; página da sessão com relato; comentários com respostas; filtro de spoiler; painel com editor de sessão, livros (com upload de capa e tema automático) e moderação; itens 4 a 7 do bloco PWA (login por código no app instalado, service worker com `/offline`, cartão de instalação, editor no celular).
   - [x] Etapa 1, Supabase, modelo de dados e RLS (migration, testes pgTAP, clientes, tipos e CI). Falta aplicar a migration na nuvem (Actions → Database deploy).
+  - [x] Etapa 2, autenticação e proteção do painel (proxy, `requireRole`, login por código e Google, 403, `/boas-vindas`, migration `profile_name_confirmation`). Falta aplicar a migration na nuvem e testar o Google e o app instalado no iPhone.
 - [ ] **Fase 2:** reações, curtidas, votação do próximo livro, estante, envio por e-mail, agendamento, membros e papéis; push (item 8 do bloco PWA) na Fase 2 ou 3.
 - [ ] **Fase 3:** busca, estatísticas do painel, SEO e compartilhamento (imagem de prévia por sessão), leitura offline de sessões já abertas.
 
@@ -172,6 +182,7 @@ O livro atual é **O Livro de Azrael**, de Amber V. Nicole. O total de capítulo
 
 - `npm run dev`: servidor de desenvolvimento em http://localhost:3000. O painel fica em `/painel`.
 - `npm run build` e `npm run start`: build e servidor de produção.
+- `npm test`: Vitest (lógica de auth, papéis e o teste-guarda do painel).
 - `npm run lint`: ESLint (config do Next, com as regras de hooks e de acessibilidade).
 - `npm run typecheck`: gera os tipos das rotas (`next typegen`) e roda o `tsc`.
 - `npm run format` e `npm run format:check`: Prettier. Os `.md` ficam de fora, porque são escritos à mão.
@@ -191,6 +202,7 @@ Versões fixadas por compatibilidade: TypeScript em 6.0 (o `typescript-eslint` n
 - `src/lib/`: `navigation.ts` (menus e regra de item ativo), `routes.ts` (URLs dinâmicas), `sample-data.ts` (dados de exemplo, saem com o Supabase), `brand.ts` (nome e cores que vivem fora do CSS).
 - `src/lib/supabase/`: `server.ts` (Server Components, Actions e Route Handlers), `browser.ts` (Client Components), `env.ts` e `database.types.ts` (gerado por `npm run db:types`, não editar à mão). O refresh de sessão por proxy fica para a etapa 2.
 - `supabase/`: `config.toml`, `migrations/`, `seed.sql` (só para o banco local; nunca para a nuvem e nunca com `--include-seed`) e `tests/database/` (pgTAP).
+- `src/proxy.ts` e `src/lib/auth/`: ver "Autenticação e painel".
 - `src/hooks/`: `useIsStandalone.ts`.
 - `src/styles/`: `tokens.css` (variáveis de design) e `base.css`.
 
