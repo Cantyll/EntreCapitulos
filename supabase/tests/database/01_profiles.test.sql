@@ -13,6 +13,8 @@ insert into auth.users (id, email, raw_user_meta_data, raw_app_meta_data) values
   ('00000000-0000-4000-8000-0000000000b1', 'maria.leitora@t.test', '{}', '{}'),
   ('00000000-0000-4000-8000-0000000000b2', 'sneaky@t.test',
      '{"role": "admin", "name": "Sneaky", "avatar_url": "http://insecure.test/a.png"}', '{"role": "admin"}'),
+  ('00000000-0000-4000-8000-0000000000b4', 'pick@t.test',
+     '{"display_name": "Nome Escolhido", "full_name": "Outro Nome"}', '{}'),
   ('00000000-0000-4000-8000-0000000000b3', 'long@t.test', jsonb_build_object('full_name', repeat('x', 200),
      'picture', 'https://lh3.test/photo.png'), '{}');
 update public.profiles set role = 'admin' where id = '00000000-0000-4000-8000-0000000000a1';
@@ -21,7 +23,12 @@ update public.profiles set role = 'admin' where id = '00000000-0000-4000-8000-00
 select is((select display_name from public.profiles where id = '00000000-0000-4000-8000-0000000000a1'),
   'Admin Pessoa', 'display_name comes from metadata');
 select is((select display_name from public.profiles where id = '00000000-0000-4000-8000-0000000000b1'),
-  'maria.leitora', 'display_name falls back to the local part of the e-mail');
+  'Leitor', 'a signup with only an e-mail gets the display_name "Leitor"');
+select is((select to_jsonb(p)::text ~* 'maria|t\.test|@' from public.profiles p
+  where p.id = '00000000-0000-4000-8000-0000000000b1'), false,
+  'the profile row contains no part of the e-mail address');
+select is((select display_name from public.profiles where id = '00000000-0000-4000-8000-0000000000b4'),
+  'Nome Escolhido', 'display_name metadata wins over full_name');
 select is((select role from public.profiles where id = '00000000-0000-4000-8000-0000000000b2'),
   'member', 'signup metadata never grants a role (user and app metadata)');
 select is((select avatar_url from public.profiles where id = '00000000-0000-4000-8000-0000000000b2'),
@@ -42,7 +49,7 @@ select ok(not public.is_admin() and not public.is_staff(), 'no user is neither')
 
 -- Visitors read profiles
 set local role anon;
-select is((select count(*)::int from public.profiles), 4, 'anon reads profiles');
+select is((select count(*)::int from public.profiles), 5, 'anon reads profiles');
 select throws_ok($$update public.profiles set display_name = 'x'$$, '42501', null, 'anon cannot update profiles');
 reset role;
 

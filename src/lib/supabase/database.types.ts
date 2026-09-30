@@ -66,12 +66,37 @@ export type Database = {
         };
         Relationships: [];
       };
+      comment_flags: {
+        Row: {
+          comment_id: string;
+          created_at: string;
+          reason: string;
+        };
+        Insert: {
+          comment_id: string;
+          created_at?: string;
+          reason: string;
+        };
+        Update: {
+          comment_id?: string;
+          created_at?: string;
+          reason?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'comment_flags_comment_id_fkey';
+            columns: ['comment_id'];
+            isOneToOne: true;
+            referencedRelation: 'comments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       comments: {
         Row: {
           author_id: string;
           body: string;
           created_at: string;
-          flag_reason: string | null;
           id: string;
           parent_id: string | null;
           read_up_to: number | null;
@@ -84,7 +109,6 @@ export type Database = {
           author_id: string;
           body: string;
           created_at?: string;
-          flag_reason?: string | null;
           id?: string;
           parent_id?: string | null;
           read_up_to?: number | null;
@@ -97,7 +121,6 @@ export type Database = {
           author_id?: string;
           body?: string;
           created_at?: string;
-          flag_reason?: string | null;
           id?: string;
           parent_id?: string | null;
           read_up_to?: number | null;
@@ -346,7 +369,7 @@ export type Database = {
     };
     Functions: {
       derive_avatar_url: { Args: { meta: Json }; Returns: string };
-      derive_display_name: { Args: { email: string; meta: Json }; Returns: string };
+      derive_display_name: { Args: { meta: Json }; Returns: string };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
     };
