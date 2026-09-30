@@ -1,6 +1,8 @@
+/* Fora da tela até receber foco. Posição fixa em px (e não um deslocamento relativo) para não
+   aparecer pela metade quando a safe area do notch empurra o topo para baixo. */
 .skip {
   position: fixed;
-  top: calc(var(--safe-top) + 8px);
+  top: -200px;
   left: calc(var(--safe-left) + 12px);
   z-index: 100;
   padding: 10px 16px;
@@ -9,11 +11,10 @@
   color: #fff;
   font-size: 14px;
   font-weight: 500;
-  transform: translateY(-200%);
 }
 
 .skip:focus {
-  transform: none;
+  top: calc(var(--safe-top) + 8px);
 }
 
 /* O anel padrão tem a cor do fundo do botão, então aqui ele fica escuro. */

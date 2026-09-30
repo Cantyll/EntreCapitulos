@@ -1,0 +1,25 @@
+.admin {
+  display: grid;
+  grid-template-columns: 252px minmax(0, 1fr);
+  min-height: var(--app-height);
+}
+
+.column {
+  min-width: 0;
+}
+
+.main {
+  padding: 30px 34px 70px;
+  max-width: 1240px;
+}
+
+/* Abaixo de 1020px: sem barra lateral, e a barra inferior fixa não pode cobrir o fim da página. */
+@media (max-width: 1020px) {
+  .admin {
+    grid-template-columns: 1fr;
+  }
+
+  .main {
+    padding: 22px 22px calc(var(--tabbar-h) + 28px);
+  }
+}

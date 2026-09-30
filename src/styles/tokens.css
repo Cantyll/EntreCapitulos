@@ -44,6 +44,7 @@
 
   /* Toque e Safari no iOS (seção "Otimização para Safari" do CLAUDE.md) */
   --tap: 44px; /* alvo de toque mínimo; usado sob (pointer: coarse) */
+  --tabbar-h: 64px; /* barra inferior do painel no celular (sem a safe area) */
   --field-font-size: 14.5px; /* vira 16px sob (pointer: coarse): abaixo disso o iOS dá zoom */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
