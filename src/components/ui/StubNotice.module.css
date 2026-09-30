@@ -11,6 +11,10 @@
   max-width: 62ch;
 }
 
+.flush {
+  margin-top: 0;
+}
+
 .notice svg {
   color: var(--rose-2);
   margin-top: 2px;
