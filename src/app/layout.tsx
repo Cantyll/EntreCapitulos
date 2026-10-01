@@ -3,6 +3,8 @@ import { Instrument_Sans, Newsreader } from 'next/font/google';
 import type { ReactNode } from 'react';
 
 import { BRAND_COLORS, SITE_DESCRIPTION, SITE_NAME } from '@/lib/brand';
+import { tokensToStyle } from '@/lib/theme';
+import { getSiteTheme } from '@/lib/theme/server';
 
 import '@/styles/tokens.css';
 import '@/styles/base.css';
@@ -36,16 +38,24 @@ export const metadata: Metadata = {
   other: { 'apple-mobile-web-app-capable': 'yes' },
 };
 
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  viewportFit: 'cover',
-  // Sem maximumScale nem userScalable: o zoom por pinça precisa continuar livre (acessibilidade).
-  // Hoje é o --rose-deep do tema padrão; com o tema automático (Fase 1) passa a ser o do livro atual.
-  themeColor: BRAND_COLORS.roseDeep,
-};
+// A cor da barra do navegador acompanha o --rose-deep do tema do livro atual. O manifest continua
+// estático e neutro (não dá para ele seguir o tema).
+export async function generateViewport(): Promise<Viewport> {
+  const theme = await getSiteTheme();
+  return {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
+    // Sem maximumScale nem userScalable: o zoom por pinça precisa continuar livre (acessibilidade).
+    themeColor: theme?.['--rose-deep'] ?? BRAND_COLORS.roseDeep,
+  };
+}
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Tema automático pela capa: as variáveis vão no <html> já no servidor (sem flash). Só passam
+  // chaves da allow-list e valores #RRGGBB; sem tema válido, vale o rosa padrão de tokens.css.
+  const theme = await getSiteTheme();
+
   return (
     // data-scroll-behavior: o CSS tem scroll-behavior smooth (âncoras); com isso o Next desliga a
     // rolagem suave só durante a troca de página, para ela não "deslizar" até o topo.
@@ -53,6 +63,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       lang="pt-BR"
       data-scroll-behavior="smooth"
       className={`${newsreader.variable} ${instrumentSans.variable}`}
+      style={theme ? tokensToStyle(theme) : undefined}
     >
       <body>{children}</body>
     </html>
