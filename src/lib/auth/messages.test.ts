@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { classifyOtpSendError, classifyOtpVerifyError, loginErrorMessage } from './messages';
+import {
+  classifyOtpSendError,
+  classifyOtpVerifyError,
+  loginErrorMessage,
+  OTP_MESSAGES,
+} from './messages';
 
 describe('loginErrorMessage', () => {
   it('só aceita códigos da lista fixa', () => {
@@ -35,6 +40,21 @@ describe('classificação dos erros do Auth', () => {
 
   it('o resto vira mensagem genérica', () => {
     expect(classifyOtpSendError({ code: 'algo_novo', status: 400 })).toBe('generic');
-    expect(classifyOtpVerifyError({})).toBe('generic');
+    expect(classifyOtpVerifyError({ code: 'algo_novo', status: 400 })).toBe('generic');
+  });
+
+  it('erro sem status nem code (rede) pede para tentar de novo', () => {
+    expect(classifyOtpSendError({})).toBe('send_failed');
+    expect(classifyOtpSendError({ status: 0 })).toBe('send_failed');
+    expect(classifyOtpSendError({ code: null, status: null })).toBe('send_failed');
+    expect(OTP_MESSAGES.send_failed).toBe(
+      'Não conseguimos enviar o código agora. Tente de novo em instantes.',
+    );
+  });
+
+  it('na verificação, o mesmo caso fala em confirmar o código', () => {
+    expect(classifyOtpVerifyError({})).toBe('verify_failed');
+    expect(classifyOtpVerifyError({ status: 503 })).toBe('verify_failed');
+    expect(OTP_MESSAGES.verify_failed).toContain('confirmar');
   });
 });

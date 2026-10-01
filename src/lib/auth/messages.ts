@@ -21,6 +21,7 @@ export const OTP_MESSAGES = {
   email_invalid: 'Esse e-mail não parece certo. Confira e tente de novo.',
   rate_limited: 'Você pediu códigos demais. Espere um minuto e tente de novo.',
   send_failed: 'Não conseguimos enviar o código agora. Tente de novo em instantes.',
+  verify_failed: 'Não conseguimos confirmar o código agora. Tente de novo em instantes.',
   code_format: 'Digite os 6 números do código que enviamos por e-mail.',
   code_invalid: 'Esse código não está certo ou já expirou. Confira ou peça um novo.',
   generic: 'Algo deu errado. Tente de novo.',
@@ -30,12 +31,22 @@ export type OtpErrorKey = keyof typeof OTP_MESSAGES;
 
 type AuthErrorLike = { code?: string | null; status?: number | null };
 
+/**
+ * Erro sem `code` e sem `status` (ou com status 0): é falha de rede ou do próprio servidor, não
+ * uma resposta do Auth. Para a pessoa, o serviço está indisponível.
+ */
+function hasNoDetails(error: AuthErrorLike): boolean {
+  return !error.code && !error.status;
+}
+
 /** Traduz o erro do Auth para uma chave de mensagem, olhando só o `code` e o status. */
 export function classifyOtpSendError(error: AuthErrorLike): OtpErrorKey {
   const code = error.code ?? '';
   if (error.status === 429 || code.includes('rate_limit')) return 'rate_limited';
   if (code === 'email_address_invalid' || code === 'validation_failed') return 'email_invalid';
-  if (code === 'unexpected_failure' || (error.status ?? 0) >= 500) return 'send_failed';
+  if (code === 'unexpected_failure' || (error.status ?? 0) >= 500 || hasNoDetails(error)) {
+    return 'send_failed';
+  }
   return 'generic';
 }
 
@@ -45,6 +56,6 @@ export function classifyOtpVerifyError(error: AuthErrorLike): OtpErrorKey {
   if (code === 'otp_expired' || code === 'validation_failed' || error.status === 403) {
     return 'code_invalid';
   }
-  if ((error.status ?? 0) >= 500) return 'send_failed';
+  if ((error.status ?? 0) >= 500 || hasNoDetails(error)) return 'verify_failed';
   return 'generic';
 }
