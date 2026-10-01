@@ -1,7 +1,5 @@
-export const SITE_NAME = 'Entre Capítulos';
-
-export const SITE_DESCRIPTION =
-  'Blog e clube de leitura em sessões, com discussão por capítulo e controle de spoiler.';
+// Nome e descrição moram em `site.ts`; aqui ficam só as cores que vivem fora do CSS.
+export { SITE_DESCRIPTION, SITE_NAME } from './site';
 
 /**
  * Valores do tema padrão (src/styles/tokens.css). Manifest, ícones e theme-color vivem fora do
