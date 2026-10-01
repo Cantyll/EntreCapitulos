@@ -52,10 +52,13 @@ export function describeFailure(error: unknown): FailureSummary {
   ) as FailureSummary;
 }
 
-/** Registra uma falha de autenticação (OTP, verificação, Google, sair…) sem dado pessoal. */
-export function logAuthFailure(operation: string, error: unknown): void {
+/** Registra uma falha (Auth, Storage, banco, sharp…) sem dado pessoal: ver `describeFailure`. */
+export function logFailure(operation: string, error: unknown): void {
   console.error(`${operation} falhou`, describeFailure(error));
 }
+
+/** Registra uma falha de autenticação (OTP, verificação, Google, sair…) sem dado pessoal. */
+export const logAuthFailure = logFailure;
 
 /** O proxy registra só o nome do erro (e, no erro de configuração, quais variáveis falharam). */
 export function logProxyFailure(error: unknown): void {
