@@ -196,6 +196,20 @@ Ao enviar a capa do livro **em leitura**, o site inteiro (páginas públicas e p
 
 Esta etapa traz a migration `…_book_lifecycle.sql` (funções `start_book` e `finish_book`). Depois do merge: faça o deploy da Vercel e rode **Actions → Database deploy** (primeiro com **dry run** ligado, depois desligado). **Antes de aplicar, o site e o painel funcionam** (cadastro, edição, capa, tema, exclusão), e só três ações mostram o aviso "Falta aplicar a atualização do banco": **Começar a ler**, **Marcar livro como terminado** e criar um livro direto como **Lendo agora** (ele fica na fila). Nada quebra por aplicar a migration depois do deploy, nem o contrário.
 
+## Escrever e publicar uma sessão
+
+Tudo isto é feito em **Painel → Sessões**, pelo celular ou pelo computador.
+
+1. **Nova sessão.** O painel já sugere os capítulos (do seguinte à última sessão, até mais dois). Dê um título e comece a escrever. O rascunho só é criado depois que você escreve o título ou o texto.
+2. **Divisória de capítulo.** Use o botão da barra para começar cada capítulo. É por elas que o filtro de spoiler esconde o texto de quem ainda não leu. O título de cada capítulo se edita em “Capítulos desta sessão”, ao lado (no celular, abaixo do texto).
+3. **Salvamento automático.** O rascunho é salvo sozinho, uns 2 segundos depois de você parar de digitar, e também quando você troca de app. O aviso mostra “Salvando…”, “Rascunho salvo” ou “Sem conexão: salvo só neste aparelho” (volta a enviar sozinho quando a internet voltar). Se o app for fechado antes de enviar, ao abrir de novo ele pergunta “Restaurar?”.
+4. **Trechos, anotações e perguntas.** Cada item é salvo na hora, sem esperar. Trechos são citações **curtas e reais** do livro; anotações são suas.
+5. **Publicar.** O botão pede confirmação com o resumo da sessão. Depois de publicar, a sessão aparece no site e a fita de capítulos avança.
+6. **Depois de publicada.** O texto **não** é salvo sozinho (uma frase pela metade iria ao ar): use “Salvar alterações”, ou “Descartar alterações”. “Voltar para rascunho” tira a sessão do ar, mas só enquanto ela não tem comentários; com comentários, feche a discussão em “Abrir comentários”.
+7. **Se aparecer “Esta sessão foi alterada em outro lugar”**, você abriu a mesma sessão em duas abas ou aparelhos. Escolha “Carregar a versão do servidor” ou “Sobrescrever com a minha”.
+
+Se ao publicar aparecer **“Falta aplicar a atualização do banco”**, vá em Actions → Database deploy (primeiro com “dry run” ligado, depois desligado). Escrever, salvar e as notas funcionam sem isso; só publicar e voltar para rascunho dependem dela.
+
 ## Solução de problemas
 
 Os nomes dos menus da Vercel mudam de vez em quando e **não foram conferidos na tela do projeto** (a documentação da Vercel consultada só descreve a CLI e a API). Se algo não estiver onde está escrito, procure pelo nome em destaque.
