@@ -135,6 +135,27 @@ Este motor precisa de testes unitários: capas coloridas, capa preto e branco e 
 - **Publicar:** `publish_session` (só rascunho; `books.current_chapter = greatest(atual, chapter_to)` na mesma transação; `chapter_to` acima do total do livro é bloqueado antes, com atalho para corrigir o total) e `unpublish_session` (volta a `draft`, mantém `published_at`, não reduz `current_chapter`, recusa com `session_has_comments:` se houver qualquer comentário). Publicar grava o texto primeiro; se a função falhar, o token novo volta ao editor (`markSaved`). Antes da migration ser aplicada, o resto funciona e publicar mostra "Falta aplicar a atualização do banco".
 - **Celular:** a barra de formatação sobe acima do teclado com `visualViewport` (`src/lib/session-editor/viewport.ts`), numa linha só (altura fixa, a página não pula), alvos de 44px, campos de 16px; a barra inferior do painel some nas telas do editor (`body:has([data-editor-root])`).
 
+## Páginas públicas, cache e filtro de spoiler (etapa 5)
+
+- **Dados públicos** (`src/lib/public/`): lidos com cliente SEM cookies (`client.ts`) dentro de `unstable_cache`, com as tags `books`, `sessions` e `session:<id>` (`tags.ts`) e rede de segurança de 5 minutos. Toda Server Action que cria, edita, publica, despublica ou apaga livro, sessão, nota ou pergunta chama `invalidateBooks()`/`invalidateSession(id)` (usam `updateTag`); o teste `tests/painel-guards.test.ts` confere. Dados por pessoa (login, progresso, sessões só para membros) vêm do cliente com cookies, em paralelo, e **nunca** entram no cache compartilhado. Sessão só para membros: visitante vê "Entre para continuar", idêntico a uma sessão inexistente; logada e inexistente dá 404.
+- **Spoiler** (`src/lib/spoiler/`): progresso = último capítulo lido (0 = não começou). Capítulo N está coberto se N > progresso; a abertura nunca; notas e perguntas ficam cobertas enquanto progresso < `chapter_to` da sessão. Progresso desconhecido vale 0 e mostra "Até que capítulo você leu?". `setReadingProgress` valida inteiro 0..total. Logada: `reading_progress`; visitante: cookie. No login, o cookie migra só se não houver progresso no banco. É cortesia de leitura, não segurança: o texto coberto está no HTML.
+- **Lição do PostgREST:** `upsert` em `reading_progress` falha (42501), porque o `ON CONFLICT DO UPDATE` tenta mudar `user_id`/`book_id` e o grant por coluna só deixa `chapter`. Use UPDATE e, se não houver linha, INSERT (com nova tentativa em 23505).
+- **Lição do `loading.tsx`:** ele envolve os layouts aninhados, então um `notFound()` lançado abaixo dele vira status 200. Checagens de 404 ficam em layouts acima da fronteira, e o esqueleto das rotas com rotas dinâmicas aninhadas é um `Suspense` na própria página.
+- **Fita de capítulos:** lógica pura em `src/lib/chapters/`; componentes `ChapterStrip` e `ChapterMap` em `src/components/public/`. A próxima sessão são os 3 capítulos depois de `current_chapter`, limitados ao total. Datas puras em `src/lib/site.ts` (fuso `America/Sao_Paulo`).
+- **Proibido `dangerouslySetInnerHTML` em `src/`** (teste estático em `tests/static-rules.test.ts`).
+
+### Cookies do site
+
+Para a política de privacidade (etapa 7). Além dos cookies de sessão do Supabase Auth:
+
+| Cookie | Finalidade | Duração | Atributos |
+|---|---|---|---|
+| `ec_progress` | Guarda até onde o visitante (sem login) leu, `{slug: capítulo}`, para o filtro de spoiler | 1 ano | `httpOnly`, `SameSite=Lax`, path `/`, `Secure` em produção |
+
+### Migrations (regra)
+
+Antes de criar uma migration: liste `supabase/migrations/` e veja a mais recente (inclusive na `main`). Crie com `supabase migration new <nome>` e confirme que o timestamp é POSTERIOR ao da última. Migrations aplicadas nunca são editadas.
+
 ## Modelo de dados (Supabase)
 
 O que já está migrado (Fase 1, etapa 1) fica em `supabase/migrations/`. As tabelas marcadas como Fase 2 ainda não existem.
@@ -195,6 +216,7 @@ O que já está migrado (Fase 1, etapa 1) fica em `supabase/migrations/`. As tab
   - [x] Etapa 2, autenticação e proteção do painel (proxy, `requireRole`, login por código e Google, 403, `/boas-vindas`, migration `profile_name_confirmation`). Falta aplicar a migration na nuvem e testar o Google e o app instalado no iPhone.
   - [x] Etapa 3, livros no painel, upload de capa e tema automático pela capa (motor de tema em `src/lib/theme/`, migration `book_lifecycle` com `start_book`/`finish_book`, `/painel/livros`). Falta aplicar a migration na nuvem (Actions → Database deploy).
   - [x] Etapa 4, editor de sessões (`/painel/sessoes`, Tiptap, autosave, migration `session_publishing` com `publish_session`/`unpublish_session`). Falta aplicar a migration na nuvem (Actions → Database deploy) e testar no iPhone com o app instalado.
+  - [x] Etapa 5, páginas públicas (home, livro, sessões, sessão, estante, sobre), fita de capítulos e filtro de spoiler. Sem migration. O texto de `/sobre` (`src/content/sobre.ts`) é PROVISÓRIO e precisa da aprovação da Agatha.
 - [ ] **Fase 2:** reações, curtidas, votação do próximo livro, estante, envio por e-mail, agendamento, membros e papéis; push (item 8 do bloco PWA) na Fase 2 ou 3.
 - [ ] **Fase 3:** busca, estatísticas do painel, SEO e compartilhamento (imagem de prévia por sessão), leitura offline de sessões já abertas.
 

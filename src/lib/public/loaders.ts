@@ -2,8 +2,8 @@ import 'server-only';
 
 import { cache } from 'react';
 
-import { isMarginNoteVisible } from '@/lib/spoiler';
 import { isValidBookSlug } from '@/lib/spoiler';
+import { pickMarginNotes } from '@/lib/spoiler/margin';
 
 import {
   getMemberMarginNotes,
@@ -92,20 +92,6 @@ export type BookPageData = {
   /** Anotações na margem já filtradas pelo progresso (vazio sem progresso). */
   marginNotes: MarginNote[];
 };
-
-export const MARGIN_NOTES_LIMIT = 4;
-
-export function pickMarginNotes(
-  notes: readonly MarginNote[],
-  progress: number | null,
-  limit = MARGIN_NOTES_LIMIT,
-): MarginNote[] {
-  if (progress === null) return [];
-  return notes
-    .filter((n) => isMarginNoteVisible(progress, n.chapterTo))
-    .sort((a, b) => b.sessionNumber - a.sessionNumber)
-    .slice(0, limit);
-}
 
 async function loadBookPageUncached(slug: string): Promise<BookPageData | null> {
   const book = await getBookBySlug(slug);

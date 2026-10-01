@@ -7,6 +7,7 @@ import {
   formatDayMonth,
   formatFullDate,
   formatRatingNumber,
+  isRecent,
 } from './site';
 
 describe('datas em Brasília', () => {
@@ -71,5 +72,22 @@ describe('formatRatingNumber', () => {
     [0.5, '0,5'],
   ])('%s → %s', (n, text) => {
     expect(formatRatingNumber(n)).toBe(text);
+  });
+});
+
+describe('isRecent ("Nova")', () => {
+  const now = new Date('2026-10-01T15:00:00Z');
+  it('publicada há menos de 7 dias é nova', () => {
+    expect(isRecent('2026-09-28T10:00:00Z', now)).toBe(true);
+    expect(isRecent('2026-10-01T14:59:00Z', now)).toBe(true);
+  });
+  it('com 7 dias ou mais, já não é', () => {
+    expect(isRecent('2026-09-24T15:00:00Z', now)).toBe(false);
+    expect(isRecent('2026-09-01T10:00:00Z', now)).toBe(false);
+  });
+  it('sem data, data inválida ou no futuro: não é nova', () => {
+    expect(isRecent(null, now)).toBe(false);
+    expect(isRecent('lixo', now)).toBe(false);
+    expect(isRecent('2026-10-05T10:00:00Z', now)).toBe(false);
   });
 });
