@@ -229,6 +229,51 @@ describe('canonicalizeBody', () => {
     ]);
   });
 
+  it('devolve só objetos comuns: attrs sem protótipo (ProseMirror) não chegam à Server Action', () => {
+    const nullProto = (value: object) => Object.assign(Object.create(null), value);
+    const raw = {
+      type: 'doc',
+      content: [
+        { type: 'heading', attrs: nullProto({ level: 2 }), content: [{ type: 'text', text: 'T' }] },
+        { type: 'chapterDivider', attrs: nullProto({ chapter: 1, title: null }) },
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: 'a',
+              marks: [
+                nullProto({ type: 'bold' }),
+                { type: 'link', attrs: nullProto({ href: 'https://a.com' }) },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'orderedList',
+          attrs: nullProto({ start: 3 }),
+          content: [{ type: 'listItem', content: [p('x')] }],
+        },
+      ],
+    } as unknown as BodyDoc;
+    const out = canonicalizeBody(raw);
+    const visit = (value: unknown) => {
+      if (Array.isArray(value)) return value.forEach(visit);
+      if (typeof value === 'object' && value !== null) {
+        expect(Object.getPrototypeOf(value)).toBe(Object.prototype);
+        Object.values(value).forEach(visit);
+      }
+    };
+    visit(out);
+    expect(out.content?.[0]).toEqual({
+      type: 'heading',
+      attrs: { level: 2 },
+      content: [{ type: 'text', text: 'T' }],
+    });
+    expect(JSON.parse(JSON.stringify(out))).toEqual(out);
+    expect(parseBody(out).ok).toBe(true);
+  });
+
   it('é idempotente', () => {
     const once = canonicalizeBody(doc(divider(2, ' x ')));
     expect(canonicalizeBody(once)).toEqual(once);

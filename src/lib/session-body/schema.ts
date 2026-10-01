@@ -182,10 +182,13 @@ export function canonicalizeBody(doc: BodyDoc): BodyDoc {
     if (typeof node !== 'object' || node === null) return node;
     const n = node as Record<string, unknown>;
     const out: Record<string, unknown> = { ...n };
+    // O ProseMirror guarda `attrs` em objetos sem protótipo, que o React não envia para uma Server
+    // Action (chegam como "function"). Copiar para um objeto comum resolve, e o JSON sai igual.
+    if (typeof n.attrs === 'object' && n.attrs !== null) out.attrs = { ...(n.attrs as object) };
     if (Array.isArray(n.marks)) {
       out.marks = n.marks.map((m) => {
         const mk = m as { type: string; attrs?: { href?: string } };
-        return mk.type === 'link' ? { type: 'link', attrs: { href: mk.attrs?.href } } : mk;
+        return mk.type === 'link' ? { type: 'link', attrs: { href: mk.attrs?.href } } : { ...mk };
       });
     }
     if (n.type === 'chapterDivider') {

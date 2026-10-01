@@ -37,7 +37,7 @@ function ToolButton({
     <button
       type="button"
       className={styles.tool}
-      aria-label={children ? undefined : label}
+      aria-label={label}
       aria-pressed={active === undefined ? undefined : active}
       title={label}
       disabled={disabled}
@@ -184,8 +184,8 @@ export function Toolbar({
           <ToolButton
             label={
               nextDivider === null
-                ? 'Todos os capítulos da faixa já têm divisória'
-                : `Divisória do capítulo ${nextDivider}`
+                ? 'Divisória de capítulo: todos os capítulos da faixa já têm uma'
+                : `Divisória de capítulo ${nextDivider}`
             }
             icon="divider"
             disabled={disabled || nextDivider === null}
@@ -194,7 +194,12 @@ export function Toolbar({
               editor
                 .chain()
                 .focus()
-                .insertContent({ type: 'chapterDivider', attrs: { chapter: nextDivider } })
+                // Divisória + um parágrafo vazio: o cursor fica depois dela, pronto para escrever (com a
+                // divisória selecionada, a primeira letra digitada a apagaria).
+                .insertContent([
+                  { type: 'chapterDivider', attrs: { chapter: nextDivider } },
+                  { type: 'paragraph' },
+                ])
                 .run();
             }}
           >
