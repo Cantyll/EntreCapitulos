@@ -38,6 +38,7 @@ const linkMark = z.strictObject({
     target: z.literal('_blank').nullish(),
     rel: z.literal('noopener noreferrer nofollow').or(z.literal('noopener noreferrer')).nullish(),
     class: z.null().optional(),
+    title: z.null().optional(),
   }),
 });
 const mark = z.discriminatedUnion('type', [boldMark, italicMark, linkMark]);
