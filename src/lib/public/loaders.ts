@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { connection } from 'next/server';
 import { cache } from 'react';
 
 import { isValidBookSlug } from '@/lib/spoiler';
@@ -23,15 +24,21 @@ import type { MarginNote, PublicBook, SessionDetail, SessionSummary } from './ty
 
 const newestFirst = (a: SessionSummary, b: SessionSummary) => b.number - a.number;
 
+/*
+ * `await connection()`: as páginas públicas são renderizadas a cada pedido (o dado vem do cache de dados,
+ * não do HTML). Sem isso o build tentaria pré-renderizá-las e falharia sem as variáveis do Supabase.
+ */
 export type Viewer = Awaited<ReturnType<typeof getViewer>>;
 
 /** O livro em leitura, do cache. Usado pelo cabeçalho e pela home. */
 export async function getCurrentBook(): Promise<PublicBook | null> {
+  await connection();
   const books = await getBooks();
   return books.find((book) => book.status === 'reading') ?? null;
 }
 
 export async function getBookBySlug(slug: string): Promise<PublicBook | null> {
+  await connection();
   if (!isValidBookSlug(slug)) return null;
   const books = await getBooks();
   return books.find((book) => book.slug === slug) ?? null;
@@ -42,6 +49,7 @@ export async function getBookBySlug(slug: string): Promise<PublicBook | null> {
  * logada, as "só para membros" (cliente com cookies). Da mais nova para a mais antiga.
  */
 export async function getVisibleSessions(bookId: string): Promise<SessionSummary[]> {
+  await connection();
   const [publicSessions, memberSessions] = await Promise.all([
     getPublicSessions(),
     getMemberSessions(bookId),
@@ -51,6 +59,7 @@ export async function getVisibleSessions(bookId: string): Promise<SessionSummary
 
 /** Quantas sessões públicas cada livro tem (a estante e as abas de /sessoes). */
 export async function getPublicSessionCounts(): Promise<Map<string, number>> {
+  await connection();
   const sessions = await getPublicSessions();
   const counts = new Map<string, number>();
   for (const s of sessions) counts.set(s.bookId, (counts.get(s.bookId) ?? 0) + 1);
@@ -68,6 +77,7 @@ export type HomeData = {
 };
 
 async function loadHomeUncached(): Promise<HomeData> {
+  await connection();
   const books = await getBooks();
   const book = books.find((b) => b.status === 'reading') ?? null;
   const finished = books.filter((b) => b.status === 'finished');
@@ -94,6 +104,7 @@ export type BookPageData = {
 };
 
 async function loadBookPageUncached(slug: string): Promise<BookPageData | null> {
+  await connection();
   const book = await getBookBySlug(slug);
   if (!book) return null;
 
@@ -130,6 +141,7 @@ export type SessionPageData =
   | { kind: 'not-found' };
 
 async function loadSessionPageUncached(slug: string, number: number): Promise<SessionPageData> {
+  await connection();
   const book = await getBookBySlug(slug);
   if (!book) return (await getViewer()) ? { kind: 'not-found' } : { kind: 'login' };
 
@@ -160,6 +172,7 @@ export type ShelfData = {
 };
 
 async function loadShelfUncached(): Promise<ShelfData> {
+  await connection();
   const [books, counts] = await Promise.all([getBooks(), getPublicSessionCounts()]);
   return {
     finished: books
