@@ -45,7 +45,6 @@ export function CurrentBookCard({ book }: { book: AdminBook | null }) {
             </div>
           </div>
           <ProgressForm
-            key={`${book.id}-${book.currentChapter}-${book.totalChapters}`}
             bookId={book.id}
             currentChapter={book.currentChapter}
             totalChapters={book.totalChapters}

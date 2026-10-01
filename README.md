@@ -163,6 +163,39 @@ O Google informa o nome e a foto; o site usa o nome como sugestão na tela de bo
 
 Quem entra pela primeira vez passa por **/boas-vindas** ("Como devemos chamar você nos comentários?"). Esse nome é público e só depois dele a pessoa consegue comentar: o banco recusa comentários de perfis sem `display_name_confirmed_at`. A migration `profile_name_confirmation` só chega à nuvem quando você a aplica (Actions → Database deploy, depois do merge). Até lá, o site trata a coluna ausente como "nome confirmado" para o login funcionar (na pré-visualização, por exemplo). Aplique a migration logo após o merge.
 
+## Livros e capas
+
+Tudo fica em **Painel → Livros** (só a administradora). A moderadora não vê esta página.
+
+### Cadastrar o primeiro livro
+
+1. Abra **Painel → Livros** e clique em **Adicionar livro**.
+2. Preencha título, autor, sinopse (opcional), gêneros (digite e aperte Enter ou vírgula) e o **total de capítulos** (uma estimativa: dá para mudar depois).
+3. Escolha o **estado inicial**: **Lendo agora** (o livro que o clube está lendo; só um por vez), **Na fila** ou **Já terminado** (pede nota e data).
+4. Escolha a **capa** (PNG, JPG ou WEBP, até 5 MB; entre 200 e 6000 px de largura e de altura) e clique em **Criar livro**.
+
+O link do livro (`/livros/<título-em-minúsculas-com-hífens>`) é gerado do título e **não muda** se você editar o título depois. Se já existir um livro com o mesmo título, o link ganha `-2`, `-3`…
+
+### Livro atual, fila e terminados
+
+- **Leitura atual:** mostra o progresso e deixa ajustar o **capítulo atual** e o **total de capítulos** (o total não pode ficar abaixo do capítulo atual). **Marcar livro como terminado** pede a nota (0 a 5, de meio em meio ponto) e leva o livro para a estante.
+- **Na fila:** **Começar a ler** só aparece enquanto nenhum livro está em leitura. Com um livro em leitura, o painel explica e leva até o cartão da leitura atual: termine o atual primeiro.
+- **Excluir livro** só funciona para livro **sem sessões** e apaga também a capa. Livro com sessões não pode ser excluído.
+
+### Capa e tema do site
+
+Ao enviar a capa do livro **em leitura**, o site inteiro (páginas públicas e painel) passa a usar as cores dela. O servidor confere o arquivo (o formato real, não só a extensão), reduz para no máximo 1000×1500 px, converte para WebP e tira os metadados. Depois extrai as cores e escolhe o tom de destaque, **escurecendo-o até o texto ficar legível** (o selo "Contraste AA verificado" é calculado de verdade nas cores guardadas). O fundo branco da foto é ignorado, e o site continua claro.
+
+- **Tema automático pela capa** (interruptor): desligado, o site usa o tema rosa padrão. Cores escolhidas à mão ficam para a página Configurações, em uma fase futura.
+- **Capa em tons de cinza, preto e branco ou sem cor suficiente:** o painel mostra o aviso "Sem cores suficientes" e o site **mantém o tema rosa padrão**. A capa em si é salva normalmente. Capas muito claras ou pastel funcionam (há uma segunda tentativa, mais tolerante).
+- **Sem livro em leitura**, ou se algo falhar ao ler o tema, vale sempre o tema padrão: o tema nunca derruba o site.
+- Livro sem capa usa uma capa gerada (gradiente a partir do título).
+- A cor da barra do navegador (`theme-color`) acompanha o tom profundo do tema; o ícone do app instalado continua o mesmo.
+
+### Aplicar a atualização do banco
+
+Esta etapa traz a migration `…_book_lifecycle.sql` (funções `start_book` e `finish_book`). Depois do merge: faça o deploy da Vercel e rode **Actions → Database deploy** (primeiro com **dry run** ligado, depois desligado). **Antes de aplicar, o site e o painel funcionam** (cadastro, edição, capa, tema, exclusão), e só três ações mostram o aviso "Falta aplicar a atualização do banco": **Começar a ler**, **Marcar livro como terminado** e criar um livro direto como **Lendo agora** (ele fica na fila). Nada quebra por aplicar a migration depois do deploy, nem o contrário.
+
 ## Solução de problemas
 
 Os nomes dos menus da Vercel mudam de vez em quando e **não foram conferidos na tela do projeto** (a documentação da Vercel consultada só descreve a CLI e a API). Se algo não estiver onde está escrito, procure pelo nome em destaque.

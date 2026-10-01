@@ -116,12 +116,20 @@ Quando a Agatha envia a capa do livro atual, o site passa a usar a paleta dela. 
 
 Este motor precisa de testes unitários: capas coloridas, capa preto e branco e contraste de todos os pares.
 
+**Implementação (etapa 3), `src/lib/theme/`** (TypeScript puro, sem DOM): `color.ts` (HSL, contraste WCAG, `fit`), `palette.ts` (`extractPalette` recebe RGBA bruto, k-means determinístico), `derive.ts` (`deriveTheme`, `measureContrasts`, `isAccessible`), `tokens.ts` (allow-list), `server.ts` (`getSiteTheme`, só servidor) e `tag.ts` (`THEME_TAG`).
+
+- `deriveTheme` escolhe o destaque em duas passagens: limiares do protótipo (saturação > 0,22, luminosidade entre 0,12 e 0,85) e, se nenhuma cor passar, uma mais tolerante (> 0,12, entre 0,08 e 0,92), para capas pastel. Devolve `null` se nenhuma passagem achar cor ou se algum dos seis contrastes mínimos falhar (branco sobre `--rose-2` ≥ 4,5; `--ink-3` e `--ink-2` sobre `--soft` ≥ 4,5; `--rose-deep` sobre `--rose-tint` ≥ 7; `--ink` sobre `--bg` ≥ 7; `--rose` contra `--bg` ≥ 3).
+- **Regra dos tokens (allow-list):** só as 17 chaves de `THEME_KEYS` e valores `#RRGGBB` viram `style` no `<html>`. `parseTokens` valida na gravação e na leitura; qualquer valor fora disso (ou token faltando) descarta o tema inteiro, e `getSiteTheme` ainda confere o contraste com `isAccessible`. Nunca interpole valor do banco em CSS por outro caminho.
+- `getSiteTheme` lê o livro `reading` com cliente SEM cookies, em cache com a tag `theme` (e 5 minutos de rede de segurança). Toda Server Action que mexe em livro, capa ou tema chama `updateTag(THEME_TAG)` e `revalidatePath('/', 'layout')`. Qualquer falha cai no tema padrão: o tema nunca derruba o site. `generateViewport` usa o `--rose-deep` do tema na `theme-color`; o manifest continua estático.
+- Capa: o navegador envia direto ao bucket `covers` (`books/<uuid>/<nome>`), e `finalizeCover` (`src/app/painel/livros/cover-actions.ts`, núcleo em `src/lib/books/finalize-cover.ts`) valida o caminho, confere o formato REAL com `sharp`, reencoda para WebP (máx. 1000x1500, sem metadados), extrai a paleta e grava. A capa anterior e as sobras só são apagadas DEPOIS de o update do livro dar certo. `next.config.ts` deriva `remotePatterns` de `NEXT_PUBLIC_SUPABASE_URL` e nunca derruba o build sem ela (sem a variável, a interface usa a capa gerada por CSS).
+
 ## Modelo de dados (Supabase)
 
 O que já está migrado (Fase 1, etapa 1) fica em `supabase/migrations/`. As tabelas marcadas como Fase 2 ainda não existem.
 
 - `profiles`: id (= auth.users), display_name, avatar_url (só `https`), role (`admin` | `moderator` | `member`), approved_comment_count, display_name_confirmed_at (nulo até a pessoa escolher o nome público em `/boas-vindas`; a pessoa grava a própria coluna), created_at, updated_at. Sem e-mail. Um trigger em `auth.users` cria o perfil (o nome vem do metadata — `display_name`, `full_name` ou `name` — e, sem ele, é `Leitor`: nenhum trecho do e-mail vai para o perfil; o papel nunca vem do metadata). **Leitura pública**: nomes e avatares de todos os membros são legíveis por qualquer visitante (entra na política de privacidade, etapa 7); o usuário só atualiza `display_name` e `avatar_url` (grant por coluna).
 - `books`: id, slug (único, usado na URL `/livros/[slug]`), title, author, synopsis, genres (`text[]`), total_chapters (estimativa, sem trava contra as sessões), current_chapter (entre 0 e total_chapters), status (`reading` | `finished` | `queued`; no máximo um `reading`), rating (0 a 5 em passos de 0,5), cover_path, palette jsonb, theme_tokens jsonb, theme_auto bool, started_at, finished_at.
+- `books` também tem as funções `start_book(p_book_id)` e `finish_book(p_book_id, p_rating)` (SECURITY INVOKER, `is_admin()` dentro, `search_path` vazio, só `authenticated` executa). `start_book` só aceita livro `queued` e recusa se já há um `reading` (`book_already_reading:`); define `started_at` (data do Brasil, `America/Sao_Paulo`) e `current_chapter` 0. `finish_book` exige nota (0 a 5, meio em meio), define `finished_at` e `current_chapter = total_chapters`. Os erros têm prefixo `codigo:` na mensagem, mapeado para pt-BR em `src/lib/books/errors.ts`. Em `books`, `palette` é `{ colors: [{ hex, share }], accent }` e `theme_tokens` é o mapa das 17 variáveis do tema.
 - `reading_sessions`: id, book_id, number (único por livro), chapter_from, chapter_to (sem sobreposição entre sessões do mesmo livro, rascunhos incluídos), title, body (JSON do Tiptap; o nó de divisória se chama `chapterDivider`, com `attrs.chapter`), excerpt, rating, visibility (`public` | `members`), status (`draft` | `published`; `scheduled` chega na Fase 2 com `publish_at`), published_at (preenchido ao publicar), read_minutes, comments_open.
 - `session_notes`: id, session_id, kind (`quote` | `note`), text, reference (ex.: "Capítulo 10, página 162"), position.
 - `session_questions`: id, session_id, text, position.
@@ -173,6 +181,7 @@ O que já está migrado (Fase 1, etapa 1) fica em `supabase/migrations/`. As tab
 - [ ] **Fase 1, MVP** (uma etapa por sessão, cada uma numa branch e num PR pequeno em rascunho): Supabase ligado; auth (Google e código por e-mail); home; página do livro; página da sessão com relato; comentários com respostas; filtro de spoiler; painel com editor de sessão, livros (com upload de capa e tema automático) e moderação; itens 4 a 7 do bloco PWA (login por código no app instalado, service worker com `/offline`, cartão de instalação, editor no celular).
   - [x] Etapa 1, Supabase, modelo de dados e RLS (migration, testes pgTAP, clientes, tipos e CI). Falta aplicar a migration na nuvem (Actions → Database deploy).
   - [x] Etapa 2, autenticação e proteção do painel (proxy, `requireRole`, login por código e Google, 403, `/boas-vindas`, migration `profile_name_confirmation`). Falta aplicar a migration na nuvem e testar o Google e o app instalado no iPhone.
+  - [x] Etapa 3, livros no painel, upload de capa e tema automático pela capa (motor de tema em `src/lib/theme/`, migration `book_lifecycle` com `start_book`/`finish_book`, `/painel/livros`). Falta aplicar a migration na nuvem (Actions → Database deploy).
 - [ ] **Fase 2:** reações, curtidas, votação do próximo livro, estante, envio por e-mail, agendamento, membros e papéis; push (item 8 do bloco PWA) na Fase 2 ou 3.
 - [ ] **Fase 3:** busca, estatísticas do painel, SEO e compartilhamento (imagem de prévia por sessão), leitura offline de sessões já abertas.
 
@@ -197,6 +206,8 @@ O livro atual é **O Livro de Azrael**, de Amber V. Nicole. O total de capítulo
 
 **Ambiente de sessão de nuvem.** O daemon do Docker pode estar parado: suba com `dockerd &`. O ECR e o GHCR ficam bloqueados pelo proxy; o Docker Hub funciona. Então, antes de `supabase start`, `db reset`, `db:test` ou `db:types`, exporte `SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io`. `supabase.com` e `nextjs.org` também ficam bloqueados; a documentação do Next vem em `node_modules/next/dist/docs`. Os testes pgTAP são herméticos (limpam as tabelas dentro da transação), então passam com o seed carregado.
 
+Se o Docker Hub devolver `429 Too Many Requests` (limite de pulls por IP), use o espelho: `SUPABASE_INTERNAL_IMAGE_REGISTRY=mirror.gcr.io`. O espelho não tem os nomes `supabase/kong`, `supabase/mailpit` e `supabase/postgrest`: baixe `mirror.gcr.io/library/kong:2.8.1`, `docker.io/axllent/mailpit` (ou `mirror.gcr.io/axllent/mailpit`) e `mirror.gcr.io/postgrest/postgrest` e dê `docker tag` para `mirror.gcr.io/supabase/kong`, `…/mailpit` e `…/postgrest` com as mesmas versões que o `supabase start` pedir no erro.
+
 Versões fixadas por compatibilidade: TypeScript em 6.0 (o `typescript-eslint` não aceita 6.1 ou superior) e ESLint em 9 (os plugins do `eslint-config-next` ainda não suportam o 10). O `next.config.ts` tem `agentRules: false`: desde o Next 16.3 o `next dev` escreveria um bloco próprio neste arquivo.
 
 ## Estrutura do projeto
@@ -207,6 +218,7 @@ Versões fixadas por compatibilidade: TypeScript em 6.0 (o `typescript-eslint` n
 - `src/lib/supabase/`: `server.ts` (Server Components, Actions e Route Handlers), `browser.ts` (Client Components), `env.ts` e `database.types.ts` (gerado por `npm run db:types`, não editar à mão). O refresh de sessão por proxy fica para a etapa 2.
 - `supabase/`: `config.toml`, `migrations/`, `seed.sql` (só para o banco local; nunca para a nuvem e nunca com `--include-seed`) e `tests/database/` (pgTAP).
 - `src/proxy.ts` e `src/lib/auth/`: ver "Autenticação e painel".
+- `src/lib/theme/`: motor do tema automático (ver "Tema automático pela capa"). `src/lib/books/`: slug, validação (zod), mapeamento de erros do banco, caminhos de capa, processamento de imagem e consultas do painel. `src/components/livros/`: cartões, formulários e capa do painel de livros.
 - `src/hooks/`: `useIsStandalone.ts`.
 - `src/styles/`: `tokens.css` (variáveis de design) e `base.css`.
 
@@ -216,4 +228,6 @@ Regras que valem daqui em diante:
 - Em CSS Modules, dois módulos não definem a mesma propriedade no mesmo elemento (a ordem do CSS no bundle não é garantida). Use um elemento interno, como fazem `SiteHeader` e `SiteFooter` com o `Container`.
 - O botão "Voltar" (`BackButton`) é sempre um link para a página pai, nunca `history.back()`: o histórico pode ter páginas de fora (login com o Google) e âncoras `#capitulo`.
 - Componentes só com ícone usam `IconButton`/`IconLink`, que exigem `label`.
+- O React 19 **zera os campos** de um `<form action={…}>` quando a action termina, mesmo com erro de validação. Em formulário cujos valores precisam continuar na tela (progresso, cadastro de livro), use `onSubmit` + `startTransition(() => action(new FormData(form)))` em vez de `action={…}`. E não use `key` que mude com os dados salvos: o formulário remonta e perde o aviso e o redirecionamento.
+- Nunca grave nem edite `database.types.ts` à mão e nunca edite uma migration já aplicada: só migrations novas.
 - As páginas-esqueleto mostram um `StubNotice`. Ele sai quando a página ganha o conteúdo do protótipo.

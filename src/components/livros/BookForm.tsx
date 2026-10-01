@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useActionState, useEffect, useId, useRef, useState } from 'react';
+import { useActionState, useEffect, useId, useRef, useState, useTransition } from 'react';
 
 import { createBook, updateBook } from '@/app/painel/livros/actions';
 import { Button, ButtonLink } from '@/components/ui/Button';
@@ -139,6 +139,8 @@ export function BookForm(props: BookFormProps) {
     IDLE_BOOK_STATE,
   );
 
+  const [, startTransition] = useTransition();
+
   // Tudo certo: volta para a lista. Se só a capa falhou, fica na página (com o aviso) e leva à edição.
   const coverFailed = Boolean(state.errors?.cover);
   useEffect(() => {
@@ -166,7 +168,17 @@ export function BookForm(props: BookFormProps) {
   const fieldClass = (name: string) => `${styles.input} ${err[name] ? styles.invalid : ''}`;
 
   return (
-    <form action={action} className={`${styles.card} ${styles.formCard}`} noValidate>
+    <form
+      // Sem `action={...}`: o React 19 zera os campos quando uma action termina, e um erro de
+      // validação não pode apagar o que a pessoa digitou.
+      onSubmit={(event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        startTransition(() => action(data));
+      }}
+      className={`${styles.card} ${styles.formCard}`}
+      noValidate
+    >
       <div className={styles.formGrid}>
         {book && <input type="hidden" name="bookId" value={book.id} />}
 
