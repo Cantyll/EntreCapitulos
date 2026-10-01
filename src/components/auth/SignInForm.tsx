@@ -21,12 +21,14 @@ type SignInFormProps = {
   next: string;
   /** Mensagem (da lista fixa) vinda de `?erro=`; nunca o valor cru da URL. */
   initialError: string | null;
+  /** Mostra "Continuar com Google". Desligado por padrão (ver `isGoogleLoginEnabled`). */
+  googleEnabled?: boolean;
 };
 
 const INITIAL_SEND: SendCodeState = { sent: false, email: '', sentAt: null, error: null };
 const INITIAL_VERIFY: VerifyCodeState = { error: null };
 
-export function SignInForm({ next, initialError }: SignInFormProps) {
+export function SignInForm({ next, initialError, googleEnabled = false }: SignInFormProps) {
   const [sendState, sendAction, sending] = useActionState(sendCode, INITIAL_SEND);
   const [verifyState, verifyAction, verifying] = useActionState(verifyCode, INITIAL_VERIFY);
   // "Usar outro e-mail": guarda de qual envio a pessoa voltou, sem precisar de um efeito.
@@ -117,14 +119,18 @@ export function SignInForm({ next, initialError }: SignInFormProps) {
           </>
         ) : (
           <>
-            <form action={signInWithGoogle}>
-              <input type="hidden" name="next" value={next} />
-              <Button type="submit" variant="ghost" block>
-                <GoogleIcon className={styles.google} />
-                Continuar com Google
-              </Button>
-            </form>
-            <div className={styles.or}>ou</div>
+            {googleEnabled && (
+              <>
+                <form action={signInWithGoogle}>
+                  <input type="hidden" name="next" value={next} />
+                  <Button type="submit" variant="ghost" block>
+                    <GoogleIcon className={styles.google} />
+                    Continuar com Google
+                  </Button>
+                </form>
+                <div className={styles.or}>ou</div>
+              </>
+            )}
             <form action={sendAction} className={styles.stack}>
               <div className={styles.field}>
                 <label htmlFor="email">E-mail</label>
