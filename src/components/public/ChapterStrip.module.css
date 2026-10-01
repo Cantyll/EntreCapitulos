@@ -95,6 +95,13 @@ a.seg:focus-visible {
   border-radius: 1px;
 }
 
+/* Fita pequena: "por ler" vira um tracinho embaixo (contorno inteiro viraria ruído com 50 segmentos). */
+.compact .unread {
+  border: 0;
+  border-bottom: 2px solid var(--ink-3);
+  border-radius: 0;
+}
+
 /* Alvo de toque: o segmento é fino, então o link ganha área invisível maior no celular. */
 @media (pointer: coarse) {
   .strip:not(.compact) a.seg {

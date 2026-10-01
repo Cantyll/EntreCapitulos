@@ -16,6 +16,39 @@ import {
   withProgress,
 } from '@/lib/spoiler';
 
+/**
+ * Grava o progresso da pessoa logada: atualiza a linha e, se ainda não existe, cria. Não é um upsert de
+ * propósito: o `ON CONFLICT DO UPDATE` do PostgREST também tenta atualizar `user_id` e `book_id`, e o
+ * banco só deixa a pessoa alterar a coluna `chapter` (grant por coluna).
+ */
+async function saveProgressRow(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  bookId: string,
+  chapter: number,
+): Promise<void> {
+  const update = () =>
+    supabase
+      .from('reading_progress')
+      .update({ chapter })
+      .eq('user_id', userId)
+      .eq('book_id', bookId)
+      .select('chapter');
+
+  const first = await update();
+  if (first.error) throw first.error;
+  if (first.data.length > 0) return;
+
+  const { error } = await supabase
+    .from('reading_progress')
+    .insert({ user_id: userId, book_id: bookId, chapter });
+  if (!error) return;
+  // Duas abas criaram a linha ao mesmo tempo: a outra venceu, então agora é só atualizar.
+  if (error.code !== '23505') throw error;
+  const retry = await update();
+  if (retry.error) throw retry.error;
+}
+
 export type ProgressResult = { ok: true } | { ok: false; message: string };
 
 const FAIL = 'Não foi possível guardar agora. Tente de novo em instantes.';
@@ -42,14 +75,7 @@ export async function setReadingProgress(
 
     const viewer = await getViewer();
     if (viewer) {
-      const supabase = await createClient();
-      const { error } = await supabase
-        .from('reading_progress')
-        .upsert(
-          { user_id: viewer.id, book_id: book.id, chapter: valid },
-          { onConflict: 'user_id,book_id' },
-        );
-      if (error) throw error;
+      await saveProgressRow(await createClient(), viewer.id, book.id, valid);
     } else {
       const store = await cookies();
       const next = withProgress(await getCookieProgress(), book.slug, valid);
