@@ -2,6 +2,9 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { PATH_HEADER } from '@/lib/auth/constants';
+import { isAuthOutage } from '@/lib/auth/failure';
+import { logProxyFailure } from '@/lib/auth/log';
+import { panelUnavailableResponse } from '@/lib/auth/panel-unavailable';
 import { signInPath } from '@/lib/auth/safe-next';
 import type { Database } from '@/lib/supabase/database.types';
 import { getSupabaseEnv } from '@/lib/supabase/env';
@@ -13,13 +16,30 @@ import { getSupabaseEnv } from '@/lib/supabase/env';
  * 2. Redireciona /painel e /painel/* para /entrar?next=… quando não há sessão. Isso é só
  *    conveniência: a autorização real fica em `requireRole` (src/lib/auth/session.ts) e no RLS.
  *
- * Não confere papel (exigiria banco em toda navegação) e não registra nada em log.
+ * Não confere papel (exigiria banco em toda navegação).
+ *
+ * Nunca derruba o site público: em qualquer exceção (variável de ambiente ausente, Auth fora do
+ * ar) as rotas públicas passam, e o log leva só o nome do erro. O painel falha FECHADO: sem poder
+ * conferir a sessão, responde 503 e nunca libera.
  */
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   // Só o proxy preenche esta header: sobrescreve qualquer valor que o navegador tenha mandado.
   request.headers.set(PATH_HEADER, `${pathname}${search}`);
+
+  const isPanel = pathname === '/painel' || pathname.startsWith('/painel/');
+
+  try {
+    return await refreshSession(request, isPanel);
+  } catch (error) {
+    logProxyFailure(error);
+    return isPanel ? panelUnavailableResponse() : NextResponse.next({ request });
+  }
+}
+
+async function refreshSession(request: NextRequest, isPanel: boolean) {
+  const { pathname, search } = request.nextUrl;
 
   let response = NextResponse.next({ request });
   let cacheHeaders: Record<string, string> = {};
@@ -43,15 +63,12 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  let signedIn = false;
-  try {
-    const { data } = await supabase.auth.getClaims();
-    signedIn = Boolean(data?.claims?.sub) && data?.claims?.is_anonymous !== true;
-  } catch {
-    // Auth fora do ar: deixa passar. A camada de dados falha fechada.
-  }
+  // O getClaims não lança quando o Auth está fora do ar: devolve o erro. Aqui ele vira exceção,
+  // para cair no mesmo tratamento das outras falhas (e o painel responder 503, não ir ao login).
+  const { data, error } = await supabase.auth.getClaims();
+  if (error && isAuthOutage(error)) throw error;
+  const signedIn = Boolean(data?.claims?.sub) && data?.claims?.is_anonymous !== true;
 
-  const isPanel = pathname === '/painel' || pathname.startsWith('/painel/');
   if (isPanel && !signedIn) {
     const redirect = NextResponse.redirect(
       new URL(signInPath(`${pathname}${search}`), request.url),
