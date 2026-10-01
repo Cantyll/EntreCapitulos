@@ -64,7 +64,8 @@ export function useSessionAutosave(options: Options) {
         const out = await saveSessionAction({
           sessionId: request.sessionId,
           expectedUpdatedAt: request.expectedUpdatedAt,
-          fields: request.snapshot,
+          // JSON puro: o que vem do editor pode ter objetos sem protótipo, que a Server Action recusa.
+          fields: JSON.parse(JSON.stringify(request.snapshot)) as typeof request.snapshot,
         });
         switch (out.kind) {
           case 'ok': {
