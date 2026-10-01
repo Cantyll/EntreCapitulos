@@ -7,6 +7,7 @@ import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 
 import { PATH_HEADER } from './constants';
+import { CurrentUserError } from './failure';
 import { redirectTo } from './redirect';
 import { hasRole, parseRole, type Role, type RoleRequirement } from './roles';
 import { signInPath } from './safe-next';
@@ -37,7 +38,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     .eq('id', claims.sub)
     .maybeSingle();
 
-  if (error) throw new Error(`profiles_read_failed:${error.code}`);
+  if (error) throw new CurrentUserError(error.code);
   if (!profile) return null;
 
   return {
