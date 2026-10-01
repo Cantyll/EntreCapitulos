@@ -1,10 +1,12 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+
 import { DISPLAY_NAME_MAX, normalizeDisplayName } from '@/lib/auth/display-name';
 import { logAuthFailure } from '@/lib/auth/log';
 import { redirectTo } from '@/lib/auth/redirect';
 import { safeNext } from '@/lib/auth/safe-next';
-import { requireUser } from '@/lib/auth/session';
+import { requireUserId } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 
 export type WelcomeState = { error: string | null; value: string };
@@ -21,7 +23,7 @@ export async function saveDisplayName(
   _prev: WelcomeState,
   formData: FormData,
 ): Promise<WelcomeState> {
-  const user = await requireUser();
+  const userId = await requireUserId();
   const raw = formData.get('displayName');
   const typed = typeof raw === 'string' ? raw : '';
 
@@ -32,12 +34,16 @@ export async function saveDisplayName(
   const { error } = await supabase
     .from('profiles')
     .update({ display_name: result.value, display_name_confirmed_at: new Date().toISOString() })
-    .eq('id', user.id);
+    .eq('id', userId);
 
   if (error) {
     logAuthFailure('profiles.update (boas-vindas)', error);
     return { error: MESSAGES.save_failed, value: result.value };
   }
 
+  // O cabeçalho mora no layout público, que o Next guarda e não renderiza de novo ao navegar entre
+  // as páginas. Sem isto ele continua mostrando "Leitor" até a pessoa sair e entrar. A invalidação
+  // vem ANTES do redirect (que interrompe a função) e também limpa o cache do navegador.
+  revalidatePath('/', 'layout');
   redirectTo(safeNext(formData.get('next')));
 }
