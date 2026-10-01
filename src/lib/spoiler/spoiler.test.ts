@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { MARGIN_NOTES_LIMIT, pickMarginNotes } from './margin';
 import { planProgressMigration } from './migrate';
 import { parseBookParam, parseSessionNumber, parseShelfTab } from '@/lib/public/params';
 
@@ -234,5 +235,41 @@ describe('planProgressMigration', () => {
     expect(planProgressMigration({}, [{ id: 'x', slug: 'constructor', totalChapters: 9 }])).toEqual(
       [],
     );
+  });
+});
+
+describe('pickMarginNotes', () => {
+  const notes = [
+    { id: 'a', sessionNumber: 1, chapterTo: 3 },
+    { id: 'b', sessionNumber: 2, chapterTo: 6 },
+    { id: 'c', sessionNumber: 3, chapterTo: 9 },
+    { id: 'd', sessionNumber: 4, chapterTo: 12 },
+    { id: 'e', sessionNumber: 4, chapterTo: 12 },
+    { id: 'f', sessionNumber: 4, chapterTo: 12 },
+  ];
+
+  it('sem progresso conhecido, o bloco some', () => {
+    expect(pickMarginNotes(notes, null)).toEqual([]);
+  });
+
+  it('progresso 0: nenhuma nota (nenhuma sessão foi lida)', () => {
+    expect(pickMarginNotes(notes, 0)).toEqual([]);
+  });
+
+  it('só notas de sessões terminadas (chapter_to ≤ progresso)', () => {
+    expect(pickMarginNotes(notes, 6).map((n) => n.id)).toEqual(['b', 'a']);
+    expect(pickMarginNotes(notes, 5).map((n) => n.id)).toEqual(['a']);
+  });
+
+  it('as mais novas primeiro e no máximo 4', () => {
+    const out = pickMarginNotes(notes, 52);
+    expect(out).toHaveLength(MARGIN_NOTES_LIMIT);
+    expect(out[0]!.sessionNumber).toBe(4);
+  });
+
+  it('não altera a lista original', () => {
+    const copy = [...notes];
+    pickMarginNotes(notes, 52);
+    expect(notes).toEqual(copy);
   });
 });

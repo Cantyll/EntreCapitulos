@@ -210,6 +210,17 @@ Tudo isto é feito em **Painel → Sessões**, pelo celular ou pelo computador.
 
 Se ao publicar aparecer **“Falta aplicar a atualização do banco”**, vá em Actions → Database deploy (primeiro com “dry run” ligado, depois desligado). Escrever, salvar e as notas funcionam sem isso; só publicar e voltar para rascunho dependem dela.
 
+## Como funciona o filtro de spoiler
+
+Quem lê escolhe "Li até o capítulo N" (na barra da sessão, na home ou na página do livro). Essa escolha fica salva na conta da pessoa, ou, para visitantes, num cookie do navegador (1 ano).
+
+- **Fica coberto** (borrado, com botão "Mostrar o capítulo N mesmo assim"): o texto de cada capítulo maior que o progresso e o título da divisória desse capítulo. Notas e perguntas ficam cobertas enquanto a pessoa não chegou ao último capítulo da sessão.
+- **Nunca fica coberto**: a abertura (o que vem antes da primeira divisória).
+- **Sempre aparece, para todo mundo**: o **título da sessão**, o **resumo** e os **números dos capítulos**. Por isso, Agatha, evite spoilers nesses três lugares; guarde-os para o corpo do relato, para os títulos de divisória, para as notas e para as perguntas.
+- Quem ainda não informou até onde leu é tratado como "capítulo 0" e vê a pergunta "Até que capítulo você leu?".
+
+O filtro é uma cortesia de leitura, **não uma trava de segurança**: o texto coberto continua no código da página e quem inspecionar o navegador consegue ler. Para esconder algo de verdade, use uma sessão só para membros ou deixe como rascunho.
+
 ## Solução de problemas
 
 Os nomes dos menus da Vercel mudam de vez em quando e **não foram conferidos na tela do projeto** (a documentação da Vercel consultada só descreve a CLI e a API). Se algo não estiver onde está escrito, procure pelo nome em destaque.
