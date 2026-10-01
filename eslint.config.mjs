@@ -23,6 +23,12 @@ export default defineConfig([
       ],
     },
   },
+  // Exceção única: a validação das variáveis precisa nomear a chave secreta para recusá-la, e o
+  // teste dela precisa de exemplos. A regra continua valendo para todo o resto de `src/`.
+  {
+    files: ['src/lib/supabase/env.ts', 'src/lib/supabase/env.test.ts'],
+    rules: { 'no-restricted-syntax': 'off' },
+  },
   // Precisa ficar por último: desliga regras de estilo que brigam com o Prettier.
   prettier,
   globalIgnores(['.next/**', 'out/**', 'build/**', 'coverage/**', 'docs/**', 'next-env.d.ts']),
