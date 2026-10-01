@@ -22,27 +22,40 @@ export type CurrentUser = {
 };
 
 /**
- * Quem está logado. A identidade vem de `getClaims()` (JWT verificado); o papel e o nome vêm do
- * banco, sob RLS (`profiles`), nunca do JWT nem de metadata. Memoizado por requisição.
- * Login anônimo do Supabase conta como deslogado.
+ * Quem é a pessoa, pelo JWT verificado (`getClaims()`), sem ler o perfil. Memoizado por
+ * requisição. Login anônimo do Supabase conta como deslogado.
  */
-export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+const getSignedInUserId = cache(async (): Promise<string | null> => {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;
   if (!claims?.sub || claims.is_anonymous === true) return null;
+  return claims.sub;
+});
 
+/**
+ * Quem está logado. A identidade vem de `getClaims()` (JWT verificado); o papel e o nome vêm do
+ * banco, sob RLS (`profiles`), nunca do JWT nem de metadata. Memoizado por requisição: dentro de
+ * uma mesma requisição o perfil não muda. Uma Server Action que grava o perfil NÃO deve chamar
+ * isto antes de gravar (use `requireUserId`), senão o perfil antigo fica memoizado e é ele que
+ * o resto da requisição, inclusive o cabeçalho da página para onde ela redireciona, enxerga.
+ */
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  const id = await getSignedInUserId();
+  if (!id) return null;
+
+  const supabase = await createClient();
   const { data: profile, error } = await supabase
     .from('profiles')
     .select('display_name, avatar_url, role')
-    .eq('id', claims.sub)
+    .eq('id', id)
     .maybeSingle();
 
   if (error) throw new CurrentUserError(error.code);
   if (!profile) return null;
 
   return {
-    id: claims.sub,
+    id,
     displayName: profile.display_name,
     avatarUrl: profile.avatar_url,
     role: parseRole(profile.role),
@@ -78,6 +91,16 @@ export async function isNameConfirmed(
 
 async function requestedPath(): Promise<string> {
   return (await headers()).get(PATH_HEADER) ?? '/';
+}
+
+/**
+ * Exige login e devolve só o id, sem ler o perfil. É o que uma Server Action que grava o próprio
+ * perfil deve usar: ver o aviso em `getCurrentUser`.
+ */
+export async function requireUserId(): Promise<string> {
+  const id = await getSignedInUserId();
+  if (!id) redirectTo(signInPath(await requestedPath()));
+  return id;
 }
 
 /** Exige login. Sem sessão, vai para /entrar e volta para a página pedida depois. */
