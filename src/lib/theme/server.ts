@@ -11,8 +11,7 @@ import { getSupabaseEnv } from '@/lib/supabase/env';
 import { isAccessible } from './derive';
 import { parseTokens, type ThemeTokens } from './tokens';
 
-/** Tag do cache do tema. As Server Actions que mexem em livro, capa ou tema a invalidam. */
-export const THEME_TAG = 'theme';
+import { THEME_TAG } from './tag';
 
 /** Rede de segurança: mesmo sem invalidação, o tema se renova sozinho em até 5 minutos. */
 const THEME_REVALIDATE_SECONDS = 300;
