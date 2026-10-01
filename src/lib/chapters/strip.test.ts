@@ -178,7 +178,7 @@ describe('contraste dos elementos gráficos da fita (≥ 3:1)', () => {
   const css = readFileSync(join(process.cwd(), 'src/styles/tokens.css'), 'utf8');
   const token = (name: string) => css.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`))![1]!;
   const defaults = Object.fromEntries(
-    ['bg', 'surface', 'rose-2', 'rose-deep', 'ink-3'].map((n) => [n, token(n)]),
+    ['bg', 'surface', 'rose', 'rose-2', 'rose-deep'].map((n) => [n, token(n)]),
   );
 
   const themed = [
@@ -214,12 +214,13 @@ describe('contraste dos elementos gráficos da fita (≥ 3:1)', () => {
   });
 
   it.each(palettes)(
-    '%s: cheio (sessão), mais escuro (última) e contornos contra o fundo',
+    '%s: cheio (sessão), mais escuro (última) e contorno contra o fundo',
     (_n, t) => {
-      expect(contrast(t['rose-2']!, t.bg!)).toBeGreaterThanOrEqual(3);
+      // --rose: sessões e contorno da próxima; --rose-deep: a última. A trilha "por ler" (--line-2) é
+      // decorativa por pedido do protótipo: a legenda e os rótulos dizem o estado.
+      expect(contrast(t['rose']!, t.bg!)).toBeGreaterThanOrEqual(3);
       expect(contrast(t['rose-deep']!, t.bg!)).toBeGreaterThanOrEqual(3);
-      expect(contrast(t['ink-3']!, t.bg!)).toBeGreaterThanOrEqual(3);
-      expect(contrast(t['rose-2']!, t.surface!)).toBeGreaterThanOrEqual(3);
+      expect(contrast(t['rose']!, t.surface!)).toBeGreaterThanOrEqual(3);
     },
   );
 });

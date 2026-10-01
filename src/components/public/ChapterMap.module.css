@@ -16,7 +16,7 @@
   place-items: center;
   aspect-ratio: 1;
   border-radius: 9px;
-  border: 1px solid var(--ink-3);
+  border: 1px solid var(--line);
   background: var(--soft);
   color: var(--ink-2);
   font-size: 13px;
