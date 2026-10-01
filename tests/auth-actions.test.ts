@@ -164,6 +164,15 @@ describe('registro de falhas de autenticação', () => {
       vi.unstubAllEnvs();
     });
 
+    it('desligado, a ação recusa sem chamar o Supabase', async () => {
+      vi.stubEnv('NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED', '');
+
+      await expect(signInWithGoogle(form({ next: '/' }))).rejects.toThrow(
+        'NEXT_REDIRECT:/entrar?erro=oauth',
+      );
+      expect(auth.signInWithOAuth).not.toHaveBeenCalled();
+    });
+
     it('falha ao iniciar volta para /entrar com o aviso, registrando só o resumo', async () => {
       auth.signInWithOAuth.mockRejectedValue(networkError());
 

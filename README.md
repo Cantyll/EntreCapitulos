@@ -150,6 +150,13 @@ Tudo pelo navegador, em duas partes. Os nomes dos menus do Google mudam com freq
 
 1. Abra **Authentication → Sign In / Providers → Google**, ligue o provedor, cole o Client ID e o Client secret e salve. O secret fica só no Supabase, nunca no repositório.
 
+**Na Vercel (ligar o botão):**
+
+O botão "Continuar com Google" **fica escondido por padrão**: o site só o mostra quando a variável `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED` vale exatamente `true`. Deixe desligado até o provedor estar configurado e testado.
+
+1. Em **Settings → Environment Variables**, crie `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED` com o valor `true` (nos ambientes em que quiser o botão).
+2. Faça um novo deploy (**Deployments →** os três pontinhos do último deploy **→ Redeploy**). Esta é uma variável `NEXT_PUBLIC_`, **lida só no build**: o Next a embute no código na hora de construir o site, então salvar o valor na Vercel não muda nada num deploy que já existe. Para desligar de novo, apague a variável (ou use qualquer valor diferente de `true`) e faça outro deploy.
+
 O Google informa o nome e a foto; o site usa o nome como sugestão na tela de boas-vindas.
 
 ### 7. Primeiro acesso

@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { SignInForm } from '@/components/auth/SignInForm';
 import { PageHeader } from '@/components/site/PageHeader';
 import { Container } from '@/components/ui/Container';
+import { isGoogleLoginEnabled } from '@/lib/auth/features';
 import { loginErrorMessage } from '@/lib/auth/messages';
 import { redirectTo } from '@/lib/auth/redirect';
 import { postLoginDestination, safeNext } from '@/lib/auth/safe-next';
@@ -28,7 +29,11 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
         title="Entre para o clube"
         lead="Comente as sessões, vote no próximo livro e receba as novidades."
       />
-      <SignInForm next={next} initialError={loginErrorMessage(first(params.erro))} />
+      <SignInForm
+        next={next}
+        initialError={loginErrorMessage(first(params.erro))}
+        googleEnabled={isGoogleLoginEnabled()}
+      />
     </Container>
   );
 }

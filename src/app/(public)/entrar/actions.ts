@@ -14,6 +14,7 @@ import {
   classifyOtpVerifyError,
   type OtpErrorKey,
 } from '@/lib/auth/messages';
+import { isGoogleLoginEnabled } from '@/lib/auth/features';
 import { logAuthFailure } from '@/lib/auth/log';
 import { redirectTo } from '@/lib/auth/redirect';
 import { isNameConfirmed } from '@/lib/auth/session';
@@ -111,6 +112,9 @@ async function siteOrigin(): Promise<string> {
 }
 
 export async function signInWithGoogle(formData: FormData) {
+  // A interface esconde o botão, mas a ação também recusa: quem a chamasse direto não passa.
+  if (!isGoogleLoginEnabled()) redirect('/entrar?erro=oauth');
+
   const next = safeNext(formData.get('next'));
 
   // O destino vai num cookie, não na URL de retorno: assim a Redirect URL cadastrada no Supabase
