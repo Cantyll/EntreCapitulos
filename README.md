@@ -163,6 +163,59 @@ O Google informa o nome e a foto; o site usa o nome como sugestão na tela de bo
 
 Quem entra pela primeira vez passa por **/boas-vindas** ("Como devemos chamar você nos comentários?"). Esse nome é público e só depois dele a pessoa consegue comentar: o banco recusa comentários de perfis sem `display_name_confirmed_at`. A migration `profile_name_confirmation` só chega à nuvem quando você a aplica (Actions → Database deploy, depois do merge). Até lá, o site trata a coluna ausente como "nome confirmado" para o login funcionar (na pré-visualização, por exemplo). Aplique a migration logo após o merge.
 
+## Solução de problemas
+
+Os nomes dos menus da Vercel mudam de vez em quando e **não foram conferidos na tela do projeto** (a documentação da Vercel consultada só descreve a CLI e a API). Se algo não estiver onde está escrito, procure pelo nome em destaque.
+
+### O site dá erro 500 em todas as páginas, ou o painel mostra "Painel indisponível"
+
+Quase sempre são as variáveis do Supabase que faltam ou estão erradas **no ambiente Production** da Vercel. O site confere as duas ao iniciar e recusa valores inválidos.
+
+1. Na Vercel, abra o projeto e vá em **Settings → Environment Variables**. Confira que existem `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, com os nomes exatos, e que a caixa **Production** está marcada em cada uma. Uma variável marcada só em Preview ou Development não chega ao site publicado.
+2. Confira os valores (sem espaços sobrando):
+   - `NEXT_PUBLIC_SUPABASE_URL` precisa começar com `https://` (é a URL do projeto, do passo 2 de "Configurar o Supabase").
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` precisa ser a chave `sb_publishable_…`. O site **recusa** uma chave `sb_secret_…` ou `service_role` colada por engano. Se foi isso, troque pela pública e considere a chave secreta exposta: gere outra no Supabase.
+3. **Faça um novo deploy** (**Deployments →** os três pontinhos do último deploy **→ Redeploy**). É indispensável: as variáveis `NEXT_PUBLIC_` são **embutidas no código na hora do build**, então salvar a variável não muda nada num deploy que já existe.
+
+Com as variáveis erradas, o site público continua abrindo como visitante (sem o menu da conta), a página de entrar mostra "Não conseguimos enviar o código agora" e `/painel` responde 503 com a página "Painel indisponível": o painel nunca é liberado sem conferir a sessão. Nos logs (próxima seção) aparece uma linha como esta, que diz **qual variável** está errada e o motivo, nunca o valor:
+
+```
+proxy falhou { name: 'SupabaseEnvError', issues: [ { variable: 'NEXT_PUBLIC_SUPABASE_URL', reason: 'missing' } ] }
+```
+
+`reason` é `missing` (variável ausente ou vazia), `invalid_url` (a URL não é `https://`) ou `secret_key` (parece uma chave secreta).
+
+### Como ler os logs de runtime da Vercel
+
+Os logs de runtime mostram o que o site registrou enquanto atendia as visitas (os de build, de quando o site é construído, ficam em **Deployments →** o deploy **→ Build Logs**).
+
+1. No projeto, abra a aba **Logs** (os logs de runtime). Se preferir ver um deploy específico, abra **Deployments**, clique no deploy e procure a aba de logs dele.
+2. Filtre pelo ambiente **Production**, pelo nível **Error** (ou pelo status `500` / `503`) e ajuste o período para incluir a hora do problema.
+3. Use a busca de texto por uma destas frases, que o site escreve quando algo falha:
+
+| Texto                                    | Onde aconteceu                                     |
+| ---------------------------------------- | -------------------------------------------------- |
+| `proxy falhou`                           | na verificação de sessão que roda antes de toda página |
+| `SiteHeader: getCurrentUser falhou` / `/entrar: getCurrentUser falhou` | ao descobrir quem está logado, no cabeçalho ou na tela de entrar |
+| `auth.signInWithOtp falhou`              | ao pedir o código por e-mail                       |
+| `auth.verifyOtp falhou`                  | ao digitar o código                                |
+| `auth.signInWithOAuth falhou` / `auth.exchangeCodeForSession falhou` | entrar com o Google |
+| `auth.signOut falhou`                    | ao sair                                            |
+| `profiles.update (boas-vindas) falhou`   | ao salvar o nome na tela de boas-vindas            |
+
+Cada linha traz só estes campos (os que não se aplicam não aparecem):
+
+- `name` e `constructorName`: o tipo do erro (por exemplo `AuthApiError`, `SupabaseEnvError`, `TypeError`).
+- `status` e `code`: a resposta do Supabase (`429` com `over_email_send_rate_limit` é limite de envio de e-mails; `403` com `otp_expired` é código errado ou vencido).
+- `causeCode`: só em erro de rede. `ENOTFOUND` costuma ser URL do Supabase com erro de digitação; `ECONNREFUSED` e `ETIMEDOUT`, serviço fora do ar ou inalcançável.
+- `issues`: só no erro de variáveis de ambiente, como no exemplo acima.
+
+**Por desenho, os logs nunca trazem e-mail, código, token, cabeçalhos nem a mensagem do erro**: não dá para descobrir de quem foi a tentativa, e isso é de propósito.
+
+### O botão "Continuar com Google" não aparece
+
+Ele só aparece com `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED` igual a `true` (e **fica escondido por padrão**). Como é uma variável `NEXT_PUBLIC_`, lida no build, depois de criar ou mudar a variável é preciso um novo deploy (**Redeploy**). Veja o passo 6 de "Configurar o login".
+
 ## Decisões conhecidas
 
 - **Excluir uma conta apaga os comentários da pessoa e, por consequência, as respostas de outras pessoas a eles.** É uma cascata no banco (`profiles → comments → respostas`), escolhida para que a exclusão da conta realmente remova o que a pessoa escreveu. Nenhuma tela exclui contas por enquanto; isso só acontece pelo painel do Supabase.
