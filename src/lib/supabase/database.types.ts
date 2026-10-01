@@ -373,8 +373,66 @@ export type Database = {
     Functions: {
       derive_avatar_url: { Args: { meta: Json }; Returns: string };
       derive_display_name: { Args: { meta: Json }; Returns: string };
+      finish_book: {
+        Args: { p_book_id: string; p_rating: number };
+        Returns: {
+          author: string;
+          cover_path: string | null;
+          created_at: string;
+          current_chapter: number;
+          finished_at: string | null;
+          genres: string[];
+          id: string;
+          palette: Json | null;
+          rating: number | null;
+          slug: string;
+          started_at: string | null;
+          status: string;
+          synopsis: string | null;
+          theme_auto: boolean;
+          theme_tokens: Json | null;
+          title: string;
+          total_chapters: number;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'books';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
+      start_book: {
+        Args: { p_book_id: string };
+        Returns: {
+          author: string;
+          cover_path: string | null;
+          created_at: string;
+          current_chapter: number;
+          finished_at: string | null;
+          genres: string[];
+          id: string;
+          palette: Json | null;
+          rating: number | null;
+          slug: string;
+          started_at: string | null;
+          status: string;
+          synopsis: string | null;
+          theme_auto: boolean;
+          theme_tokens: Json | null;
+          title: string;
+          total_chapters: number;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'books';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
     };
     Enums: {
       [_ in never]: never;
