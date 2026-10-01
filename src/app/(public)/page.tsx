@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
 import { BookCover } from '@/components/livros/BookCover';
 import { ChapterLegend, ChapterStrip } from '@/components/public/ChapterStrip';
 import { Chip } from '@/components/public/Chip';
+import { HomeSkeleton } from '@/components/public/Skeleton';
 import { ProgressPrompt } from '@/components/public/ProgressPrompt';
 import { SessionCard, chaptersText } from '@/components/public/SessionCard';
 import { Stars } from '@/components/public/Stars';
@@ -20,7 +22,20 @@ export const metadata: Metadata = { description: SITE_DESCRIPTION };
 
 const HOME_SESSIONS = 5;
 
-export default async function HomePage() {
+/*
+ * O esqueleto da home é um Suspense da própria página, e não um `loading.tsx` em `(public)/`: um
+ * `loading.tsx` ali envolveria TODAS as rotas públicas e o status 404 delas viraria 200 (o esqueleto sai
+ * antes de a página descobrir que o livro ou a sessão não existe).
+ */
+export default function HomePage() {
+  return (
+    <Suspense fallback={<HomeSkeleton />}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+async function HomeContent() {
   const { book, sessions, progress, viewer, finished } = await loadHome();
 
   if (!book) {

@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { BookCover } from '@/components/livros/BookCover';
 import { ChapterLegend } from '@/components/public/ChapterStrip';
 import { ChapterMap } from '@/components/public/ChapterMap';
 import { Chip } from '@/components/public/Chip';
+import { BookSkeleton } from '@/components/public/Skeleton';
 import { ProgressPrompt } from '@/components/public/ProgressPrompt';
 import { Stars } from '@/components/public/Stars';
 import { ButtonLink } from '@/components/ui/Button';
@@ -38,7 +40,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function BookPage({ params }: Props) {
+/*
+ * O esqueleto é um Suspense da própria página (e não um `loading.tsx` em `livros/[slug]/`): um
+ * `loading.tsx` ali envolveria também a rota da sessão, e o 404 dela viraria 200.
+ */
+export default function BookPage(props: Props) {
+  return (
+    <Suspense fallback={<BookSkeleton />}>
+      <BookContent {...props} />
+    </Suspense>
+  );
+}
+
+async function BookContent({ params }: Props) {
   const { slug } = await params;
   const data = await loadBookPage(slug);
   if (!data) notFound();

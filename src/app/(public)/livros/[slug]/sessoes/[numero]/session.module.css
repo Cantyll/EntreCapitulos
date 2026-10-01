@@ -1,6 +1,7 @@
 /* Sessão (protótipo: .s-layout, .article, .author-line, .spoiler-bar, .ch-jump, .partial, .questions, .s-nav, .toc). */
 .top {
   display: grid;
+  justify-items: start;
   gap: 10px;
   padding: 26px 0 0;
 }

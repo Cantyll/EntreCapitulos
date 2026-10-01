@@ -266,6 +266,10 @@
 }
 
 @media (max-width: 760px) {
+  .head > :first-child {
+    max-width: 160px;
+  }
+
   .head {
     grid-template-columns: minmax(0, 1fr);
     gap: 22px;
