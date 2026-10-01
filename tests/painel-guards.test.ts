@@ -53,4 +53,24 @@ describe('painel', () => {
       expect(guards.length).toBeGreaterThanOrEqual(actions.length);
     },
   );
+
+  // O que muda livro ou sessão precisa expirar o cache de dados públicos (`updateTag`), senão a home
+  // e as páginas de sessão continuam mostrando o dado velho até o prazo de segurança de 5 minutos.
+  // Não há exceção: até o autosave chama o helper (que só expira quando a sessão está no ar).
+  const NO_PUBLIC_CACHE = new Set<string>();
+
+  it.each(actionFiles.map((f) => [f.slice(PAINEL.length)]))(
+    '%s: cada action que muda dados expira o cache público',
+    (file) => {
+      const source = readFileSync(join(PAINEL, file as string), 'utf8');
+      const parts = source.split(/^export async function /m).slice(1);
+      for (const part of parts) {
+        const name = part.slice(0, part.indexOf('('));
+        if (NO_PUBLIC_CACHE.has(name)) continue;
+        expect(part, `${name} precisa chamar invalidate… ou updateTag`).toMatch(
+          /invalidate(Books|Session)\(|refreshAfterBookChange\(|refreshPublic\(|updateTag\(/,
+        );
+      }
+    },
+  );
 });
