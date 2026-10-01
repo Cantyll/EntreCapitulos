@@ -91,6 +91,7 @@ export class AutosaveController {
   private retryTimer: unknown = null;
   private retryCount = 0;
   private inFlight = false;
+  private inFlightPromise: Promise<void> | null = null;
   private flushAfterFlight = false;
   private localWriting = false;
   private localPending: LocalRecord | 'remove' | null = null;
@@ -201,6 +202,7 @@ export class AutosaveController {
     if (!state.dirty || state.status === 'conflict') return;
     if (this.inFlight) {
       this.flushAfterFlight = true;
+      await this.inFlightPromise;
       return;
     }
     if (state.sessionId === null && !(this.deps.worthCreating?.(state.current) ?? true)) return;
@@ -214,25 +216,33 @@ export class AutosaveController {
     this.clearRetry();
     this.set({ status: 'saving', message: null });
 
-    let result: SaveResult;
-    try {
-      result = await this.deps.transport({
-        sessionId: state.sessionId,
-        expectedUpdatedAt: state.token,
-        snapshot: sent,
-      });
-    } catch {
-      result = { kind: 'network' };
-    }
-    this.inFlight = false;
-    this.apply(result, sent);
-
-    if (this.flushAfterFlight) {
-      this.flushAfterFlight = false;
-      if (this.state.dirty && this.state.status !== 'conflict' && this.state.mode === 'draft') {
-        void this.send();
+    this.inFlightPromise = (async () => {
+      let result: SaveResult;
+      try {
+        result = await this.deps.transport({
+          sessionId: state.sessionId,
+          expectedUpdatedAt: state.token,
+          snapshot: sent,
+        });
+      } catch {
+        result = { kind: 'network' };
       }
-    }
+      this.inFlight = false;
+      this.apply(result, sent);
+
+      if (this.flushAfterFlight) {
+        this.flushAfterFlight = false;
+        if (this.state.dirty && this.state.status !== 'conflict' && this.state.mode === 'draft') {
+          await this.send();
+        }
+      }
+    })();
+    await this.inFlightPromise;
+  }
+
+  /** Espera terminar o envio em andamento (e o reenvio que ele puxou). Usado antes de publicar. */
+  async idle(): Promise<void> {
+    while (this.inFlight) await this.inFlightPromise;
   }
 
   private apply(result: SaveResult, sent: SessionSnapshot): void {

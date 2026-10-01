@@ -371,9 +371,9 @@ describe('saveSession: atualizar', () => {
     const supabase = {
       ...base,
       from: (table: string) => {
-        const query = (base.from as (t: string) => Record<string, (...a: unknown[]) => unknown>)(
-          table,
-        );
+        const query = (
+          base.from as unknown as (t: string) => Record<string, (...a: unknown[]) => unknown>
+        )(table);
         if (table !== 'reading_sessions') return query;
         const update = query.update!.bind(query);
         query.update = (payload: unknown) => {
