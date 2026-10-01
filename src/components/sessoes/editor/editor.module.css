@@ -236,8 +236,10 @@
 
 /* Celular: alvos de toque de 44px, e a barra acima do teclado ocupa a largura toda. */
 @media (pointer: coarse) {
+  /* 44px do botão + 5px de folga em cima e embaixo + as bordas: o mesmo valor com a barra ancorada. */
   .toolbarSlot {
-    min-height: 54px;
+    height: 56px;
+    min-height: 56px;
   }
 
   .tool {
@@ -266,17 +268,23 @@
     box-shadow: 0 -6px 18px -12px rgba(42, 30, 36, 0.35);
   }
 
-  .toolbarSlot[data-docked] .toolRow {
+  /* Uma linha só, com ou sem teclado: a altura da barra não muda quando ela sobe, e a página não pula. */
+  .toolRow {
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
   }
 
-  .toolbarSlot[data-docked] .toolRow::-webkit-scrollbar {
+  .toolRow::-webkit-scrollbar {
     display: none;
   }
 
-  .toolbarSlot[data-docked] .tool {
+  .tool {
     flex: none;
+  }
+
+  /* Só o ícone no celular (o nome continua no aria-label e no title): cabe tudo em 390px. */
+  .toolText {
+    display: none;
   }
 }

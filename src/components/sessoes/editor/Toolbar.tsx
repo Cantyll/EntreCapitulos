@@ -45,7 +45,7 @@ function ToolButton({
       onClick={onClick}
     >
       <Icon name={icon} size="sm" />
-      {children}
+      {children && <span className={styles.toolText}>{children}</span>}
     </button>
   );
 }
