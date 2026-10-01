@@ -11,7 +11,10 @@ const maybeSingle = vi.fn();
 const eq = vi.fn(() => ({ maybeSingle }));
 const select = vi.fn(() => ({ eq }));
 const from = vi.fn(() => ({ select }));
-const createClient = vi.fn((..._args: unknown[]) => ({ from }));
+const createClient = vi.fn((...args: unknown[]) => {
+  void args;
+  return { from };
+});
 
 vi.mock('server-only', () => ({}));
 vi.mock('@supabase/supabase-js', () => ({ createClient: (...a: unknown[]) => createClient(...a) }));
