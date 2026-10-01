@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useTransition } from 'react';
 
 import { updateProgress } from '@/app/painel/livros/actions';
 import { Button } from '@/components/ui/Button';
@@ -22,11 +22,21 @@ export function ProgressForm({
     updateProgress,
     IDLE_BOOK_STATE,
   );
+  const [, startTransition] = useTransition();
   // O select de "Capítulo atual" vai de 0 até o total; se o total foi estimado a mais, o que sobrar fica de fora.
   const max = Math.max(totalChapters, currentChapter);
 
   return (
-    <form action={action} className={styles.form}>
+    <form
+      // Sem `action={...}`: o React 19 zera os campos quando uma action termina, e aqui os valores
+      // digitados (ou o erro de validação) precisam continuar na tela.
+      onSubmit={(event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        startTransition(() => action(data));
+      }}
+      className={styles.form}
+    >
       <input type="hidden" name="bookId" value={bookId} />
       <div className={styles.fields}>
         <div className={styles.field}>

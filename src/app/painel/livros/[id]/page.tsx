@@ -49,7 +49,6 @@ export default async function EditBookPage({ params }: { params: Promise<{ id: s
           </div>
         </section>
         <BookForm
-          key={`${book.id}-${book.title}-${book.author}-${book.totalChapters}`}
           mode="edit"
           book={{
             id: book.id,
