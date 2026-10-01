@@ -262,8 +262,8 @@ export default async function SessionPage({ params }: Props) {
                 title={book.title}
                 author={book.author}
                 coverUrl={book.coverUrl}
-                width={56}
-                fontSize={7}
+                width={62}
+                fontSize={8}
               />
               <div>
                 <b>{book.title}</b>

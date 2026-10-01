@@ -1,47 +1,228 @@
 /*
- * Fita e mapa de capítulos (protótipo: .strip, .chmap, .tile). Só tokens do tema. Contraste de
- * elementos gráficos ≥ 3:1 contra o fundo: cheio (--rose-2 e --rose-deep), tracejado (--rose-2) e
- * contorno de "por ler" (--ink-3). O que a cor sozinha não diz, a forma e os rótulos dizem.
+ * Fita e mapa de capítulos (protótipo: .strip, .strip.sm). Só tokens do tema.
+ *
+ * Dois desenhos no HTML, um visível por vez:
+ *  - `.byChapter`: um segmento por capítulo (cada um com no mínimo 3px);
+ *  - `.bySession`: um bloco por sessão, largura proporcional, e uma trilha contínua para o que falta ler.
+ * O contêiner (`.strip`) é um `container`, e a escada de larguras abaixo troca de desenho quando o segmento
+ * por capítulo cabe (precisa bater com `STRIP_WIDTH_STEPS` em `src/lib/chapters/layout.ts`). Se nenhum
+ * degrau comporta, o HTML só traz `.bySession`.
+ *
+ * O estado nunca depende só da cor: cheio, mais escuro (a última), contornado (a próxima) e trilha
+ * (por ler) têm forma própria, mais os rótulos e a legenda.
  */
 .strip {
-  display: grid;
-  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
-  column-gap: 2px;
+  --gap: 2px;
+  --seg-h: 16px;
+  container: strip / inline-size;
+  min-width: 0;
+}
+
+.compact {
+  --gap: 1px;
+  --seg-h: 8px;
+}
+
+.byChapter,
+.bySession {
+  grid-auto-rows: auto;
+  column-gap: var(--gap);
   row-gap: 6px;
+}
+
+.byChapter {
+  display: none;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+}
+
+.bySession {
+  display: grid;
+}
+
+@container strip (min-width: 160px) {
+  .need0 .byChapter {
+    display: grid;
+  }
+
+  .need0 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 200px) {
+  .need1 .byChapter {
+    display: grid;
+  }
+
+  .need1 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 240px) {
+  .need2 .byChapter {
+    display: grid;
+  }
+
+  .need2 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 280px) {
+  .need3 .byChapter {
+    display: grid;
+  }
+
+  .need3 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 320px) {
+  .need4 .byChapter {
+    display: grid;
+  }
+
+  .need4 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 360px) {
+  .need5 .byChapter {
+    display: grid;
+  }
+
+  .need5 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 400px) {
+  .need6 .byChapter {
+    display: grid;
+  }
+
+  .need6 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 480px) {
+  .need7 .byChapter {
+    display: grid;
+  }
+
+  .need7 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 560px) {
+  .need8 .byChapter {
+    display: grid;
+  }
+
+  .need8 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 640px) {
+  .need9 .byChapter {
+    display: grid;
+  }
+
+  .need9 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 760px) {
+  .need10 .byChapter {
+    display: grid;
+  }
+
+  .need10 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 900px) {
+  .need11 .byChapter {
+    display: grid;
+  }
+
+  .need11 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 1040px) {
+  .need12 .byChapter {
+    display: grid;
+  }
+
+  .need12 .bySession {
+    display: none;
+  }
+}
+
+@container strip (min-width: 1200px) {
+  .need13 .byChapter {
+    display: grid;
+  }
+
+  .need13 .bySession {
+    display: none;
+  }
 }
 
 .seg {
   display: block;
-  height: 16px;
-  border-radius: 2px;
   box-sizing: border-box;
+  height: var(--seg-h);
+  min-width: 3px;
+  border-radius: 2px;
 }
 
-/* Lido, sem sessão visível (sem link). */
+.compact .seg {
+  border-radius: 1px;
+}
+
+/* Por ler: bloco sólido (trilha contínua na fita por sessão). */
+.unread {
+  background: var(--line-2);
+}
+
+/* Lido, sem sessão visível (sem link): mais claro que o das sessões. */
 .read {
-  background: var(--rose);
+  background: color-mix(in srgb, var(--rose) 45%, var(--surface));
 }
 
 .session {
-  background: var(--rose-2);
+  background: var(--rose);
 }
 
 .session.alt {
-  background: color-mix(in srgb, var(--rose-2) 70%, var(--rose-deep));
+  background: color-mix(in srgb, var(--rose) 62%, var(--surface));
 }
 
 .last {
   background: var(--rose-deep);
 }
 
+/* Próxima sessão: bloco contornado. Tracejado na fita grande; contorno inteiro na pequena, onde o
+   tracejado vira ruído. Nunca um traço fino. */
 .next {
   background: var(--surface);
-  border: 1.5px dashed var(--rose-2);
+  border: 1.5px dashed var(--rose);
 }
 
-.unread {
-  background: transparent;
-  border: 1px solid var(--ink-3);
+.compact .next {
+  border: 0;
+  box-shadow: inset 0 0 0 1.5px var(--rose);
 }
 
 a.seg {
@@ -64,14 +245,21 @@ a.seg:focus-visible {
   }
 }
 
+/* Alvo de toque: o segmento da fita grande ganha altura no celular. */
+@media (pointer: coarse) {
+  .strip:not(.compact) a.seg {
+    height: 24px;
+  }
+}
+
 .label {
   padding-top: 4px;
-  border-top: 1px solid var(--ink-3);
+  border-top: 1px solid var(--line-2);
   overflow: hidden;
   font-size: 11px;
   text-align: center;
   white-space: nowrap;
-  color: var(--ink-2);
+  color: var(--ink-3);
 }
 
 .label_last {
@@ -82,31 +270,8 @@ a.seg:focus-visible {
 
 .label_next {
   border-top-style: dashed;
-  border-top-color: var(--rose-2);
+  border-top-color: var(--rose);
   color: var(--rose-deep);
-}
-
-.compact {
-  column-gap: 1px;
-}
-
-.compact .seg {
-  height: 8px;
-  border-radius: 1px;
-}
-
-/* Fita pequena: "por ler" vira um tracinho embaixo (contorno inteiro viraria ruído com 50 segmentos). */
-.compact .unread {
-  border: 0;
-  border-bottom: 2px solid var(--ink-3);
-  border-radius: 0;
-}
-
-/* Alvo de toque: o segmento é fino, então o link ganha área invisível maior no celular. */
-@media (pointer: coarse) {
-  .strip:not(.compact) a.seg {
-    height: 24px;
-  }
 }
 
 .legend {

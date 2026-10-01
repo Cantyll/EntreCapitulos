@@ -267,7 +267,7 @@
   position: sticky;
   top: calc(var(--safe-top) + 92px);
   display: grid;
-  gap: 14px;
+  gap: 0;
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: var(--r);
@@ -276,9 +276,11 @@
 }
 
 .sideBook {
-  display: flex;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
 .sideBook b {
@@ -295,7 +297,7 @@
 }
 
 .sideCap {
-  margin: 0;
+  margin: 0 0 8px;
   font-size: 12.5px;
   color: var(--ink-2);
 }
@@ -323,7 +325,7 @@
 }
 
 .sideTitle {
-  margin: 0;
+  margin: 16px 0 8px;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--ink-3);
