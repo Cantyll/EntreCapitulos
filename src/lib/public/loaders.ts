@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { cache } from 'react';
+
 import { isMarginNoteVisible } from '@/lib/spoiler';
 import { isValidBookSlug } from '@/lib/spoiler';
 
@@ -65,7 +67,7 @@ export type HomeData = {
   finished: PublicBook[];
 };
 
-export async function loadHome(): Promise<HomeData> {
+async function loadHomeUncached(): Promise<HomeData> {
   const books = await getBooks();
   const book = books.find((b) => b.status === 'reading') ?? null;
   const finished = books.filter((b) => b.status === 'finished');
@@ -105,7 +107,7 @@ export function pickMarginNotes(
     .slice(0, limit);
 }
 
-export async function loadBookPage(slug: string): Promise<BookPageData | null> {
+async function loadBookPageUncached(slug: string): Promise<BookPageData | null> {
   const book = await getBookBySlug(slug);
   if (!book) return null;
 
@@ -141,7 +143,7 @@ export type SessionPageData =
   | { kind: 'login' }
   | { kind: 'not-found' };
 
-export async function loadSessionPage(slug: string, number: number): Promise<SessionPageData> {
+async function loadSessionPageUncached(slug: string, number: number): Promise<SessionPageData> {
   const book = await getBookBySlug(slug);
   if (!book) return (await getViewer()) ? { kind: 'not-found' } : { kind: 'login' };
 
@@ -171,7 +173,7 @@ export type ShelfData = {
   counts: Map<string, number>;
 };
 
-export async function loadShelf(): Promise<ShelfData> {
+async function loadShelfUncached(): Promise<ShelfData> {
   const [books, counts] = await Promise.all([getBooks(), getPublicSessionCounts()]);
   return {
     finished: books
@@ -181,3 +183,12 @@ export async function loadShelf(): Promise<ShelfData> {
     counts,
   };
 }
+
+/*
+ * As páginas e o `generateMetadata` pedem os mesmos dados na mesma requisição: com `cache` do React o
+ * segundo pedido reaproveita o primeiro, sem nenhuma consulta a mais.
+ */
+export const loadHome = cache(loadHomeUncached);
+export const loadBookPage = cache(loadBookPageUncached);
+export const loadSessionPage = cache(loadSessionPageUncached);
+export const loadShelf = cache(loadShelfUncached);

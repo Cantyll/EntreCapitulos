@@ -1,0 +1,258 @@
+/* Home (protótipo: .hero-band, .hero, .last-session, .layout, .mini-shelf). Só tokens do tema. */
+.band {
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(900px 380px at 12% 0%, var(--soft-2), transparent 62%),
+    linear-gradient(180deg, var(--soft), var(--bg) 85%);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 56px;
+  align-items: center;
+  padding-block: 52px 46px;
+}
+
+.coverWrap {
+  transform: rotate(-1.5deg);
+}
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--rose-deep);
+}
+
+.live i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--rose-2);
+  box-shadow: 0 0 0 4px var(--rose-tint);
+}
+
+.title {
+  margin: 14px 0 8px;
+  font-family: var(--serif);
+  font-size: clamp(36px, 5.2vw, 60px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.by {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-style: italic;
+  color: var(--ink-2);
+}
+
+.stripBlock {
+  max-width: 620px;
+  margin: 26px 0 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.stripCap {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.stripCap b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.last {
+  max-width: 620px;
+  margin-top: 22px;
+  display: grid;
+  gap: 6px;
+}
+
+.lastTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.muted {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.lastTitle {
+  margin: 4px 0 0;
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.lastExcerpt {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.soon {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--ink-2);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 52px;
+  padding-block: 44px 70px;
+}
+
+.secHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: var(--rose-2);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.shelfHead {
+  margin-top: 44px;
+}
+
+.miniShelf {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.miniShelf a {
+  display: grid;
+  gap: 8px;
+}
+
+.aside {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.card {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.card h2 {
+  margin: 0 0 4px;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.card p {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.empty {
+  padding: 70px 0;
+  max-width: 560px;
+}
+
+.empty h1 {
+  margin: 0 0 10px;
+  font-family: var(--serif);
+  font-size: clamp(34px, 4.6vw, 52px);
+  font-weight: 500;
+  line-height: 1.05;
+}
+
+.empty p {
+  margin: 0 0 20px;
+  color: var(--ink-2);
+  font-size: 16px;
+}
+
+@media (hover: hover) {
+  .link:hover {
+    color: var(--rose-deep);
+  }
+}
+
+@media (max-width: 1020px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    padding-block: 28px 56px;
+  }
+
+  /* No celular o seletor de progresso vem antes da lista, não perdido no fim da página. */
+  .aside {
+    display: contents;
+  }
+
+  .progressCard {
+    order: -1;
+  }
+
+  .joinCard {
+    order: 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding-block: 28px 30px;
+  }
+
+  .coverWrap {
+    width: 150px;
+  }
+
+  .miniShelf {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

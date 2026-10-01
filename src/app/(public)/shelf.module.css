@@ -1,0 +1,151 @@
+/* /sessoes e /estante (protótipo: .shelf-hero, .tabs, .shelf, .book-tile, .next-list). */
+.hero {
+  padding: 40px 0 10px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(34px, 4.6vw, 52px);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.hero p {
+  margin: 8px 0 0;
+  font-size: 16px;
+  color: var(--ink-2);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 26px 0 30px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 14px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-size: 14.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.tab[aria-current='page'] {
+  border-color: var(--rose-2);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.tab small {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.list {
+  max-width: 820px;
+  padding-bottom: 60px;
+}
+
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+  gap: 36px 26px;
+  margin: 0;
+  padding: 0 0 60px;
+  list-style: none;
+}
+
+.tile h2 {
+  margin: 14px 0 2px;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.tile .au {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.tile .stars {
+  margin-top: 6px;
+}
+
+.tile .meta {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.tile a {
+  display: block;
+}
+
+.next {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0 0 60px;
+  list-style: none;
+}
+
+.nextItem {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+.nextItem h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 500;
+}
+
+.nextItem p {
+  margin: 4px 0 0;
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+
+.empty {
+  padding: 24px 0 60px;
+  color: var(--ink-2);
+}
+
+@media (hover: hover) {
+  .tab:hover {
+    color: var(--ink);
+  }
+
+  .tile a:hover h2 {
+    color: var(--rose-deep);
+  }
+}
+
+@media (max-width: 760px) {
+  .shelf {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 16px;
+  }
+
+  .nextItem {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 14px;
+  }
+}

@@ -1,0 +1,128 @@
+/*
+ * Fita e mapa de capítulos (protótipo: .strip, .chmap, .tile). Só tokens do tema. Contraste de
+ * elementos gráficos ≥ 3:1 contra o fundo: cheio (--rose-2 e --rose-deep), tracejado (--rose-2) e
+ * contorno de "por ler" (--ink-3). O que a cor sozinha não diz, a forma e os rótulos dizem.
+ */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  column-gap: 2px;
+  row-gap: 6px;
+}
+
+.seg {
+  display: block;
+  height: 16px;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+
+/* Lido, sem sessão visível (sem link). */
+.read {
+  background: var(--rose);
+}
+
+.session {
+  background: var(--rose-2);
+}
+
+.session.alt {
+  background: color-mix(in srgb, var(--rose-2) 70%, var(--rose-deep));
+}
+
+.last {
+  background: var(--rose-deep);
+}
+
+.next {
+  background: var(--surface);
+  border: 1.5px dashed var(--rose-2);
+}
+
+.unread {
+  background: transparent;
+  border: 1px solid var(--ink-3);
+}
+
+a.seg {
+  transition: transform 0.15s;
+}
+
+a.seg:focus-visible {
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  a.seg:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a.seg {
+    transition: none;
+  }
+}
+
+.label {
+  padding-top: 4px;
+  border-top: 1px solid var(--ink-3);
+  overflow: hidden;
+  font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+
+.label_last {
+  border-top-color: var(--rose-deep);
+  color: var(--rose-deep);
+  font-weight: 600;
+}
+
+.label_next {
+  border-top-style: dashed;
+  border-top-color: var(--rose-2);
+  color: var(--rose-deep);
+}
+
+.compact {
+  column-gap: 1px;
+}
+
+.compact .seg {
+  height: 8px;
+  border-radius: 1px;
+}
+
+/* Alvo de toque: o segmento é fino, então o link ganha área invisível maior no celular. */
+@media (pointer: coarse) {
+  .strip:not(.compact) a.seg {
+    height: 24px;
+  }
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}

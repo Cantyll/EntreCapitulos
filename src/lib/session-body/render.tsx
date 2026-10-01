@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
 
+import { ChapterSection } from '@/components/public/ChapterSection';
+import { isChapterCovered } from '@/lib/spoiler/rules';
+
 import styles from './render.module.css';
 import { isSafeHref } from './schema';
 import type {
@@ -109,7 +112,21 @@ export function groupBody(doc: BodyDoc): {
   return { opening, sections };
 }
 
-export function SessionBody({ doc, className }: { doc: BodyDoc; className?: string }) {
+/**
+ * Cobertura de spoiler (só nas páginas públicas): o capítulo N fica coberto se N > `progress`. A
+ * abertura nunca é coberta. Sem `coverage` (a pré-visualização do editor), nada é coberto.
+ */
+export type Coverage = { progress: number; known: boolean };
+
+export function SessionBody({
+  doc,
+  className,
+  coverage,
+}: {
+  doc: BodyDoc;
+  className?: string;
+  coverage?: Coverage;
+}) {
   const { opening, sections } = groupBody(doc);
   return (
     <div className={[styles.prose, className].filter(Boolean).join(' ')}>
@@ -118,17 +135,30 @@ export function SessionBody({ doc, className }: { doc: BodyDoc; className?: stri
           {opening.map(renderBlock)}
         </div>
       ) : null}
-      {sections.map(({ divider, blocks }, index) => (
-        <section
-          key={index}
-          id={`ch-${divider.attrs.chapter}`}
-          data-chapter={divider.attrs.chapter}
-          className={styles.section}
-        >
-          <ChapterHeading divider={divider} />
-          {blocks.map(renderBlock)}
-        </section>
-      ))}
+      {sections.map(({ divider, blocks }, index) =>
+        coverage ? (
+          <ChapterSection
+            key={index}
+            chapter={divider.attrs.chapter}
+            title={divider.attrs.title ?? null}
+            covered={isChapterCovered(divider.attrs.chapter, coverage.progress)}
+            progress={coverage.progress}
+            progressKnown={coverage.known}
+          >
+            {blocks.map(renderBlock)}
+          </ChapterSection>
+        ) : (
+          <section
+            key={index}
+            id={`ch-${divider.attrs.chapter}`}
+            data-chapter={divider.attrs.chapter}
+            className={styles.section}
+          >
+            <ChapterHeading divider={divider} />
+            {blocks.map(renderBlock)}
+          </section>
+        ),
+      )}
     </div>
   );
 }

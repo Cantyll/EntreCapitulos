@@ -8,7 +8,7 @@ import { AccountMenu } from './AccountMenu';
 import styles from './SiteHeader.module.css';
 import { SiteNav } from './SiteNav';
 
-export async function SiteHeader({ currentBookSlug }: { currentBookSlug: string }) {
+export async function SiteHeader({ currentBookSlug }: { currentBookSlug: string | null }) {
   // O cabeçalho aparece em todas as páginas públicas: se o Supabase falhar, a pessoa vê o site
   // como visitante em vez de um erro 500.
   const user = await getCurrentUserOrNull('SiteHeader');

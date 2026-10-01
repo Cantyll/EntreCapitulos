@@ -1,0 +1,30 @@
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.glyphs {
+  display: inline-flex;
+  gap: 1px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--line-2);
+}
+
+.glyphs [data-fill='full'] {
+  color: var(--rose-2);
+}
+
+.glyphs [data-fill='half'] {
+  background: linear-gradient(90deg, var(--rose-2) 50%, var(--line-2) 50%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}

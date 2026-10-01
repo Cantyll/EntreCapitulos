@@ -21,10 +21,25 @@ export const SESSION_LIST_COLUMNS =
   'id, book_id, number, chapter_from, chapter_to, title, excerpt, rating, published_at, read_minutes, visibility';
 export const SESSION_DETAIL_COLUMNS = `${SESSION_LIST_COLUMNS}, body, session_notes(id, kind, text, reference, position), session_questions(id, text, position)`;
 
+type BookColumnKey =
+  | 'id'
+  | 'slug'
+  | 'title'
+  | 'author'
+  | 'synopsis'
+  | 'genres'
+  | 'total_chapters'
+  | 'current_chapter'
+  | 'status'
+  | 'rating'
+  | 'cover_path'
+  | 'started_at'
+  | 'finished_at';
+
 const toStatus = (value: string): BookStatus =>
   value === 'reading' || value === 'finished' ? value : 'queued';
 
-export function toPublicBook(row: Pick<BookRow, (typeof BOOK_COLUMN_KEYS)[number]>): PublicBook {
+export function toPublicBook(row: Pick<BookRow, BookColumnKey>): PublicBook {
   return {
     id: row.id,
     slug: row.slug,
@@ -42,21 +57,6 @@ export function toPublicBook(row: Pick<BookRow, (typeof BOOK_COLUMN_KEYS)[number
   };
 }
 
-const BOOK_COLUMN_KEYS = [
-  'id',
-  'slug',
-  'title',
-  'author',
-  'synopsis',
-  'genres',
-  'total_chapters',
-  'current_chapter',
-  'status',
-  'rating',
-  'cover_path',
-  'started_at',
-  'finished_at',
-] as const;
 
 type SessionListRow = Pick<
   SessionRow,

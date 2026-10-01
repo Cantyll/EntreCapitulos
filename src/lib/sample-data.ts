@@ -1,13 +1,7 @@
 /**
- * Dados de exemplo da Fase 0. Saem quando o Supabase entrar (Fase 1).
- * O livro atual é real; os demais livros e os membros do protótipo são fictícios.
+ * Dados de exemplo da Fase 0 que o painel ainda usa (as páginas públicas já leem do banco). Saem com a
+ * moderação de comentários.
  */
-export const currentBook = {
-  slug: 'o-livro-de-azrael',
-  title: 'O Livro de Azrael',
-  author: 'Amber V. Nicole',
-} as const;
-
 export const adminProfile = {
   name: 'Agatha Montinelli',
   role: 'Administradora',
