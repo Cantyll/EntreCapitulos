@@ -19,8 +19,13 @@ export type PublicNavItem = {
  * Menu do site público, igual ao do protótipo. "Sessões" continua ativo dentro de uma sessão
  * (/livros/[slug]/sessoes/[numero]) e "Lendo agora" aponta para a página do livro atual.
  */
-export function getPublicNav({ currentBookSlug }: { currentBookSlug: string }): PublicNavItem[] {
-  const currentBookHref = bookHref(currentBookSlug);
+export function getPublicNav({
+  currentBookSlug,
+}: {
+  /** `null` quando não há livro em leitura: "Lendo agora" aponta para /livro, que leva à estante. */
+  currentBookSlug: string | null;
+}): PublicNavItem[] {
+  const currentBookHref = currentBookSlug ? bookHref(currentBookSlug) : ('/livro' as Route);
 
   return [
     { label: 'Início', href: '/', isActive: (pathname) => pathname === '/' },

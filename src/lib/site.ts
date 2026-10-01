@@ -78,3 +78,14 @@ export function calendarDateTime(value: string): string | undefined {
 export function formatRatingNumber(rating: number): string {
   return rating.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
+
+const RECENT_DAYS = 7;
+
+/** "Nova": publicada há menos de 7 dias. `now` entra de fora para o teste não depender do relógio. */
+export function isRecent(published: string | null, now: Date): boolean {
+  if (!published) return false;
+  const date = toDate(published);
+  if (!date) return false;
+  const age = now.getTime() - date.getTime();
+  return age >= 0 && age < RECENT_DAYS * 24 * 60 * 60 * 1000;
+}

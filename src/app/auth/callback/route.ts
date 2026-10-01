@@ -6,6 +6,7 @@ import { logAuthFailure } from '@/lib/auth/log';
 import type { LoginErrorCode } from '@/lib/auth/messages';
 import { postLoginDestination, safeNext } from '@/lib/auth/safe-next';
 import { isNameConfirmed } from '@/lib/auth/session';
+import { migrateVisitorProgress } from '@/lib/public/progress';
 import { createClient } from '@/lib/supabase/server';
 
 /** Volta do Google: troca o `code` (PKCE) por sessão e segue para o destino validado. */
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
     return fail('oauth');
   }
 
+  await migrateVisitorProgress(userId, supabase);
   const confirmed = await isNameConfirmed(userId, supabase);
   const url = request.nextUrl.clone();
   const destination = new URL(postLoginDestination(next, confirmed), request.nextUrl.origin);

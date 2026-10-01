@@ -17,6 +17,7 @@ import {
 import { isGoogleLoginEnabled } from '@/lib/auth/features';
 import { logAuthFailure } from '@/lib/auth/log';
 import { redirectTo } from '@/lib/auth/redirect';
+import { migrateVisitorProgress } from '@/lib/public/progress';
 import { isNameConfirmed } from '@/lib/auth/session';
 import { postLoginDestination, safeNext } from '@/lib/auth/safe-next';
 import { createClient } from '@/lib/supabase/server';
@@ -98,6 +99,8 @@ export async function verifyCode(
     return { error: 'verify_failed' };
   }
 
+  // O progresso de leitura que a pessoa tinha como visitante passa para a conta (nunca falha o login).
+  await migrateVisitorProgress(userId, supabase);
   const confirmed = await isNameConfirmed(userId, supabase);
   redirectTo(postLoginDestination(formData.get('next'), confirmed));
 }

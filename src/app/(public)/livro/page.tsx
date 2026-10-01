@@ -1,9 +1,13 @@
 import { redirect } from 'next/navigation';
 
+import { getCurrentBook } from '@/lib/public/loaders';
 import { bookHref } from '@/lib/routes';
-import { currentBook } from '@/lib/sample-data';
 
-/** Atalho estável para o livro que está sendo lido agora. */
-export default function CurrentBookShortcut() {
-  redirect(bookHref(currentBook.slug));
+/**
+ * Atalho estável para o livro que está sendo lido agora. Sem livro em leitura, vai para a estante
+ * (o redirecionamento é temporário: o livro atual muda).
+ */
+export default async function CurrentBookShortcut() {
+  const book = await getCurrentBook();
+  redirect(book ? bookHref(book.slug) : '/estante');
 }

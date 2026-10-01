@@ -1,6 +1,7 @@
 export { checkDividers, dividersOf, nextDividerChapter } from './chapters';
 export type { DividerCheck, DividerIssue, DividerIssueKind } from './chapters';
 export { groupBody, SessionBody } from './render';
+export type { Coverage } from './render';
 export {
   BODY_ISSUE_MESSAGES,
   BODY_MAX_BYTES,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { planProgressMigration } from './migrate';
 import { parseBookParam, parseSessionNumber, parseShelfTab } from '@/lib/public/params';
 
 import {
@@ -199,5 +200,39 @@ describe('parâmetros de URL', () => {
     ['1234567', null],
   ])('número de sessão %j → %j', (text, expected) => {
     expect(parseSessionNumber(text)).toBe(expected);
+  });
+});
+
+describe('planProgressMigration', () => {
+  const books = [
+    { id: 'b1', slug: 'o-livro-de-azrael', totalChapters: 52 },
+    { id: 'b2', slug: 'sal-e-cinza', totalChapters: 36 },
+    { id: 'b3', slug: 'curto', totalChapters: 5 },
+  ];
+
+  it('uma linha por livro conhecido, dentro do total', () => {
+    expect(
+      planProgressMigration({ 'o-livro-de-azrael': 12, 'sal-e-cinza': 0, curto: 5 }, books),
+    ).toEqual([
+      { book_id: 'b1', chapter: 12 },
+      { book_id: 'b2', chapter: 0 },
+      { book_id: 'b3', chapter: 5 },
+    ]);
+  });
+
+  it('ignora livro desconhecido e capítulo acima do total do livro', () => {
+    expect(planProgressMigration({ fantasma: 3, curto: 6, 'sal-e-cinza': 10 }, books)).toEqual([
+      { book_id: 'b2', chapter: 10 },
+    ]);
+  });
+
+  it('cookie vazio: nada a migrar', () => {
+    expect(planProgressMigration({}, books)).toEqual([]);
+  });
+
+  it('um slug como "constructor" não herda do protótipo', () => {
+    expect(planProgressMigration({}, [{ id: 'x', slug: 'constructor', totalChapters: 9 }])).toEqual(
+      [],
+    );
   });
 });

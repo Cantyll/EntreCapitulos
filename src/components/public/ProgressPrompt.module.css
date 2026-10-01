@@ -1,0 +1,22 @@
+.prompt {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--rose);
+  border-radius: var(--r-sm);
+  background: var(--rose-tint);
+}
+
+.question {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--rose-deep);
+}
+
+.help {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}

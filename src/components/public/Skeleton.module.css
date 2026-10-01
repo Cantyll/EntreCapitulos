@@ -1,0 +1,77 @@
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.bar,
+.cover {
+  display: block;
+  border-radius: 8px;
+  background: var(--soft-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bar,
+  .cover {
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.band {
+  border-bottom: 1px solid var(--line);
+  background: var(--soft);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 56px;
+  align-items: center;
+  padding-block: 52px 46px;
+}
+
+.cover {
+  width: 230px;
+  aspect-ratio: 2 / 3;
+}
+
+.stack {
+  display: grid;
+  gap: 12px;
+}
+
+.list {
+  display: grid;
+  gap: 34px;
+  max-width: 700px;
+  padding-block: 44px;
+}
+
+.article {
+  display: grid;
+  gap: 14px;
+  max-width: 700px;
+  padding-block: 44px;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding-block: 28px;
+  }
+
+  .cover {
+    width: 150px;
+  }
+}

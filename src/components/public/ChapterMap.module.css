@@ -1,0 +1,71 @@
+.map {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: block;
+}
+
+.tile {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 9px;
+  border: 1px solid var(--ink-3);
+  background: var(--soft);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lido, sem sessão visível (sem link). */
+.read {
+  background: var(--soft-2);
+  border-color: var(--rose);
+  color: var(--rose-deep);
+}
+
+a.tile {
+  border-color: transparent;
+  background: var(--rose-2);
+  color: var(--surface);
+  transition: transform 0.15s;
+}
+
+a.tile.alt {
+  background: color-mix(in srgb, var(--rose-2) 72%, var(--rose-deep));
+}
+
+a.tile.last {
+  background: var(--rose-deep);
+}
+
+.tile.next {
+  background: var(--surface);
+  border: 1.5px dashed var(--rose-2);
+  color: var(--rose-deep);
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  a.tile:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a.tile {
+    transition: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .map {
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  }
+}

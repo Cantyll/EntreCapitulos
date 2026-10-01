@@ -1,0 +1,100 @@
+/* Cartão de sessão (protótipo: .s-card). O link do título cobre o cartão inteiro. */
+.card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 22px;
+  padding: 26px 0;
+  border-top: 1px solid var(--line);
+}
+
+.card:first-child {
+  border-top: 0;
+}
+
+.num {
+  font-family: var(--serif);
+  font-size: 46px;
+  font-weight: 400;
+  line-height: 0.9;
+  color: var(--rose);
+}
+
+.num small {
+  display: block;
+  margin-bottom: 6px;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.title {
+  margin: 10px 0 6px;
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.visually {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.excerpt {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (hover: hover) {
+  .card:hover .title {
+    color: var(--rose-deep);
+  }
+}
+
+@media (max-width: 760px) {
+  .card {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .num {
+    font-size: 30px;
+  }
+
+  .title {
+    font-size: 21px;
+  }
+}

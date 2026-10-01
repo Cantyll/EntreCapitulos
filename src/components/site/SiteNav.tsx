@@ -8,7 +8,7 @@ import { getPublicNav } from '@/lib/navigation';
 
 import styles from './SiteNav.module.css';
 
-export function SiteNav({ currentBookSlug }: { currentBookSlug: string }) {
+export function SiteNav({ currentBookSlug }: { currentBookSlug: string | null }) {
   const pathname = usePathname();
 
   return (

@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { Container } from '@/components/ui/Container';
 import { Logo } from '@/components/ui/Logo';
+import { SITE_TAGLINE } from '@/lib/site';
 
 import styles from './SiteFooter.module.css';
 
@@ -12,11 +13,11 @@ export function SiteFooter() {
         <div className={styles.inner}>
           <Logo size="sm" />
           <nav className={styles.nav} aria-label="Rodapé">
-            <Link href="/sobre">Regras da comunidade</Link>
-            <Link href="/#receber-por-email">Receber por e-mail</Link>
+            <Link href="/sessoes">Sessões</Link>
             <Link href="/estante">Estante</Link>
+            <Link href="/sobre">Regras da comunidade</Link>
           </nav>
-          <span>Um clube de leitura em sessões, feito com carinho.</span>
+          <span>{SITE_TAGLINE}</span>
         </div>
       </Container>
     </footer>
