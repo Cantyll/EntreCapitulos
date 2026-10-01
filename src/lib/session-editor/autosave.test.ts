@@ -106,6 +106,14 @@ function setup(options: Partial<AutosaveDeps> & { results?: SaveResult[] } = {})
   return { controller, clock, calls, transport, local, records };
 }
 
+describe('estado inicial', () => {
+  it('sessão que já existe abre como salva; a nova abre como "rascunho novo"', () => {
+    expect(setup().controller.getState().status).toBe('saved');
+    const fresh = setup({ initial: { snapshot: base, token: null, sessionId: null } });
+    expect(fresh.controller.getState().status).toBe('idle');
+  });
+});
+
 describe('debounce do rascunho', () => {
   it('só envia 2 s depois da última alteração', async () => {
     const { controller, clock, calls } = setup();
@@ -411,6 +419,20 @@ describe('conflito de concorrência', () => {
     expect(calls[0]!.expectedUpdatedAt).toBe('T-servidor');
   });
 
+  it('markSaved: a publicação que gravou o texto mas falhou depois não gera conflito consigo mesma', async () => {
+    const { controller, clock, calls } = setup();
+    controller.edit(withBody('a'));
+    controller.markSaved('T-publicar', withBody('a'));
+    expect(controller.getState()).toMatchObject({
+      token: 'T-publicar',
+      dirty: false,
+      status: 'saved',
+    });
+    controller.edit(withBody('ab'));
+    await clock.advance(DEBOUNCE_MS);
+    expect(calls[0]!.expectedUpdatedAt).toBe('T-publicar');
+  });
+
   it('idle() espera o envio em andamento', async () => {
     let release!: () => void;
     const { controller, transport } = setup();
@@ -704,6 +726,47 @@ describe('updated_at é texto opaco (microssegundos)', () => {
         /new Date\(|Date\.parse/,
       );
     }
+  });
+});
+
+describe('comparação ignora a ordem das chaves (jsonb do Postgres)', () => {
+  it('o mesmo corpo com as chaves em outra ordem é igual', () => {
+    const fromEditor = withBody('oi');
+    const fromDatabase: SessionSnapshot = {
+      ...base,
+      body: JSON.parse(
+        '{"content":[{"content":[{"text":"oi","type":"text"}],"type":"paragraph"}],"type":"doc"}',
+      ),
+    };
+    expect(snapshotKey(fromDatabase)).toBe(snapshotKey(fromEditor));
+  });
+
+  it('decideRestore: cópia idêntica ao servidor, só com chaves em outra ordem, não pergunta', () => {
+    const server = {
+      updatedAt: 'T1',
+      snapshot: {
+        ...base,
+        body: JSON.parse(
+          '{"content":[{"content":[{"text":"um","type":"text"}],"type":"paragraph"}],"type":"doc"}',
+        ),
+      },
+    };
+    expect(decideRestore(server, { baseUpdatedAt: 'T1', snapshot: base, dirty: true })).toEqual({
+      kind: 'none',
+    });
+  });
+
+  it('abrir e voltar ao texto salvo deixa de ser alteração', async () => {
+    const serverBody = JSON.parse(
+      '{"content":[{"content":[{"text":"um","type":"text"}],"type":"paragraph"}],"type":"doc"}',
+    );
+    const { controller } = setup({
+      initial: { snapshot: { ...base, body: serverBody }, token: 'T1', sessionId: 'sess-1' },
+    });
+    controller.edit(withBody('um mais'));
+    expect(controller.getState().dirty).toBe(true);
+    controller.edit(base);
+    expect(controller.getState().dirty).toBe(false);
   });
 });
 

@@ -260,6 +260,9 @@ export function SessionEditor({
           setDialog(null);
           return;
         case 'rejected':
+          // O texto foi salvo antes da função do banco falhar: guarda o token novo.
+          if ('savedUpdatedAt' in result)
+            controller.markSaved(result.savedUpdatedAt, after.current);
           setDialogError(result.message);
           setFixTotal(Boolean(result.fixTotalBookId));
           return;
@@ -267,6 +270,8 @@ export function SessionEditor({
           setDialogError('Esta sessão não existe mais.');
           return;
         case 'failed':
+          if ('savedUpdatedAt' in result)
+            controller.markSaved(result.savedUpdatedAt, after.current);
           setDialogError(result.message ?? 'Não foi possível publicar agora. Tente de novo.');
           return;
       }

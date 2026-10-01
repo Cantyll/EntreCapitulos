@@ -367,8 +367,15 @@ async function updateSession(
 
 // --- Publicar, voltar para rascunho e excluir ---------------------------------------------------
 
+/**
+ * Publicar grava o conteúdo ANTES de chamar a função do banco. Se a função falhar, o conteúdo já
+ * foi salvo e o `updated_at` mudou: `savedUpdatedAt` devolve o token novo, para o editor não dar
+ * conflito consigo mesmo no próximo salvamento.
+ */
 export type PublishOutcome =
-  { kind: 'published'; number: number } | Exclude<SaveOutcome, { kind: 'ok' }>;
+  | { kind: 'published'; number: number }
+  | Exclude<SaveOutcome, { kind: 'ok' }>
+  | (Extract<SaveOutcome, { kind: 'rejected' | 'failed' }> & { savedUpdatedAt: string });
 
 export async function publishSession(
   supabase: Client,
@@ -381,12 +388,12 @@ export async function publishSession(
     const { data, error } = await supabase.rpc('publish_session', { p_session_id: args.sessionId });
     if (error) {
       logFailure('sessions.publish', error);
-      return rejected(sessionErrorMessage(error));
+      return { ...rejected(sessionErrorMessage(error)), savedUpdatedAt: saved.updatedAt };
     }
     return { kind: 'published', number: data.number };
   } catch (error) {
     logFailure('sessions.publish', error);
-    return failed();
+    return { ...failed(), savedUpdatedAt: saved.updatedAt };
   }
 }
 
