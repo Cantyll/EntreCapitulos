@@ -21,6 +21,7 @@ import {
   totalChaptersSchema,
 } from '@/lib/books/validation';
 import { createClient } from '@/lib/supabase/server';
+import { invalidateBooks } from '@/lib/public/tags';
 import { THEME_TAG } from '@/lib/theme/tag';
 
 /*
@@ -44,6 +45,7 @@ const generic = () => error(BOOK_MESSAGES.generic);
 
 function refreshAfterBookChange() {
   updateTag(THEME_TAG);
+  invalidateBooks();
   revalidatePath('/', 'layout');
 }
 

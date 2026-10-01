@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { requireRole } from '@/lib/auth/session';
+import { invalidateBooks, invalidateSession } from '@/lib/public/tags';
 import {
   addNote,
   addQuestion,
@@ -39,8 +40,13 @@ import { createClient } from '@/lib/supabase/server';
  * excluir mexem nas páginas públicas ou na lista.
  */
 
-/** Páginas públicas e cabeçalho dependem de sessões e do capítulo atual do livro. */
-function refreshPublic() {
+/**
+ * Sessão no ar mudou (salva, publicada, despublicada): o cache de dados públicos expira na hora
+ * (`updateTag`) e o layout público é revalidado. Publicar também move o capítulo atual do livro.
+ */
+function refreshPublic(sessionId?: string) {
+  invalidateSession(sessionId);
+  invalidateBooks();
   revalidatePath('/', 'layout');
 }
 
@@ -61,7 +67,7 @@ export async function saveSessionAction(input: {
     expectedUpdatedAt: input.expectedUpdatedAt,
     fields: input.fields,
   });
-  if (outcome.kind === 'ok' && outcome.status === 'published') refreshPublic();
+  if (outcome.kind === 'ok' && outcome.status === 'published') refreshPublic(outcome.sessionId);
   return outcome;
 }
 
@@ -79,7 +85,7 @@ export async function publishSessionAction(input: {
     expectedUpdatedAt: input.expectedUpdatedAt,
     fields: input.fields,
   });
-  if (outcome.kind === 'published') refreshPublic();
+  if (outcome.kind === 'published') refreshPublic(input.sessionId);
   return outcome;
 }
 
@@ -90,7 +96,7 @@ export async function unpublishSessionAction(sessionId: string): Promise<SimpleO
   }
   const supabase = await createClient();
   const result = await unpublishSession(supabase, sessionId);
-  if (result.ok) refreshPublic();
+  if (result.ok) refreshPublic(sessionId);
   return result;
 }
 
@@ -101,7 +107,10 @@ export async function deleteDraftAction(sessionId: string): Promise<SimpleOutcom
   }
   const supabase = await createClient();
   const result = await deleteDraftSession(supabase, sessionId);
-  if (result.ok) revalidatePath('/painel/sessoes');
+  if (result.ok) {
+    invalidateSession(sessionId);
+    revalidatePath('/painel/sessoes');
+  }
   return result;
 }
 
@@ -112,7 +121,9 @@ export async function addNoteAction(
   input: unknown,
 ): Promise<ItemResult<NoteItem>> {
   await requireRole('admin');
-  return addNote(await createClient(), sessionId, input);
+  const result = await addNote(await createClient(), sessionId, input);
+  if (result.ok) invalidateSession(sessionId);
+  return result;
 }
 
 export async function updateNoteAction(
@@ -120,12 +131,16 @@ export async function updateNoteAction(
   input: unknown,
 ): Promise<ItemResult<NoteItem>> {
   await requireRole('admin');
-  return updateNote(await createClient(), noteId, input);
+  const result = await updateNote(await createClient(), noteId, input);
+  if (result.ok) invalidateSession();
+  return result;
 }
 
 export async function removeNoteAction(noteId: string): Promise<DoneResult> {
   await requireRole('admin');
-  return removeNote(await createClient(), noteId);
+  const result = await removeNote(await createClient(), noteId);
+  if (result.ok) invalidateSession();
+  return result;
 }
 
 export async function reorderNotesAction(
@@ -133,7 +148,9 @@ export async function reorderNotesAction(
   orderedIds: string[],
 ): Promise<ListResult<NoteItem>> {
   await requireRole('admin');
-  return reorderNotes(await createClient(), sessionId, orderedIds);
+  const result = await reorderNotes(await createClient(), sessionId, orderedIds);
+  if (result.ok) invalidateSession(sessionId);
+  return result;
 }
 
 // --- Perguntas para a discussão -------------------------------------------------------------------
@@ -143,7 +160,9 @@ export async function addQuestionAction(
   input: unknown,
 ): Promise<ItemResult<QuestionItem>> {
   await requireRole('admin');
-  return addQuestion(await createClient(), sessionId, input);
+  const result = await addQuestion(await createClient(), sessionId, input);
+  if (result.ok) invalidateSession(sessionId);
+  return result;
 }
 
 export async function updateQuestionAction(
@@ -151,12 +170,16 @@ export async function updateQuestionAction(
   input: unknown,
 ): Promise<ItemResult<QuestionItem>> {
   await requireRole('admin');
-  return updateQuestion(await createClient(), questionId, input);
+  const result = await updateQuestion(await createClient(), questionId, input);
+  if (result.ok) invalidateSession();
+  return result;
 }
 
 export async function removeQuestionAction(questionId: string): Promise<DoneResult> {
   await requireRole('admin');
-  return removeQuestion(await createClient(), questionId);
+  const result = await removeQuestion(await createClient(), questionId);
+  if (result.ok) invalidateSession();
+  return result;
 }
 
 export async function reorderQuestionsAction(
@@ -164,5 +187,7 @@ export async function reorderQuestionsAction(
   orderedIds: string[],
 ): Promise<ListResult<QuestionItem>> {
   await requireRole('admin');
-  return reorderQuestions(await createClient(), sessionId, orderedIds);
+  const result = await reorderQuestions(await createClient(), sessionId, orderedIds);
+  if (result.ok) invalidateSession(sessionId);
+  return result;
 }

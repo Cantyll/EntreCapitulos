@@ -5,6 +5,7 @@ import { revalidatePath, updateTag } from 'next/cache';
 import { finalizeCoverWith, type FinalizeCoverResult } from '@/lib/books/finalize-cover';
 import { requireRole } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
+import { invalidateBooks } from '@/lib/public/tags';
 import { THEME_TAG } from '@/lib/theme/tag';
 
 /**
@@ -22,6 +23,7 @@ export async function finalizeCover(
 
   if (result.ok) {
     updateTag(THEME_TAG);
+    invalidateBooks();
     revalidatePath('/', 'layout');
   }
   return result;
