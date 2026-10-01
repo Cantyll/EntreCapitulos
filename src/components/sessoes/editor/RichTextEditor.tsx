@@ -64,7 +64,9 @@ export function RichTextEditor({
   }, [editor, onEditor]);
 
   useEffect(() => {
-    editor?.setEditable(editable);
+    // `false`: trocar editável/só leitura não é uma alteração do texto (sem `onUpdate`). Com o evento,
+    // o editor devolveria o texto ANTIGO ao controlador logo depois de uma restauração.
+    editor?.setEditable(editable, false);
   }, [editor, editable]);
 
   return (

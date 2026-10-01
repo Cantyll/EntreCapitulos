@@ -99,7 +99,8 @@ export class AutosaveController {
   constructor(private readonly deps: AutosaveDeps) {
     this.state = {
       mode: deps.mode,
-      status: 'idle',
+      // Uma sessão que já existe no servidor abre "salva"; só a nova (sem token) é "rascunho novo".
+      status: deps.initial.token === null ? 'idle' : 'saved',
       current: deps.initial.snapshot,
       saved: deps.initial.snapshot,
       token: deps.initial.token,
@@ -335,6 +336,21 @@ export class AutosaveController {
   }
 
   // --- Conflito, restauração e descarte ----------------------------------------------------
+
+  /**
+   * Um salvamento feito fora do autosave (a publicação grava o texto antes de chamar o banco) deu
+   * um token novo: adota o token e o que foi salvo, para o próximo envio não dar conflito.
+   */
+  markSaved(updatedAt: string, snapshot: SessionSnapshot): void {
+    const dirty = !snapshotsEqual(this.state.current, snapshot);
+    this.set({
+      token: updatedAt,
+      saved: snapshot,
+      dirty,
+      status: dirty ? 'dirty' : 'saved',
+    });
+    if (!dirty) this.removeLocal();
+  }
 
   /** Um conflito descoberto fora do autosave (ao publicar): mesmo banner, mesmas duas saídas. */
   reportConflict(server: ServerVersion): void {

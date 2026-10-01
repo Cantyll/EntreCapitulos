@@ -33,9 +33,25 @@ export const SNAPSHOT_KEYS = [
   'excerpt',
 ] as const satisfies readonly (keyof SessionSnapshot)[];
 
-/** Comparação por valor, com a ordem das chaves fixa (o `body` vem do Tiptap, também estável). */
+/**
+ * JSON com as chaves em ordem alfabética, em todos os níveis. O Postgres (jsonb) devolve as chaves
+ * de um objeto em outra ordem que o editor as emite, então a comparação precisa ignorar a ordem.
+ */
+export function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  if (typeof value === 'object' && value !== null) {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => v !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`);
+    return `{${entries.join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'null';
+}
+
+/** Comparação por valor: campos na ordem da lista fixa, objetos com as chaves ordenadas. */
 export function snapshotKey(snapshot: SessionSnapshot): string {
-  return JSON.stringify(SNAPSHOT_KEYS.map((key) => snapshot[key]));
+  return stableStringify(SNAPSHOT_KEYS.map((key) => snapshot[key]));
 }
 
 export function snapshotsEqual(a: SessionSnapshot, b: SessionSnapshot): boolean {
