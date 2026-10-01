@@ -404,6 +404,33 @@ export type Database = {
       };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
+      publish_session: {
+        Args: { p_session_id: string };
+        Returns: {
+          body: NonNullable<Json>;
+          book_id: string;
+          chapter_from: number;
+          chapter_to: number;
+          comments_open: boolean;
+          created_at: string;
+          excerpt: string | null;
+          id: string;
+          number: number;
+          published_at: string | null;
+          rating: number | null;
+          read_minutes: number | null;
+          status: string;
+          title: string;
+          updated_at: string;
+          visibility: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'reading_sessions';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       start_book: {
         Args: { p_book_id: string };
         Returns: {
@@ -429,6 +456,33 @@ export type Database = {
         SetofOptions: {
           from: '*';
           to: 'books';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      unpublish_session: {
+        Args: { p_session_id: string };
+        Returns: {
+          body: NonNullable<Json>;
+          book_id: string;
+          chapter_from: number;
+          chapter_to: number;
+          comments_open: boolean;
+          created_at: string;
+          excerpt: string | null;
+          id: string;
+          number: number;
+          published_at: string | null;
+          rating: number | null;
+          read_minutes: number | null;
+          status: string;
+          title: string;
+          updated_at: string;
+          visibility: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'reading_sessions';
           isOneToOne: true;
           isSetofReturn: false;
         };
