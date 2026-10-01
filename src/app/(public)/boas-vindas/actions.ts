@@ -1,6 +1,7 @@
 'use server';
 
 import { DISPLAY_NAME_MAX, normalizeDisplayName } from '@/lib/auth/display-name';
+import { logAuthFailure } from '@/lib/auth/log';
 import { redirectTo } from '@/lib/auth/redirect';
 import { safeNext } from '@/lib/auth/safe-next';
 import { requireUser } from '@/lib/auth/session';
@@ -34,7 +35,7 @@ export async function saveDisplayName(
     .eq('id', user.id);
 
   if (error) {
-    console.error('profiles.update (boas-vindas) falhou', { code: error.code });
+    logAuthFailure('profiles.update (boas-vindas)', error);
     return { error: MESSAGES.save_failed, value: result.value };
   }
 

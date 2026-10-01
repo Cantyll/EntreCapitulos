@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { NEXT_COOKIE, NEXT_COOKIE_PATH } from '@/lib/auth/constants';
+import { logAuthFailure } from '@/lib/auth/log';
 import type { LoginErrorCode } from '@/lib/auth/messages';
 import { postLoginDestination, safeNext } from '@/lib/auth/safe-next';
 import { isNameConfirmed } from '@/lib/auth/session';
@@ -28,18 +29,22 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   if (!code) return fail('oauth');
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error || !data.user) {
-    if (error)
-      console.error('auth.exchangeCodeForSession falhou', {
-        code: error.code,
-        status: error.status,
-      });
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  let userId: string;
+  try {
+    supabase = await createClient();
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error || !data.user) {
+      if (error) logAuthFailure('auth.exchangeCodeForSession', error);
+      return fail('oauth');
+    }
+    userId = data.user.id;
+  } catch (error) {
+    logAuthFailure('auth.exchangeCodeForSession', error);
     return fail('oauth');
   }
 
-  const confirmed = await isNameConfirmed(data.user.id, supabase);
+  const confirmed = await isNameConfirmed(userId, supabase);
   const url = request.nextUrl.clone();
   const destination = new URL(postLoginDestination(next, confirmed), request.nextUrl.origin);
   url.pathname = destination.pathname;
