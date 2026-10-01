@@ -400,6 +400,38 @@ describe('conflito de concorrência', () => {
     expect(controller.getState().conflict).toBeNull();
   });
 
+  it('conflito descoberto fora do autosave (publicar) abre o mesmo banner', async () => {
+    const { controller, clock, calls } = setup();
+    controller.edit(withBody('minha'));
+    controller.reportConflict({ updatedAt: 'T-servidor', snapshot: serverSnapshot });
+    expect(controller.getState().status).toBe('conflict');
+    await clock.advance(DEBOUNCE_MS * 3);
+    expect(calls).toHaveLength(0);
+    await controller.overwriteWithMine();
+    expect(calls[0]!.expectedUpdatedAt).toBe('T-servidor');
+  });
+
+  it('idle() espera o envio em andamento', async () => {
+    let release!: () => void;
+    const { controller, transport } = setup();
+    transport.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve({ kind: 'ok', updatedAt: 'T9', sessionId: 'sess-1' });
+        }),
+    );
+    controller.edit(withBody('a'));
+    void controller.flush();
+    let idle = false;
+    void controller.idle().then(() => (idle = true));
+    await settle();
+    expect(idle).toBe(false);
+    release();
+    await settle(30);
+    expect(idle).toBe(true);
+    expect(controller.getState().token).toBe('T9');
+  });
+
   it('sem conflito pendente, as duas escolhas não fazem nada', async () => {
     const { controller, calls } = setup();
     controller.acceptServerVersion();

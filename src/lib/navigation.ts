@@ -151,6 +151,7 @@ export function getAdminTabbar(role: Role) {
 /** Título do topo do painel. */
 export function getAdminTitle(pathname: string) {
   if (pathname === NEW_SESSION_HREF) return 'Nova sessão';
+  if (/^\/painel\/sessoes\/[^/]+$/.test(pathname)) return 'Editar sessão';
   const match = adminNav
     .filter((item) => isAdminNavActive(item, pathname))
     .sort((a, b) => b.href.length - a.href.length)[0];

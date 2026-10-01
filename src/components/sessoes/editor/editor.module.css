@@ -1,0 +1,282 @@
+/* Editor do relato (protótipo: .toolbar, .ed-paper, .ed-body). Tipografia serifa como a da página. */
+.wrap {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* O espaço da barra fica reservado aqui: quando ela vira `fixed` acima do teclado, a página não pula. */
+.toolbarSlot {
+  position: sticky;
+  top: calc(var(--safe-top) + 76px);
+  z-index: 4;
+  min-height: 46px;
+}
+
+.toolbar {
+  display: grid;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.toolRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.tool[aria-pressed='true'] {
+  background: var(--rose-tint);
+  color: var(--rose-deep);
+}
+
+.tool:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) {
+  .tool:hover:not(:disabled) {
+    background: var(--soft);
+    color: var(--ink);
+  }
+}
+
+.sep {
+  width: 1px;
+  margin: 6px 4px;
+  background: var(--line);
+}
+
+.linkRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  padding: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.linkLabel {
+  display: grid;
+  flex: 1 1 200px;
+  gap: 2px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.linkInput {
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+}
+
+.linkBtn {
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font-size: 13.5px;
+}
+
+.linkError {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.paper {
+  min-width: 0;
+  padding: 10px 34px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+.content {
+  min-width: 0;
+}
+
+.content :global(.tiptap) {
+  min-height: max(280px, 40dvh);
+  padding: 18px 0;
+  outline: none;
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.72;
+  overflow-wrap: anywhere;
+}
+
+.content :global(.tiptap p) {
+  margin: 0 0 1em;
+}
+
+.content :global(.tiptap > p:only-child:has(> br.ProseMirror-trailingBreak:only-child))::before {
+  content: 'Comece a escrever o relato…';
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
+.content :global(.tiptap h2) {
+  margin: 26px 0 10px;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 24px;
+  color: var(--rose-deep);
+}
+
+.content :global(.tiptap blockquote) {
+  margin: 22px 0;
+  padding: 2px 0 2px 20px;
+  border-left: 2px solid var(--rose);
+  font-style: italic;
+  font-size: 21px;
+  color: var(--rose-deep);
+}
+
+.content :global(.tiptap ul),
+.content :global(.tiptap ol) {
+  padding-left: 1.3em;
+  margin: 0 0 1em;
+}
+
+.content :global(.tiptap li > p) {
+  margin: 0 0 0.3em;
+}
+
+.content :global(.tiptap a) {
+  color: var(--rose-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Divisória: leitura apenas (o título se edita em "Capítulos desta sessão"). */
+.content :global(.ec-divider) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 30px 0 14px;
+  padding: 10px 14px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--soft);
+  user-select: none;
+}
+
+.content :global(.ec-divider-number) {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.content :global(.ec-divider-title) {
+  font-style: italic;
+  font-size: 22px;
+  color: var(--rose-deep);
+}
+
+.content :global(.ec-divider.ProseMirror-selectednode) {
+  outline: 2px solid var(--rose-2);
+}
+
+/* "Minha teoria" (protótipo: .theory). */
+.content :global(.ec-theory) {
+  margin: 24px 0;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--soft);
+  font-family: var(--sans);
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+
+.content :global(.ec-theory)::before {
+  content: 'Minha teoria';
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--rose-deep);
+}
+
+@media (max-width: 640px) {
+  .paper {
+    padding: 4px 16px 14px;
+  }
+
+  .content :global(.tiptap) {
+    font-size: 18px;
+  }
+}
+
+/* Celular: alvos de toque de 44px, e a barra acima do teclado ocupa a largura toda. */
+@media (pointer: coarse) {
+  .toolbarSlot {
+    min-height: 54px;
+  }
+
+  .tool {
+    min-width: var(--tap);
+    height: var(--tap);
+  }
+
+  .sep {
+    margin: 8px 3px;
+  }
+
+  .linkBtn,
+  .linkInput {
+    height: var(--tap);
+  }
+
+  .toolbarSlot[data-docked] .toolbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    border-radius: 0;
+    border-width: 1px 0 0;
+    padding-left: max(5px, var(--safe-left));
+    padding-right: max(5px, var(--safe-right));
+    box-shadow: 0 -6px 18px -12px rgba(42, 30, 36, 0.35);
+  }
+
+  .toolbarSlot[data-docked] .toolRow {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .toolbarSlot[data-docked] .toolRow::-webkit-scrollbar {
+    display: none;
+  }
+
+  .toolbarSlot[data-docked] .tool {
+    flex: none;
+  }
+}

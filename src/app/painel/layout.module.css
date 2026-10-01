@@ -22,4 +22,9 @@
   .main {
     padding: 22px 22px calc(var(--tabbar-h) + 28px);
   }
+
+  /* Sem a barra inferior (telas do editor), não precisa da folga dela. */
+  :global(body:has([data-editor-root])) .main {
+    padding-bottom: calc(var(--safe-bottom) + 70px);
+  }
 }

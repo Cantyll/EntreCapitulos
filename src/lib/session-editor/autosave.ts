@@ -336,6 +336,12 @@ export class AutosaveController {
 
   // --- Conflito, restauração e descarte ----------------------------------------------------
 
+  /** Um conflito descoberto fora do autosave (ao publicar): mesmo banner, mesmas duas saídas. */
+  reportConflict(server: ServerVersion): void {
+    this.cancelTimers();
+    this.set({ status: 'conflict', conflict: server, message: null });
+  }
+
   /** "Carregar a versão do servidor": troca o conteúdo e apaga a cópia local. */
   acceptServerVersion(): void {
     const server = this.state.conflict;

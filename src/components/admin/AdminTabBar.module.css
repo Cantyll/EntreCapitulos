@@ -205,3 +205,8 @@
   margin: 8px 12px;
   background: var(--line);
 }
+
+/* Telas do editor de sessões: a barra de formatação fica acima do teclado, então esta sai de cena. */
+:global(body:has([data-editor-root])) .root {
+  display: none;
+}
