@@ -1,3 +1,8 @@
+/*
+ * `.prompt .question` e `.prompt .help` (e não só `.question` e `.help`): a home tem `.card p` com cor e
+ * tamanho próprios, e a regra mais específica ganharia aqui (o texto saía em --ink-3 sobre --rose-tint,
+ * 4,42:1, abaixo do AA). Com a classe do contêiner a regra deste módulo vence em qualquer página.
+ */
 .prompt {
   display: grid;
   gap: 4px;
@@ -7,7 +12,7 @@
   background: var(--rose-tint);
 }
 
-.question {
+.prompt .question {
   margin: 0;
   font-family: var(--serif);
   font-size: 19px;
@@ -15,7 +20,7 @@
   color: var(--rose-deep);
 }
 
-.help {
+.prompt .help {
   margin: 0 0 8px;
   font-size: 13.5px;
   color: var(--ink-2);
