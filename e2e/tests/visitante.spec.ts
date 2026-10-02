@@ -105,6 +105,10 @@ test.describe('visitante', () => {
     ).toBeVisible();
     await expect(page.getByRole('link', { name: 'Voltar para o início' })).toBeVisible();
 
+    // As Links da página (cabeçalho, rodapé) já começaram a buscar a próxima tela (prefetch). Navegar com
+    // essas buscas no ar faz o WebKit cancelá-las e relatar "Fetch API cannot load … access control
+    // checks" como erro não tratado: espera a rede assentar antes de sair da página.
+    await page.waitForLoadState('networkidle');
     const book = await page.goto('/livros/livro-que-nao-existe');
     expect(book?.status()).toBe(404);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
