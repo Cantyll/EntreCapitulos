@@ -1,5 +1,6 @@
 import { A_DEFINIR, type LegalData, type LegalText } from '../legal-config';
 import { SITE_COOKIES } from './cookies';
+import { activeProviders, regionOf } from './providers';
 import type { LegalBlock, LegalDoc, LegalFeatures, LegalSection } from './types';
 
 /*
@@ -39,11 +40,11 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
   const { regions } = config;
 
   const dataItems = [
-    'E-mail: usado só para você entrar (o código de 6 dígitos chega por ele) e para falarmos com você sobre a sua conta. Ele não aparece para outras pessoas.',
+    `E-mail: o endereço que você informa para entrar${features.google ? ' (ou que o Google informa, se você entrar com ele)' : ''}. Usamos para enviar o código de acesso por e-mail e responder aos pedidos que você nos fizer. Ele não aparece para outras pessoas.`,
     'Nome de exibição: o nome que você escolhe no primeiro acesso e pode trocar em Minha conta. É público.',
     ...(features.google
       ? [
-          'Se você entrar com o Google: o nome e o endereço da foto do seu perfil Google, que o Google informa no primeiro acesso. O nome inicial do perfil vem daí.',
+          'Se você escolher entrar com o Google, ele nos informa seu nome, e-mail e foto de perfil. O nome inicial do perfil vem daí.',
         ]
       : []),
     'Comentários e respostas: o texto, a data, o estado de moderação (em análise, publicado ou removido), o aviso de spoiler, se houver, e até que capítulo você tinha lido quando comentou. Nome, texto e esse capítulo são públicos.',
@@ -52,45 +53,25 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
     'Registros técnicos: os provedores de hospedagem e de banco de dados podem registrar dados técnicos de acesso, como endereço IP, data e hora, tipo de navegador e páginas acessadas, para operar e proteger o serviço. O site não usa ferramentas de análise de audiência nem de publicidade.',
     ...(features.turnstile
       ? [
-          'Verificação de segurança: ao pedir o código por e-mail, o Cloudflare Turnstile recebe dados do seu navegador para distinguir pessoas de robôs. Os dados exatos são definidos pela Cloudflare.',
+          'Quando a verificação anti-robô (Cloudflare Turnstile) estiver ativa, ela é usada na tela de entrada para confirmar que o envio vem de uma pessoa. Ela recebe dados do seu navegador; os dados exatos são definidos pela Cloudflare.',
         ]
       : []),
   ];
 
   const purposes = [
-    'Deixar você entrar na sua conta e manter a sessão.',
+    'Deixar você entrar na sua conta e manter a sessão, enviar o código de acesso por e-mail e responder aos pedidos que você nos fizer.',
     'Mostrar as sessões de leitura e esconder o que fala de capítulos que você ainda não leu.',
     'Publicar, moderar e exibir comentários e respostas.',
     'Guardar até onde você leu, para a próxima visita.',
-    'Proteger o site contra abuso e spam (limite de comentários por minuto e por hora, análise de comentários com link e, quando ativa, a verificação de segurança no envio do código).',
-    'Atender os seus pedidos sobre os seus dados e cumprir obrigações legais.',
+    'Proteger o site contra abuso e spam (limite de comentários por minuto e por hora, análise de comentários com link e, quando ativa, a verificação anti-robô no envio do código).',
+    'Cumprir obrigações legais e exercer direitos em eventual disputa.',
   ];
 
-  const providers: string[][] = [
-    [
-      'Supabase',
-      'Banco de dados, autenticação (login) e armazenamento das capas dos livros.',
-      regions.supabase,
-    ],
-    ['Vercel', 'Hospedagem do site e das funções que o executam.', regions.vercel],
-    [
-      'Resend',
-      'Envio do e-mail com o código de entrada, como operador contratado por nós e acionado pelo Supabase (o envio de e-mails do Supabase está configurado para usá-lo).',
-      regions.resend,
-    ],
-    ...(features.google
-      ? [['Google', 'Login com a conta Google, quando você escolhe essa opção.', regions.google]]
-      : []),
-    ...(features.turnstile
-      ? [
-          [
-            'Cloudflare Turnstile',
-            'Verificação de segurança ao pedir o código por e-mail.',
-            regions.cloudflareTurnstile,
-          ],
-        ]
-      : []),
-  ];
+  const providers: string[][] = activeProviders(features).map((provider) => [
+    provider.name,
+    provider.purpose,
+    regionOf(config, provider.id),
+  ]);
 
   const cookies = SITE_COOKIES.filter((cookie) => cookie.only !== 'google' || features.google);
 
@@ -109,7 +90,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
         },
         {
           type: 'p',
-          text: `O site é destinado a pessoas com ${config.minimumAge} anos ou mais.`,
+          text: `O clube é destinado a pessoas com ${config.minimumAge} anos ou mais. O site não verifica a idade de quem cria a conta. Se soubermos que alguém abaixo dessa idade criou uma conta, podemos excluí-la.`,
         },
       ],
     },
@@ -159,6 +140,10 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           head: ['Serviço', 'Para quê', 'Região'],
           rows: providers,
         },
+        {
+          type: 'p',
+          text: `O banco de dados e a autenticação (Supabase) ficam na região de ${regions.supabase}. As funções do site (Vercel) rodam na região de ${regions.vercel}, conforme a configuração do projeto no provedor.`,
+        },
         ...(isPending(config.internationalTransfer)
           ? [
               {
@@ -187,7 +172,15 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
         ),
         {
           type: 'p',
-          text: 'Você pode apagar os seus dados a qualquer momento: "Excluir meu comentário" apaga o texto de um comentário, e "Excluir minha conta", em Minha conta, apaga o seu perfil, o seu e-mail, os seus comentários (e as respostas que outras pessoas escreveram a eles) e o seu progresso de leitura. A exclusão da conta não tem volta.',
+          text: 'Você pode excluir seus comentários que estejam visíveis ou em análise, quando quiser, no próprio comentário ("Excluir meu comentário", embaixo dele, na página da sessão). Comentários removidos pela moderação não aparecem mais no site, e o texto deles só deixa de existir quando a conta é excluída; se quiser que um deles seja apagado antes, peça pelo e-mail de contato. As respostas de outras pessoas a um comentário excluído deixam de aparecer no site, mas continuam guardadas até a exclusão da conta de quem as escreveu.',
+        },
+        {
+          type: 'p',
+          text: '"Excluir minha conta", em Minha conta, apaga o seu perfil, o seu e-mail, os seus comentários (e as respostas que outras pessoas escreveram a eles) e o seu progresso de leitura. A exclusão da conta não tem volta.',
+        },
+        {
+          type: 'p',
+          text: 'Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe. Peça pelo e-mail de contato.',
         },
       ],
     },
@@ -205,8 +198,8 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           items: [
             'Editar o seu nome: em Minha conta (menu da conta, no topo do site).',
             'Baixar uma cópia dos seus dados: em Minha conta, "Baixar meus dados" (um arquivo com o seu perfil, e-mail, todos os seus comentários e o seu progresso).',
-            'Excluir um comentário: "Excluir meu comentário", embaixo dele.',
-            'Excluir a sua conta: em Minha conta, "Excluir minha conta". Contas da equipe precisam deixar o papel de equipe antes.',
+            'Excluir um comentário que esteja visível ou em análise: "Excluir meu comentário", embaixo dele. Para um comentário removido pela moderação, peça pelo e-mail de contato.',
+            'Excluir a sua conta: em Minha conta, "Excluir minha conta". Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe. Peça pelo e-mail de contato.',
             `Qualquer outro pedido (por exemplo, confirmar o tratamento, corrigir algo que você não consegue editar ou pedir informações): escreva para ${config.privacyContactEmail}, a partir do e-mail cadastrado na conta.`,
           ],
         },

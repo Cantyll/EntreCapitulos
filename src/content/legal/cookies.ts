@@ -35,3 +35,29 @@ export const SITE_COOKIES: readonly CookieInfo[] = [
     duration: 'a duração da sessão, definida pelo Supabase',
   },
 ];
+
+/** Armazenamento local do navegador (fora os cookies). Para a política e para o documento de revisão. */
+export type LocalStorageInfo = {
+  name: string;
+  purpose: string;
+  duration: string;
+  /** Quem é afetado. */
+  who: string;
+  only?: 'turnstile';
+};
+
+export const LOCAL_STORAGE_ITEMS: readonly LocalStorageInfo[] = [
+  {
+    name: 'IndexedDB do editor de sessões (`session:<id>` e `new:<bookId>`)',
+    purpose: 'Cópia local do rascunho, para não perder o texto se o aplicativo for fechado.',
+    duration: 'até o rascunho ser enviado ao servidor ou o navegador limpar os dados do site',
+    who: 'só a equipe (quem usa o editor)',
+  },
+  {
+    name: '`cf.turnstile.u` (armazenamento local do iframe da Cloudflare)',
+    purpose: 'Item criado pelo widget de verificação anti-robô, no domínio da Cloudflare.',
+    duration: 'definida pela Cloudflare',
+    who: 'quem pede o código quando a verificação está ativa',
+    only: 'turnstile',
+  },
+];
