@@ -64,6 +64,17 @@ export default function globalSetup() {
     delete from public.reading_sessions where book_id in (select id from public.books where slug like 'e2e-%');
     delete from public.books where slug like 'e2e-%';
     delete from auth.users where email like '%@teste.example';
+
+    -- O que o painel (chromium-admin) cria e altera: livros "Livro do Painel …" e o estado do livro atual do seed.
+    delete from public.comments where session_id in (select s.id from public.reading_sessions s join public.books b on b.id = s.book_id where b.title like 'Livro do Painel %');
+    delete from public.reading_sessions where book_id in (select id from public.books where title like 'Livro do Painel %');
+    delete from public.books where title like 'Livro do Painel %';
+    delete from public.comments where session_id in (select s.id from public.reading_sessions s join public.books b on b.id = s.book_id where b.slug = 'o-livro-de-azrael' and s.number > 4);
+    delete from public.reading_sessions where number > 4 and book_id in (select id from public.books where slug = 'o-livro-de-azrael');
+    update public.books
+       set status = 'reading', rating = null, finished_at = null, current_chapter = 12, total_chapters = 52,
+           started_at = '2026-09-02', theme_auto = true
+     where slug = 'o-livro-de-azrael';
   `);
 
   const sessions = WORLD.sessions;
