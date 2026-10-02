@@ -25,11 +25,19 @@ export function buildTerms(config: LegalData): LegalDoc {
       blocks: [
         {
           type: 'p',
-          text: `Você pode ler as sessões públicas sem conta. Para comentar, é preciso entrar com um código enviado por e-mail ou, quando disponível, com a conta Google. O site é destinado a pessoas com ${config.minimumAge} anos ou mais.`,
+          text: 'Você pode ler as sessões públicas sem conta. Para comentar, é preciso entrar com um código enviado por e-mail ou, quando disponível, com a conta Google.',
+        },
+        {
+          type: 'p',
+          text: `O clube é destinado a pessoas com ${config.minimumAge} anos ou mais. O site não verifica a idade de quem cria a conta. Se soubermos que alguém abaixo dessa idade criou uma conta, podemos excluí-la.`,
         },
         {
           type: 'p',
           text: 'Você escolhe o nome que aparece nos seus comentários, que é público. Cuide do acesso ao seu e-mail: quem o controla consegue entrar na sua conta. Você pode trocar o nome, baixar os seus dados e excluir a conta em Minha conta.',
+        },
+        {
+          type: 'p',
+          text: 'Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe. Peça pelo e-mail de contato.',
         },
       ],
     },
@@ -54,7 +62,11 @@ export function buildTerms(config: LegalData): LegalDoc {
         },
         {
           type: 'p',
-          text: 'Você é responsável pelo que escreve. A moderação pode remover um comentário a qualquer momento. Você pode excluir o seu próprio comentário quando quiser, com "Excluir meu comentário".',
+          text: 'Você é responsável pelo que escreve. A moderação pode remover um comentário a qualquer momento.',
+        },
+        {
+          type: 'p',
+          text: 'Você pode excluir seus comentários que estejam visíveis ou em análise, quando quiser, no próprio comentário ("Excluir meu comentário", embaixo dele, na página da sessão). Comentários removidos pela moderação não aparecem mais no site, e o texto deles só deixa de existir quando a conta é excluída; se quiser que um deles seja apagado antes, peça pelo e-mail de contato.',
         },
       ],
     },

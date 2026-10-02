@@ -80,12 +80,12 @@ export const legalConfig = {
 
   // PROPOSTA: validar com advogado
   internationalTransfer:
-    'O banco de dados e as funções do site rodam em servidores em São Paulo (Brasil). Mesmo assim, os provedores que usamos (Supabase, Vercel, Resend, Cloudflare Turnstile e, se você escolher entrar com ele, o Google) são empresas com operações em outros países, e partes do tratamento, como a entrega de e-mails, a proteção contra robôs, a rede de distribuição de conteúdo, os registros técnicos e o suporte, podem ocorrer fora do Brasil. Nesses casos, buscamos as garantias previstas na LGPD por meio dos contratos de tratamento de dados e dos termos desses provedores. Você pode pedir informações sobre isso pelo e-mail de contato.',
+    'O banco de dados e as funções do site rodam em servidores em São Paulo (Brasil). Mesmo assim, os provedores que usamos (Supabase, Vercel e Resend) e, quando ativos, o Cloudflare Turnstile e o login do Google são empresas com operações em outros países, e partes do tratamento, como a entrega de e-mails, a proteção contra robôs, a rede de distribuição de conteúdo, os registros técnicos e o suporte, podem ocorrer fora do Brasil. Nesses casos, buscamos as garantias previstas na LGPD por meio dos contratos de tratamento de dados e dos termos desses provedores. Você pode pedir informações sobre isso pelo e-mail de contato.',
 
   // PROPOSTA: validar com advogado
   retention: [
     'Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados.',
-    'Comentários: enquanto a conta existir ou até você excluir o comentário. Ao excluir, o texto é substituído por um aviso e o original deixa de ser guardado. Comentários removidos pela moderação ficam guardados, sem exibição pública, até a exclusão da conta de quem os escreveu.',
+    'Comentários: enquanto a conta existir ou até você excluir o comentário. Ao excluir, o texto é substituído por um aviso e o original deixa de ser guardado. Comentários removidos pela moderação ficam guardados, sem exibição pública, até a exclusão da conta de quem os escreveu ou até você pedir, pelo e-mail de contato, que o texto seja apagado antes.',
     'Progresso de leitura: enquanto a conta existir. Para quem não tem conta, por até 1 ano no próprio navegador (cookie).',
     'Registros técnicos e de segurança: mantidos pelos provedores por períodos definidos por eles, em regra curtos, e pelo prazo que a lei exigir.',
     'Pedidos de privacidade enviados por e-mail: pelo tempo necessário para atender e comprovar o atendimento.',
@@ -94,13 +94,26 @@ export const legalConfig = {
 
   // PROPOSTA: validar com advogado
   requestDeadline:
-    'Respondemos aos pedidos em até 15 dias, contados do recebimento. Acessar seus dados, corrigir seu nome e excluir sua conta você faz na hora, em "Minha conta".',
+    'Respondemos aos pedidos em até 15 dias, contados do recebimento. Acessar seus dados, corrigir seu nome e excluir sua conta você faz na hora, em "Minha conta"; as contas da equipe do clube têm uma etapa a mais para a exclusão (veja "Seus direitos").',
 } as const satisfies LegalData;
 
 export type LegalConfig = {
   readonly legalReviewed: boolean;
   readonly [key: string]: unknown;
 };
+
+/**
+ * Campos preenchidos com PROPOSTAS (cada um tem `// PROPOSTA: validar com advogado` no arquivo). Um teste confere
+ * a lista contra os comentários, e o documento de revisão jurídica a usa.
+ */
+export const PROPOSAL_FIELDS = [
+  'regions.cloudflareTurnstile',
+  'regions.google',
+  'legalBases',
+  'internationalTransfer',
+  'retention',
+  'requestDeadline',
+] as const;
 
 /** Texto que o site mostra no lugar de um valor ainda não decidido. */
 export const PENDING_LABEL = A_DEFINIR;

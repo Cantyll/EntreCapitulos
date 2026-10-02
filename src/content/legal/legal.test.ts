@@ -117,7 +117,9 @@ describe('política de privacidade', () => {
     expect(rows(OFF)).toEqual(['Supabase', 'Vercel', 'Resend']);
     expect(rows(ON)).toEqual(['Supabase', 'Vercel', 'Resend', 'Google', 'Cloudflare Turnstile']);
     const on = allText(buildPrivacy(legalConfig, ON));
-    expect(on).toContain('nome e o endereço da foto do seu perfil Google');
+    expect(on).toContain(
+      'Se você escolher entrar com o Google, ele nos informa seu nome, e-mail e foto de perfil.',
+    );
     expect(on).toContain('ec_next');
     expect(text).not.toContain('ec_next');
   });
@@ -251,5 +253,217 @@ describe('detecção dos pendentes na configuração entregue', () => {
 
   it('nenhum campo ficou como <PREENCHER>', () => {
     expect(JSON.stringify(legalConfig)).not.toContain('<PREENCHER>');
+  });
+});
+
+/* --- Correções de redação pedidas depois da revisão do código -------------------------------------------- */
+
+const terms = () => allText(buildTerms(legalConfig));
+const privacyOn = () => allText(buildPrivacy(legalConfig, ON));
+
+describe('Google e Turnstile: texto condicional', () => {
+  it('Google: a frase pedida só aparece com o login ativo, e o e-mail está entre os dados', () => {
+    expect(privacyOn()).toContain(
+      'Se você escolher entrar com o Google, ele nos informa seu nome, e-mail e foto de perfil.',
+    );
+    expect(privacyOn()).toContain('(ou que o Google informa, se você entrar com ele)');
+    expect(allText(buildPrivacy(legalConfig, OFF))).not.toContain('ele nos informa seu nome');
+  });
+
+  it('Turnstile: a frase pedida só aparece com a verificação ativa', () => {
+    expect(privacyOn()).toContain(
+      'Quando a verificação anti-robô (Cloudflare Turnstile) estiver ativa, ela é usada na tela de entrada para confirmar que o envio vem de uma pessoa.',
+    );
+    expect(allText(buildPrivacy(legalConfig, OFF))).not.toContain(
+      'verificação anti-robô (Cloudflare Turnstile)',
+    );
+  });
+
+  it('internationalTransfer cita Supabase, Vercel e Resend e, "quando ativos", Turnstile e Google', () => {
+    const text = legalConfig.internationalTransfer;
+    expect(text).toContain(
+      'os provedores que usamos (Supabase, Vercel e Resend) e, quando ativos, o Cloudflare Turnstile e o login do Google',
+    );
+    expect(text).toContain('podem ocorrer fora do Brasil');
+    expect(text).not.toMatch(/n[ãa]o saem do brasil|n[ãa]o h[áa] transfer[êe]ncia internacional/i);
+  });
+
+  it('a tabela de serviços continua listando só o que está ativo', () => {
+    const rows = (features: typeof OFF) =>
+      buildPrivacy(legalConfig, features)
+        .sections.find((section) => section.id === 'compartilhamento')!
+        .blocks.flatMap((b) => (b.type === 'table' ? b.rows.map((r) => r[0]) : []));
+    expect(rows(OFF)).toEqual(['Supabase', 'Vercel', 'Resend']);
+    expect(rows({ google: true, turnstile: false })).toEqual([
+      'Supabase',
+      'Vercel',
+      'Resend',
+      'Google',
+    ]);
+    expect(rows(ON)).toEqual(['Supabase', 'Vercel', 'Resend', 'Google', 'Cloudflare Turnstile']);
+  });
+});
+
+describe('exclusão da conta: a equipe tem uma etapa a mais', () => {
+  const STAFF =
+    'Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe. Peça pelo e-mail de contato.';
+
+  it('a frase pedida está na política (retenção e direitos) e nos termos', () => {
+    expect(privacyOn().split(STAFF).length - 1).toBeGreaterThanOrEqual(1);
+    expect(privacyOn()).toContain(
+      'Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe.',
+    );
+    expect(terms()).toContain(STAFF);
+  });
+
+  it('nenhuma frase diz que a exclusão é imediata para todos', () => {
+    // Nos textos das páginas nada diz que a exclusão é imediata ou "na hora": só o prazo de resposta cita isso,
+    // e ele já traz a exceção da equipe.
+    for (const text of [privacyOn().replace(legalConfig.requestDeadline, ''), terms()]) {
+      expect(text).not.toMatch(/\bna hora\b|imediat/i);
+    }
+    // O prazo de resposta cita a exceção da equipe ao falar da exclusão "na hora".
+    expect(legalConfig.requestDeadline).toContain(
+      'as contas da equipe do clube têm uma etapa a mais para a exclusão',
+    );
+    expect(legalConfig.requestDeadline).toContain(
+      'Respondemos aos pedidos em até 15 dias, contados do recebimento.',
+    );
+  });
+});
+
+describe('excluir comentário: política, termos e retenção dizem a mesma coisa', () => {
+  const VISIBLE =
+    'Você pode excluir seus comentários que estejam visíveis ou em análise, quando quiser';
+  const MODERATED =
+    'Comentários removidos pela moderação não aparecem mais no site, e o texto deles só deixa de existir quando a conta é excluída; se quiser que um deles seja apagado antes, peça pelo e-mail de contato.';
+
+  it('política e termos usam as duas frases', () => {
+    for (const text of [privacyOn(), terms()]) {
+      expect(text).toContain(VISIBLE);
+      expect(text).toContain(MODERATED);
+    }
+  });
+
+  it('a retenção diz o mesmo dos comentários removidos pela moderação', () => {
+    const item = (legalConfig.retention as readonly string[])[1]!;
+    expect(item).toContain(
+      'Comentários removidos pela moderação ficam guardados, sem exibição pública, até a exclusão da conta de quem os escreveu ou até você pedir, pelo e-mail de contato, que o texto seja apagado antes.',
+    );
+  });
+
+  it('só promete o que o botão faz: no próprio comentário (Minha conta não tem exclusão de comentário)', () => {
+    expect(privacyOn()).not.toMatch(/quando quiser, no próprio comentário ou em Minha conta/);
+    expect(terms()).not.toMatch(/quando quiser, no próprio comentário ou em Minha conta/);
+    expect(terms()).not.toContain('quando quiser, com "Excluir meu comentário"');
+  });
+
+  it('avisa que as respostas de outras pessoas somem da tela mas ficam guardadas', () => {
+    expect(privacyOn()).toContain(
+      'continuam guardadas até a exclusão da conta de quem as escreveu',
+    );
+  });
+});
+
+describe('finalidades: só o que o site pratica', () => {
+  const purposes = () =>
+    buildPrivacy(legalConfig, ON)
+      .sections.find((section) => section.id === 'finalidades')!
+      .blocks.flatMap((b) => (b.type === 'ul' ? [...b.items] : []));
+
+  it('o e-mail serve para o código e para responder aos pedidos', () => {
+    expect(purposes()[0]).toContain(
+      'enviar o código de acesso por e-mail e responder aos pedidos que você nos fizer',
+    );
+    expect(privacyOn()).toContain(
+      'Usamos para enviar o código de acesso por e-mail e responder aos pedidos que você nos fizer.',
+    );
+    expect(privacyOn()).not.toContain('falarmos com você sobre a sua conta');
+  });
+
+  it('nenhuma finalidade ou texto fala de e-mail de novas sessões, analytics, publicidade ou notificações', () => {
+    const text = `${privacyOn()}\n${terms()}`.toLowerCase();
+    for (const word of [
+      'novas sessões',
+      'newsletter',
+      'inscritos',
+      'push',
+      'notificaç',
+      'marketing',
+      'perfil de consumo',
+    ]) {
+      expect(text, word).not.toContain(word);
+    }
+    // Só a negação existe: o site NÃO usa análise de audiência nem publicidade.
+    expect(text).toContain('não usa ferramentas de análise de audiência nem de publicidade');
+    expect(purposes().join(' ').toLowerCase()).not.toMatch(
+      /an[áa]lise de audi|publicidade|novas sess/,
+    );
+  });
+});
+
+describe('idade mínima vem de legal-config', () => {
+  const SENTENCE = (age: number) =>
+    `O clube é destinado a pessoas com ${age} anos ou mais. O site não verifica a idade de quem cria a conta. Se soubermos que alguém abaixo dessa idade criou uma conta, podemos excluí-la.`;
+
+  it('política e termos usam a frase pedida com a idade da configuração', () => {
+    expect(privacyOn()).toContain(SENTENCE(legalConfig.minimumAge));
+    expect(terms()).toContain(SENTENCE(legalConfig.minimumAge));
+  });
+
+  it('mudar a idade na configuração muda os dois textos (o número não está escrito no texto)', () => {
+    const other: LegalData = { ...legalConfig, minimumAge: 18 };
+    expect(allText(buildPrivacy(other, ON))).toContain(SENTENCE(18));
+    expect(allText(buildTerms(other))).toContain(SENTENCE(18));
+    expect(allText(buildPrivacy(other, ON))).not.toContain('16 anos');
+    expect(allText(buildTerms(other))).not.toContain('16 anos');
+  });
+
+  it('os arquivos de conteúdo não têm a idade escrita à mão', () => {
+    for (const file of ['privacy.ts', 'terms.ts']) {
+      const source = readFileSync(join(process.cwd(), 'src/content/legal', file), 'utf8');
+      expect(source, file).not.toMatch(/\b1[68] anos\b/);
+    }
+  });
+});
+
+describe('regiões', () => {
+  it('Supabase e Vercel: as frases pedidas, a partir de legal-config', () => {
+    const text = privacyOn();
+    expect(text).toContain(
+      'O banco de dados e a autenticação (Supabase) ficam na região de São Paulo (Brasil).',
+    );
+    expect(text).toContain(
+      'As funções do site (Vercel) rodam na região de São Paulo (gru1, Brasil), conforme a configuração do projeto no provedor.',
+    );
+    const other: LegalData = {
+      ...legalConfig,
+      regions: { ...legalConfig.regions, supabase: 'Virgínia (EUA)' },
+    };
+    expect(allText(buildPrivacy(other, ON))).toContain('ficam na região de Virgínia (EUA)');
+  });
+
+  it('o Resend tem região em legal-config (não ficou A DEFINIR)', () => {
+    expect(legalConfig.regions.resend).not.toBe(A_DEFINIR);
+    expect(pendingFields(legalConfig)).not.toContain('regions.resend');
+  });
+
+  it('continua proibido afirmar que os dados "não saem do Brasil"', () => {
+    for (const text of [privacyOn(), terms(), JSON.stringify(legalConfig)]) {
+      expect(text.toLowerCase()).not.toMatch(
+        /n[ãa]o saem do brasil|n[ãa]o h[áa] transfer[êe]ncia internacional/,
+      );
+    }
+  });
+});
+
+describe('o que ficou como estava (propostas a validar)', () => {
+  it('base legal, garantia contratual dos provedores e prazo de 15 dias continuam e seguem como proposta', () => {
+    expect((legalConfig.legalBases as readonly string[]).length).toBe(4);
+    expect(legalConfig.internationalTransfer).toContain(
+      'buscamos as garantias previstas na LGPD por meio dos contratos de tratamento de dados e dos termos desses provedores',
+    );
+    expect(legalConfig.requestDeadline).toContain('Respondemos aos pedidos em até 15 dias');
+    expect(legalConfig.legalReviewed).toBe(false);
   });
 });

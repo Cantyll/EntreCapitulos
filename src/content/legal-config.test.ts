@@ -3,7 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { A_DEFINIR, isLegalDraft, legalConfig, pendingFields, pendingItems } from './legal-config';
+import {
+  A_DEFINIR,
+  PROPOSAL_FIELDS,
+  isLegalDraft,
+  legalConfig,
+  pendingFields,
+  pendingItems,
+} from './legal-config';
 
 describe('legalConfig', () => {
   it('tem os campos informados pela dona do projeto', () => {
@@ -41,6 +48,14 @@ describe('legalConfig', () => {
         new RegExp(`// PROPOSTA: validar com advogado\\n\\s+${field}:`),
       );
     }
+  });
+
+  it('PROPOSAL_FIELDS lista exatamente os campos marcados como proposta no arquivo', () => {
+    const source = readFileSync(join(process.cwd(), 'src/content/legal-config.ts'), 'utf8');
+    expect(source.match(/^\s*\/\/ PROPOSTA: validar com advogado$/gm)).toHaveLength(
+      PROPOSAL_FIELDS.length,
+    );
+    expect(PROPOSAL_FIELDS.length).toBe(6);
   });
 
   it('as propostas não afirmam que os dados ficam só no Brasil', () => {

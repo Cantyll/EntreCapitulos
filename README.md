@@ -318,6 +318,16 @@ Use o e-mail de contato de `src/content/legal-config.ts` (campo `privacyContactE
 
    Confira que `usuarios` volta a `0` repetindo a consulta do passo 5. Nas páginas das sessões, os comentários apagados podem continuar aparecendo por **até 5 minutos** (o cache público). Se precisar sumir na hora, use **Redeploy** na Vercel.
 
+   **Pedido para apagar o texto de um comentário removido pela moderação** (o botão "Excluir meu comentário" não existe para ele): confirme o autor (passo 1), ache o comentário e troque o texto pelo aviso padrão, no **SQL Editor** (`removed` continua como está, e nada aparece no site):
+
+   ```sql
+   update public.comments
+   set body = '[comentário removido pelo autor]'
+   where id = 'ID-DO-COMENTARIO' and author_id = 'ID' and status = 'removed';
+   ```
+
+   Confira que voltou **uma** linha. O texto original deixa de existir no banco (as cópias de segurança do provedor podem ainda tê-lo por um tempo, ver `retention`).
+
 7. **Responda por e-mail** dizendo o que foi feito. Se a exclusão for feita pelo SQL, as cópias de segurança do Supabase podem reter os dados por um período: **o que dizer sobre isso depende do plano contratado e de análise jurídica (A DEFINIR)**; não afirme prazos que você não conferiu.
 
 ## Cabeçalhos de segurança e CSP
@@ -371,6 +381,10 @@ Com `true`, o site manda `Content-Security-Policy-Report-Only` em vez de `Conten
 **O que os textos mostram sozinhos:** o texto de privacidade inclui o Google e o Cloudflare Turnstile **só se estiverem ligados** (`NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED` e `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, que são lidas no build). Os combinados da comunidade nos termos são os mesmos da página "Sobre o clube" (`src/content/sobre.ts`). A lista de cookies está em `src/content/legal/cookies.ts` e um teste a compara com a tabela "Cookies do site" do CLAUDE.md.
 
 Nunca escreva nos textos que os dados "não saem do Brasil" nem que "não há transferência internacional": os serviços são de empresas internacionais, e a rede de entrega, os registros e o suporte podem envolver outros países. Os textos descrevem a região onde o banco e as funções rodam e deixam a análise para o profissional.
+
+### Documento para o advogado (`docs/revisao-juridica.md`)
+
+Para facilitar a revisão, o repositório tem `docs/revisao-juridica.md`: resumo do serviço, mapa de dados (dado, onde é guardado, finalidade, base legal e retenção propostas, quem vê), provedores e o papel de cada um, cookies e armazenamento local, o texto integral de `/privacidade` e `/termos`, a lista de campos preenchidos como proposta, as funcionalidades futuras que mudam a política e as perguntas para o advogado. Cada fato vem marcado como "do código", "informado pelo dono do site" ou "não verificado". **É um documento temporário: depois da revisão, pode ser apagado** (apague só o arquivo; os testes seguem passando). Ele é **gerado** a partir de `src/content/` (não edite à mão); se os textos ou o `legal-config.ts` mudarem, um teste do CI avisa que ele ficou desatualizado, e a regeneração (`UPDATE_LEGAL_REVIEW=1 npx vitest run src/content/legal/review.test.ts`) é feita pelo desenvolvimento.
 
 ## Proteção contra abuso
 
