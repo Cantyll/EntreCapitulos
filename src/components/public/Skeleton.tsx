@@ -111,3 +111,18 @@ export function ListSkeleton() {
     </Frame>
   );
 }
+
+/** A discussão da sessão enquanto carrega (o relato já está na tela). */
+export function DiscussionSkeleton() {
+  return (
+    <div aria-busy="true" className={styles.article}>
+      <p className={styles.sr} role="status">
+        Carregando a discussão…
+      </p>
+      <Bar w="30%" h={32} />
+      <Bar h={110} />
+      <Bar h={56} />
+      <Bar h={56} />
+    </div>
+  );
+}

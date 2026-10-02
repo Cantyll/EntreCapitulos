@@ -19,7 +19,7 @@ export const BOOK_COLUMNS =
   'id, slug, title, author, synopsis, genres, total_chapters, current_chapter, status, rating, cover_path, started_at, finished_at';
 export const SESSION_LIST_COLUMNS =
   'id, book_id, number, chapter_from, chapter_to, title, excerpt, rating, published_at, read_minutes, visibility';
-export const SESSION_DETAIL_COLUMNS = `${SESSION_LIST_COLUMNS}, body, session_notes(id, kind, text, reference, position), session_questions(id, text, position)`;
+export const SESSION_DETAIL_COLUMNS = `${SESSION_LIST_COLUMNS}, comments_open, body, session_notes(id, kind, text, reference, position), session_questions(id, text, position)`;
 
 type BookColumnKey =
   | 'id'
@@ -73,7 +73,7 @@ type SessionListRow = Pick<
   | 'visibility'
 >;
 
-export function toSessionSummary(row: SessionListRow): SessionSummary {
+export function toSessionSummary(row: SessionListRow, commentCount = 0): SessionSummary {
   return {
     id: row.id,
     bookId: row.book_id,
@@ -86,11 +86,12 @@ export function toSessionSummary(row: SessionListRow): SessionSummary {
     publishedAt: row.published_at,
     readMinutes: row.read_minutes,
     membersOnly: row.visibility === 'members',
+    commentCount,
   };
 }
 
 type DetailRow = SessionListRow &
-  Pick<SessionRow, 'body'> & {
+  Pick<SessionRow, 'body' | 'comments_open'> & {
     session_notes: { id: string; kind: string; text: string; reference: string | null; position: number }[] | null;
     session_questions: { id: string; text: string; position: number }[] | null;
   };
@@ -107,5 +108,11 @@ export function toSessionDetail(row: DetailRow): SessionDetail {
   const questions: SessionQuestionView[] = [...(row.session_questions ?? [])]
     .sort(byPosition)
     .map((q) => ({ id: q.id, text: q.text }));
-  return { ...toSessionSummary(row), body: body.ok ? body.doc : null, notes, questions };
+  return {
+    ...toSessionSummary(row),
+    commentsOpen: row.comments_open,
+    body: body.ok ? body.doc : null,
+    notes,
+    questions,
+  };
 }

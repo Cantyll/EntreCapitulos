@@ -11,7 +11,7 @@ import {
   toSessionDetail,
   toSessionSummary,
 } from './mappers';
-import { BOOKS_TAG, SESSIONS_TAG, sessionTag } from './tags';
+import { BOOKS_TAG, COMMENT_COUNTS_TAG, SESSIONS_TAG, sessionTag } from './tags';
 import type { MarginNote, PublicBook, SessionDetail, SessionSummary } from './types';
 
 /*
@@ -50,11 +50,39 @@ export const getPublicSessions = unstable_cache(
       .eq('visibility', 'public')
       .order('number', { ascending: false });
     if (error) throw error;
-    return (data ?? []).map(toSessionSummary);
+    return (data ?? []).map((row) => toSessionSummary(row));
   },
   ['public:sessions'],
   { tags: [SESSIONS_TAG], revalidate: SAFETY_NET_SECONDS },
 );
+
+/**
+ * Comentários APROVADOS por sessão pública (id da sessão → quantidade). Tag própria (`comment-counts`),
+ * separada das sessões: um comentário novo não precisa expirar a lista de sessões nem os livros.
+ * O filtro `status = approved` é explícito, porque a equipe lê todos os estados (o cliente aqui é
+ * anônimo, mas a regra não pode depender disso).
+ */
+export const getPublicCommentCounts = unstable_cache(
+  async (): Promise<Record<string, number>> => {
+    const { data, error } = await createPublicClient()
+      .from('reading_sessions')
+      .select('id, comments(count)')
+      .eq('status', 'published')
+      .eq('visibility', 'public')
+      .eq('comments.status', 'approved');
+    if (error) throw error;
+    const counts: Record<string, number> = {};
+    for (const row of data ?? []) counts[row.id] = embeddedCount(row.comments);
+    return counts;
+  },
+  ['public:comment-counts'],
+  { tags: [COMMENT_COUNTS_TAG], revalidate: SAFETY_NET_SECONDS },
+);
+
+/** O `count` de um embed `comments(count)` do PostgREST. */
+export function embeddedCount(embed: unknown): number {
+  return (embed as { count: number }[] | null)?.[0]?.count ?? 0;
+}
 
 /** Corpo, trechos e perguntas de UMA sessão pública. `null` se ela não existe para o visitante. */
 export function getPublicSessionDetail(id: string): Promise<SessionDetail | null> {

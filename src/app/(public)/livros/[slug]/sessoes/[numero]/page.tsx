@@ -1,13 +1,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
+import { Discussion } from '@/components/comments/Discussion';
 import { BookCover } from '@/components/livros/BookCover';
 import { ChapterStrip } from '@/components/public/ChapterStrip';
 import { Chip } from '@/components/public/Chip';
 import { CoverableBlock } from '@/components/public/Coverable';
 import { chaptersText } from '@/components/public/SessionCard';
 import { ProgressPrompt } from '@/components/public/ProgressPrompt';
+import { DiscussionSkeleton } from '@/components/public/Skeleton';
 import { Stars } from '@/components/public/Stars';
 import { Avatar } from '@/components/ui/Avatar';
 import { ButtonLink } from '@/components/ui/Button';
@@ -16,6 +19,7 @@ import { Container } from '@/components/ui/Container';
 import { Icon } from '@/components/ui/Icon';
 import { signInPath } from '@/lib/auth/safe-next';
 import { buildChapterStrip, nextChapterRange } from '@/lib/chapters';
+import { parseCommentOrder } from '@/lib/comments';
 import { loadSessionPage } from '@/lib/public/loaders';
 import { parseSessionNumber } from '@/lib/public/params';
 import { bookHref, sessionHref } from '@/lib/routes';
@@ -47,8 +51,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function SessionPage({ params }: Props) {
+export default async function SessionPage({ params, searchParams }: Props) {
   const { slug, numero } = await params;
+  const { ordem } = await searchParams;
   const number = parseSessionNumber(numero);
   if (number === null) notFound();
 
@@ -66,7 +71,8 @@ export default async function SessionPage({ params }: Props) {
     );
   }
 
-  const { book, session, sessions, progress } = data;
+  const { book, session, sessions, progress, viewer } = data;
+  const commentCount = sessions.find((s) => s.id === session.id)?.commentCount ?? 0;
   const known = progress !== null;
   const shown = effectiveProgress(progress);
   const extrasCovered = isExtrasCovered(shown, session.chapterTo);
@@ -124,6 +130,11 @@ export default async function SessionPage({ params }: Props) {
               <div className={styles.meta}>
                 {session.publishedAt && <span>{formatFullDate(session.publishedAt)}</span>}
                 {session.readMinutes ? <span>{session.readMinutes} min de leitura</span> : null}
+                {commentCount > 0 && (
+                  <a href="#discussao">
+                    {commentCount} {commentCount === 1 ? 'comentário' : 'comentários'}
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -251,8 +262,22 @@ export default async function SessionPage({ params }: Props) {
             )}
           </nav>
 
-          {/* Ponto de ancoragem da discussão (etapa 6): fica vazio até lá. */}
-          <div id="discussao" />
+          {/* A discussão carrega em paralelo ao relato: o texto aparece primeiro. */}
+          <Suspense fallback={<DiscussionSkeleton />}>
+            <Discussion
+              sessionId={session.id}
+              bookSlug={book.slug}
+              sessionNumber={session.number}
+              membersOnly={session.membersOnly}
+              commentsOpen={session.commentsOpen}
+              chapterFrom={session.chapterFrom}
+              chapterTo={session.chapterTo}
+              totalChapters={book.totalChapters}
+              progress={progress}
+              viewer={viewer}
+              order={parseCommentOrder(ordem)}
+            />
+          </Suspense>
         </article>
 
         <aside className={styles.side} aria-label="Sobre o livro">

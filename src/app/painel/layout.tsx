@@ -7,7 +7,8 @@ import { AdminTopbar } from '@/components/admin/AdminTopbar';
 import { SkipLink } from '@/components/ui/SkipLink';
 import { requireRole } from '@/lib/auth/session';
 import { SITE_NAME } from '@/lib/brand';
-import { pendingCommentsCount } from '@/lib/sample-data';
+import { getPendingCount } from '@/lib/comments/admin-queries';
+import { createClient } from '@/lib/supabase/server';
 
 import styles from './layout.module.css';
 
@@ -20,6 +21,10 @@ export const metadata: Metadata = {
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   // Layouts não rodam de novo a cada navegação interna: cada página também confere o papel.
   const user = await requireRole('staff');
+  // O contador de pendentes (barra lateral, barra inferior e sino): um head count só para a equipe. O
+  // layout não roda de novo a cada navegação interna; as actions de moderação o refazem com
+  // `revalidatePath('/painel', 'layout')`. Falha na contagem não derruba o painel.
+  const pendingCommentsCount = await getPendingCount(await createClient());
 
   return (
     <>
