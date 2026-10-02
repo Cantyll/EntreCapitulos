@@ -60,6 +60,12 @@ export function SessionCard({
               {session.readMinutes} min de leitura
             </span>
           ) : null}
+          {session.commentCount > 0 && (
+            <span>
+              <Icon name="chat" size="sm" />
+              {session.commentCount} {session.commentCount === 1 ? 'comentário' : 'comentários'}
+            </span>
+          )}
         </div>
       </div>
     </article>

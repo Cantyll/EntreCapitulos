@@ -66,10 +66,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 });
 
 /**
- * A pessoa já escolheu o nome público? A coluna chega com a migration
- * `profile_name_confirmation`. Enquanto a migration não foi aplicada na nuvem (por exemplo numa
- * pré-visualização), o Postgres responde 42703 (coluna inexistente) e tratamos como confirmado,
- * para o login funcionar. Nenhum outro erro é mascarado.
+ * A pessoa já escolheu o nome público? A coluna `display_name_confirmed_at` já existe na nuvem, então
+ * qualquer erro de leitura (inclusive coluna inexistente, 42703) falha de forma visível, sem reserva.
  */
 export async function isNameConfirmed(
   userId: string,
@@ -82,13 +80,7 @@ export async function isNameConfirmed(
     .eq('id', userId)
     .maybeSingle();
 
-  if (error) {
-    if (error.code === '42703') {
-      console.warn('profiles.display_name_confirmed_at ausente (42703): migration pendente');
-      return true;
-    }
-    throw new Error(`profiles_read_failed:${error.code}`);
-  }
+  if (error) throw new Error(`profiles_read_failed:${error.code}`);
   return data?.display_name_confirmed_at != null;
 }
 

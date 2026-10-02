@@ -71,6 +71,7 @@ async function BookContent({ params }: Props) {
   const read = book.status === 'finished' ? book.totalChapters : book.currentChapter;
   const percent = book.totalChapters > 0 ? Math.round((read / book.totalChapters) * 100) : 0;
   const last = sessions[0];
+  const commentTotal = sessions.reduce((sum, s) => sum + s.commentCount, 0);
 
   return (
     <Container>
@@ -169,6 +170,12 @@ async function BookContent({ params }: Props) {
                   {sessions.length === 1 ? 'sessão' : 'sessões'}
                 </li>
               )}
+              {commentTotal > 0 && (
+                <li>
+                  <b>{commentTotal}</b>
+                  {commentTotal === 1 ? 'comentário' : 'comentários'}
+                </li>
+              )}
             </ul>
           )}
 
@@ -223,6 +230,11 @@ async function BookContent({ params }: Props) {
                           : `capítulos ${s.chapterFrom} a ${s.chapterTo}`}
                       </small>
                       <h3>{s.title}</h3>
+                      {s.commentCount > 0 && (
+                        <small>
+                          {s.commentCount} {s.commentCount === 1 ? 'comentário' : 'comentários'}
+                        </small>
+                      )}
                     </Link>
                   </li>
                 ))}

@@ -21,18 +21,22 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 export default async function ShelfPage({ searchParams }: Props) {
-  const [params, { finished, queued, counts }] = await Promise.all([searchParams, loadShelf()]);
+  const [params, { finished, queued, counts, commentCounts }] = await Promise.all([
+    searchParams,
+    loadShelf(),
+  ]);
   const tab = parseShelfTab(params.aba);
 
   const sessionTotal = finished.reduce((sum, book) => sum + (counts.get(book.id) ?? 0), 0);
-  const summary = [
-    finished.length > 0
-      ? `${plural(finished.length, 'livro terminado', 'livros terminados')}`
-      : null,
+  const commentTotal = finished.reduce((sum, book) => sum + (commentCounts.get(book.id) ?? 0), 0);
+  const parts = [
+    finished.length > 0 ? plural(finished.length, 'livro terminado', 'livros terminados') : null,
     sessionTotal > 0 ? plural(sessionTotal, 'sessão', 'sessões') : null,
-  ]
-    .filter(Boolean)
-    .join(' e ');
+    commentTotal > 0 ? plural(commentTotal, 'comentário', 'comentários') : null,
+  ].filter((part): part is string => part !== null);
+  // "a", "a e b", "a, b e c"
+  const summary =
+    parts.length > 1 ? `${parts.slice(0, -1).join(', ')} e ${parts.at(-1)}` : (parts[0] ?? '');
 
   return (
     <Container>
@@ -65,6 +69,7 @@ export default async function ShelfPage({ searchParams }: Props) {
           <ul className={styles.shelf}>
             {finished.map((book) => {
               const sessions = counts.get(book.id) ?? 0;
+              const comments = commentCounts.get(book.id) ?? 0;
               return (
                 <li key={book.id} className={styles.tile}>
                   <Link href={bookHref(book.slug)}>
@@ -94,6 +99,7 @@ export default async function ShelfPage({ searchParams }: Props) {
                       <>
                         {book.finishedAt && <br />}
                         {plural(sessions, 'sessão', 'sessões')}
+                        {comments > 0 && `, ${plural(comments, 'comentário', 'comentários')}`}
                       </>
                     )}
                   </div>
