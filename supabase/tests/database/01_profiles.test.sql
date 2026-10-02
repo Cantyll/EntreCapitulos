@@ -57,14 +57,14 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000b1", "role": "authenticated"}', true);
 
-select lives_ok($$update public.profiles set display_name = 'Maria', avatar_url = 'https://x.test/m.png'
-  where id = '00000000-0000-4000-8000-0000000000b1'$$, 'member updates own display_name and avatar_url');
+select lives_ok($$update public.profiles set display_name = 'Maria'
+  where id = '00000000-0000-4000-8000-0000000000b1'$$, 'member updates own display_name');
 select throws_ok($$update public.profiles set role = 'admin' where id = '00000000-0000-4000-8000-0000000000b1'$$,
   '42501', null, 'member cannot promote self');
 select throws_ok($$update public.profiles set approved_comment_count = 99 where id = '00000000-0000-4000-8000-0000000000b1'$$,
   '42501', null, 'member cannot change approved_comment_count');
 select throws_ok($$update public.profiles set avatar_url = 'javascript:alert(1)' where id = '00000000-0000-4000-8000-0000000000b1'$$,
-  '23514', null, 'avatar_url must be https');
+  '42501', null, 'avatar_url is read-only for clients (the https rule is enforced by the column check and handle_new_user)');
 select throws_ok($$insert into public.profiles (id, display_name) values (gen_random_uuid(), 'x')$$,
   '42501', null, 'no client insert on profiles');
 select throws_ok($$delete from public.profiles where id = '00000000-0000-4000-8000-0000000000b1'$$,

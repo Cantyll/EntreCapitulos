@@ -8,6 +8,8 @@ delete from public.comments;
 delete from public.reading_sessions;
 delete from public.books;
 delete from auth.users;
+-- These tests insert many comments as one member in a single transaction: the rate limit has its own file.
+alter table public.comments disable trigger comments_rate_limit;
 
 insert into auth.users (id, email) values
   ('00000000-0000-4000-8000-0000000000a1', 'admin@t.test'),

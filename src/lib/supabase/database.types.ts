@@ -371,6 +371,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      delete_my_account: { Args: Record<PropertyKey, never>; Returns: undefined };
       derive_avatar_url: { Args: { meta: Json }; Returns: string };
       derive_display_name: { Args: { meta: Json }; Returns: string };
       finish_book: {
@@ -431,6 +432,7 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      retract_comment: { Args: { p_comment_id: string }; Returns: string };
       start_book: {
         Args: { p_book_id: string };
         Returns: {
