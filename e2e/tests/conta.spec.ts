@@ -5,7 +5,12 @@ import { createAdmin, createUser } from '../support/users';
 import { claimPoolSlot } from '../support/world';
 
 /** Comentário inserido direto no banco (aprovado), numa sessão do pool: só prepara dados para o teste. */
-function insertComment(options: { slug: string; authorId: string; body: string; parentId?: string }): string {
+function insertComment(options: {
+  slug: string;
+  authorId: string;
+  body: string;
+  parentId?: string;
+}): string {
   return sql(
     `insert into public.comments (session_id, author_id, parent_id, body, read_up_to, status)
      select s.id, ${lit(options.authorId)}, ${options.parentId ? lit(options.parentId) : 'null'}, ${lit(options.body)}, 0, 'approved'
@@ -24,7 +29,9 @@ test.describe('minha conta', () => {
     await field.fill('Nome Novo');
     await page.getByRole('button', { name: 'Salvar nome' }).click();
     await expect(page.getByRole('button', { name: 'Menu da conta de Nome Novo' })).toBeVisible();
-    expect(sql(`select display_name from public.profiles where id = ${lit(user.id)};`)).toBe('Nome Novo');
+    expect(sql(`select display_name from public.profiles where id = ${lit(user.id)};`)).toBe(
+      'Nome Novo',
+    );
   });
 
   test('baixar meus dados entrega um JSON só com dados da própria pessoa', async ({ signedIn }) => {
@@ -69,8 +76,15 @@ test.describe('minha conta', () => {
     const { page, user } = await signedIn({ name: 'Quem Sai' });
     const other = await createUser({ name: 'Quem Fica' });
     const parent = insertComment({ slug, authorId: user.id, body: 'Comentário de quem vai sair' });
-    const reply = insertComment({ slug, authorId: other.id, parentId: parent, body: 'Resposta de quem fica' });
-    sql(`insert into public.reading_progress (user_id, book_id, chapter) select ${lit(user.id)}, id, 2 from public.books where slug = ${lit(slug)};`);
+    const reply = insertComment({
+      slug,
+      authorId: other.id,
+      parentId: parent,
+      body: 'Resposta de quem fica',
+    });
+    sql(
+      `insert into public.reading_progress (user_id, book_id, chapter) select ${lit(user.id)}, id, 2 from public.books where slug = ${lit(slug)};`,
+    );
 
     await page.goto('/conta');
     const field = page.getByLabel(/Para confirmar, digite/);
@@ -84,7 +98,9 @@ test.describe('minha conta', () => {
     expect(sql(`select count(*) from auth.users where id = ${lit(user.id)};`)).toBe('0');
     expect(sql(`select count(*) from public.profiles where id = ${lit(user.id)};`)).toBe('0');
     expect(sql(`select count(*) from public.comments where id = ${lit(parent)};`)).toBe('0');
-    expect(sql(`select count(*) from public.reading_progress where user_id = ${lit(user.id)};`)).toBe('0');
+    expect(
+      sql(`select count(*) from public.reading_progress where user_id = ${lit(user.id)};`),
+    ).toBe('0');
     // A resposta de outra pessoa ao comentário apagado vai junto (decisão conhecida); a pessoa fica.
     expect(sql(`select count(*) from public.comments where id = ${lit(reply)};`)).toBe('0');
     expect(sql(`select count(*) from public.profiles where id = ${lit(other.id)};`)).toBe('1');
@@ -94,11 +110,15 @@ test.describe('minha conta', () => {
     await expect(page).toHaveURL(/\/entrar/);
   });
 
-  test('conta da equipe não tem o formulário de exclusão e explica a etapa a mais', async ({ openAs }) => {
+  test('conta da equipe não tem o formulário de exclusão e explica a etapa a mais', async ({
+    openAs,
+  }) => {
     const { page } = await openAs(await createAdmin());
     await page.goto('/conta');
     await expect(page.getByText(/contas da equipe não podem ser excluídas por aqui/)).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Excluir minha conta para sempre' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Excluir minha conta para sempre' })).toHaveCount(
+      0,
+    );
   });
 
   test('se o papel de equipe chegar com a tela aberta, o servidor recusa a exclusão e nada é apagado', async ({
@@ -112,7 +132,11 @@ test.describe('minha conta', () => {
     sql(`update public.profiles set role = 'moderator' where id = ${lit(user.id)};`);
     await field.fill('EXCLUIR');
     await page.getByRole('button', { name: 'Excluir minha conta para sempre' }).click();
-    await expect(page.getByRole('alert').filter({ hasText: 'Contas da equipe não podem ser excluídas por aqui' })).toBeVisible();
+    await expect(
+      page
+        .getByRole('alert')
+        .filter({ hasText: 'Contas da equipe não podem ser excluídas por aqui' }),
+    ).toBeVisible();
     expect(sql(`select count(*) from auth.users where id = ${lit(user.id)};`)).toBe('1');
   });
 });

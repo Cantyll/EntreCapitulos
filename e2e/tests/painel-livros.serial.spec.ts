@@ -6,7 +6,10 @@ const DEFAULT_ROSE_2 = '#b04c69';
 
 /** Valor do token no `<html>` da página atual (o tema vem do servidor, em `style`). */
 const token = (page: import('@playwright/test').Page, name: string) =>
-  page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim().toLowerCase(), name);
+  page.evaluate(
+    (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim().toLowerCase(),
+    name,
+  );
 
 test.describe.serial('painel: livros, capa e tema', () => {
   let admin: TestUser;
@@ -23,7 +26,9 @@ test.describe.serial('painel: livros, capa e tema', () => {
     await page.getByRole('button', { name: 'Marcar livro como terminado' }).click();
     await page.getByLabel('Nota do livro').selectOption({ label: '4,0 de 5' });
     await page.getByRole('button', { name: 'Marcar como terminado' }).click();
-    await expect(page.getByRole('region', { name: 'Leitura atual' })).not.toContainText('O Livro de Azrael');
+    await expect(page.getByRole('region', { name: 'Leitura atual' })).not.toContainText(
+      'O Livro de Azrael',
+    );
 
     await page.goto('/painel/livros/novo');
     await page.getByLabel('Título', { exact: true }).fill(title);
@@ -31,7 +36,9 @@ test.describe.serial('painel: livros, capa e tema', () => {
     await page.getByLabel('Sinopse').fill('Sinopse de teste do painel.');
     await page.getByLabel('Total de capítulos').fill('12');
     await page.getByLabel('Estado inicial').selectOption('queued');
-    await page.getByLabel('Capa').setInputFiles({ name: 'capa.png', mimeType: 'image/png', buffer: await coverPng() });
+    await page
+      .getByLabel('Capa')
+      .setInputFiles({ name: 'capa.png', mimeType: 'image/png', buffer: await coverPng() });
     await expect(page.getByAltText('Prévia da capa escolhida')).toBeVisible();
     await page.getByRole('button', { name: 'Criar livro' }).click();
     // Só segue depois de o servidor criar o livro (e enviar a capa): a tela sai do formulário.
@@ -42,7 +49,10 @@ test.describe.serial('painel: livros, capa e tema', () => {
     await expect(page.getByRole('region', { name: 'Leitura atual' })).toContainText(title);
   });
 
-  test('o tema da capa vale no site e no painel e some ao desligar o tema automático', async ({ openAs, browser }) => {
+  test('o tema da capa vale no site e no painel e some ao desligar o tema automático', async ({
+    openAs,
+    browser,
+  }) => {
     const { page } = await openAs(admin);
     const visitor = await (await browser.newContext()).newPage();
 
@@ -52,7 +62,10 @@ test.describe.serial('painel: livros, capa e tema', () => {
     expect(await token(page, '--rose-2')).not.toBe(DEFAULT_ROSE_2);
 
     await page.getByRole('switch', { name: 'Tema automático pela capa' }).click();
-    await expect(page.getByRole('switch', { name: 'Tema automático pela capa' })).toHaveAttribute('aria-checked', 'false');
+    await expect(page.getByRole('switch', { name: 'Tema automático pela capa' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
 
     await visitor.goto('/');
     await expect.poll(() => token(visitor, '--rose-2')).toBe(DEFAULT_ROSE_2);

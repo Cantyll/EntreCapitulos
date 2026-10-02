@@ -6,9 +6,15 @@ import { expect, type Locator } from '@playwright/test';
  */
 export async function untilHydrated(locator: Locator): Promise<void> {
   await expect
-    .poll(() => locator.evaluate((element) => Object.keys(element).some((key) => key.startsWith('__reactProps$'))), {
-      message: 'a página ainda não hidratou',
-    })
+    .poll(
+      () =>
+        locator.evaluate((element) =>
+          Object.keys(element).some((key) => key.startsWith('__reactProps$')),
+        ),
+      {
+        message: 'a página ainda não hidratou',
+      },
+    )
     .toBe(true);
 }
 
@@ -17,7 +23,11 @@ export async function untilHydrated(locator: Locator): Promise<void> {
  * depois de uma ação anterior (o servidor devolve a lista nova), o texto digitado pode se perder: o
  * `toPass` repete o preenchimento até o estado do React acompanhar. Não cria nada por conta própria.
  */
-export async function fillUntilEnabled(field: Locator, value: string, button: Locator): Promise<void> {
+export async function fillUntilEnabled(
+  field: Locator,
+  value: string,
+  button: Locator,
+): Promise<void> {
   await expect(async () => {
     await field.fill(value);
     await expect(button).toBeEnabled({ timeout: 1_500 });

@@ -48,7 +48,10 @@ test.describe('segurança de transporte e robots', () => {
 
   const nonceOf = (csp: string) => /'nonce-([^']+)'/.exec(csp)?.[1] ?? '';
 
-  test('rotas públicas: cabeçalhos presentes e nonce diferente a cada requisição', async ({ request, guard }) => {
+  test('rotas públicas: cabeçalhos presentes e nonce diferente a cada requisição', async ({
+    request,
+    guard,
+  }) => {
     guard.allowStatus(404);
     for (const path of PUBLIC_ROUTES) {
       const first = await getHeaders(request, path);
@@ -63,7 +66,7 @@ test.describe('segurança de transporte e robots', () => {
 
   test('o navegador não consegue impor a própria CSP nem o próprio nonce', async ({ request }) => {
     const response = await request.get('/', {
-      headers: { 'content-security-policy': "default-src *", 'x-nonce': 'forjado-pelo-navegador' },
+      headers: { 'content-security-policy': 'default-src *', 'x-nonce': 'forjado-pelo-navegador' },
     });
     const csp = response.headers()['content-security-policy'] ?? '';
     expect(csp).not.toContain('forjado-pelo-navegador');
@@ -71,7 +74,9 @@ test.describe('segurança de transporte e robots', () => {
     expect(await response.text()).not.toContain('forjado-pelo-navegador');
   });
 
-  test('rotas de quem entrou: /boas-vindas, /conta e o painel (editor incluso)', async ({ openAs }) => {
+  test('rotas de quem entrou: /boas-vindas, /conta e o painel (editor incluso)', async ({
+    openAs,
+  }) => {
     const newcomer = await createUser({ name: null });
     const { context: memberContext } = await openAs(newcomer);
     for (const path of ['/boas-vindas', '/conta', '/conta/excluida']) {
@@ -81,7 +86,13 @@ test.describe('segurança de transporte e robots', () => {
     }
 
     const { context: adminContext } = await openAs(await createAdmin());
-    for (const path of ['/painel', '/painel/livros', '/painel/sessoes', '/painel/sessoes/nova', '/painel/comentarios']) {
+    for (const path of [
+      '/painel',
+      '/painel/livros',
+      '/painel/sessoes',
+      '/painel/sessoes/nova',
+      '/painel/comentarios',
+    ]) {
       const { headers, response } = await getHeaders(adminContext.request, path);
       expect(response.status(), path).toBeLessThan(400);
       expectSecurityHeaders(headers, path);
@@ -93,7 +104,8 @@ test.describe('segurança de transporte e robots', () => {
     const text = await (await request.get('/robots.txt')).text();
     expect(text).toMatch(/User-Agent: \*/i);
     expect(text).toMatch(/Allow: \//);
-    for (const path of ['/painel', '/conta', '/auth', '/entrar']) expect(text).toContain(`Disallow: ${path}`);
+    for (const path of ['/painel', '/conta', '/auth', '/entrar'])
+      expect(text).toContain(`Disallow: ${path}`);
     expect(text).not.toMatch(/Disallow: \/\s*$/m);
   });
 
@@ -116,13 +128,17 @@ test.describe('páginas legais', () => {
     ['/privacidade', 'Política de Privacidade'],
     ['/termos', 'Termos de Uso'],
   ] as const) {
-    test(`${path} mostra o aviso de rascunho e fica fora dos buscadores @mobile`, async ({ page }) => {
+    test(`${path} mostra o aviso de rascunho e fica fora dos buscadores @mobile`, async ({
+      page,
+    }) => {
       await page.goto(path);
       await expect(page.getByRole('heading', { level: 1, name: new RegExp(title) })).toBeVisible();
       await expect(page.getByText('Rascunho em revisão.')).toBeVisible();
       await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
       // A redação proibida de afirmar (ver CLAUDE.md): os dados não "ficam no Brasil" por definição.
-      await expect(page.getByText(/não saem do Brasil|não há transferência internacional/i)).toHaveCount(0);
+      await expect(
+        page.getByText(/não saem do Brasil|não há transferência internacional/i),
+      ).toHaveCount(0);
     });
   }
 });

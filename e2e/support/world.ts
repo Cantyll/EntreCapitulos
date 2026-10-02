@@ -18,7 +18,7 @@ export const WORLD = {
     closed: { number: 4, from: 10, to: 12, title: 'Comentários fechados' },
   },
   /** Quantidade de livros do "pool": cada teste que comenta pega um livro só dele. */
-  poolSize: 160,
+  poolSize: 80,
 } as const;
 
 export const poolSlug = (slot: number) => `e2e-pool-${slot}`;

@@ -4,12 +4,13 @@ import { lit, sql } from '../support/db';
 import { expect, test } from '../support/fixtures';
 import { untilHydrated } from '../support/hydration';
 import { findPending } from '../support/moderation';
-import { createModerator, createUser } from '../support/users';
+import { createModerator } from '../support/users';
 import { WORLD, claimPoolSlot, sessionPath } from '../support/world';
 
 let counter = 0;
 /** Texto único por comentário, para achar o comentário certo no meio dos dos outros testes. */
-const unique = (label: string) => `${label} ${Date.now().toString(36)}${(counter += 1)}${Math.random().toString(36).slice(2, 6)}`;
+const unique = (label: string) =>
+  `${label} ${Date.now().toString(36)}${(counter += 1)}${Math.random().toString(36).slice(2, 6)}`;
 
 const POSTED = /Comentário publicado\.|Recebemos seu comentário/;
 
@@ -17,15 +18,22 @@ const POSTED = /Comentário publicado\.|Recebemos seu comentário/;
  * Publica e ESPERA a confirmação do servidor. Sem isso o teste seguiria antes de o comentário
  * existir e de o cache da lista expirar, e outra página abriria e guardaria a lista vazia.
  */
-async function post(page: Page, text: string, options: { spoilerUpTo?: number; expectError?: boolean } = {}) {
+async function post(
+  page: Page,
+  text: string,
+  options: { spoilerUpTo?: number; expectError?: boolean } = {},
+) {
   const field = page.getByLabel('Seu comentário');
   await untilHydrated(field);
   await field.fill(text);
   if (options.spoilerUpTo !== undefined) {
-    await page.getByLabel(/Fala de algo depois do capítulo/).selectOption(String(options.spoilerUpTo));
+    await page
+      .getByLabel(/Fala de algo depois do capítulo/)
+      .selectOption(String(options.spoilerUpTo));
   }
   await page.getByRole('button', { name: 'Publicar comentário' }).click();
-  if (!options.expectError) await expect(page.getByRole('status').filter({ hasText: POSTED })).toBeVisible();
+  if (!options.expectError)
+    await expect(page.getByRole('status').filter({ hasText: POSTED })).toBeVisible();
 }
 
 test.describe('comentários', () => {
@@ -91,7 +99,10 @@ test.describe('comentários', () => {
     await expect(visitor.getByText(text)).toBeVisible();
   });
 
-  test('comentário com marca de spoiler aparece coberto e pode ser revelado', async ({ signedIn, page: reader }) => {
+  test('comentário com marca de spoiler aparece coberto e pode ser revelado', async ({
+    signedIn,
+    page: reader,
+  }) => {
     const { sessionPath: path } = claimPoolSlot();
     const text = unique('Spoiler do final');
     const { page: author } = await signedIn({ approved: 3 });
@@ -110,7 +121,7 @@ test.describe('comentários', () => {
     await expect(reader.getByText(text)).toBeVisible();
   });
 
-  test('resposta aparece embaixo do comentário aprovado', async ({ signedIn, openAs }) => {
+  test('resposta aparece embaixo do comentário aprovado', async ({ signedIn }) => {
     const { sessionPath: path } = claimPoolSlot();
     const text = unique('Comentário principal');
     const answer = unique('Resposta ao principal');
@@ -127,11 +138,14 @@ test.describe('comentários', () => {
     await replyField.fill(answer);
     await replier.getByRole('button', { name: 'Responder', exact: true }).click();
     await expect(replier.getByRole('status').filter({ hasText: POSTED })).toBeVisible();
-    await expect(replier.getByRole('list', { name: 'Respostas a Autora Principal' }).getByText(answer)).toBeVisible();
+    await expect(
+      replier.getByRole('list', { name: 'Respostas a Autora Principal' }).getByText(answer),
+    ).toBeVisible();
 
     await author.reload();
-    await expect(author.getByRole('list', { name: 'Respostas a Autora Principal' }).getByText(answer)).toBeVisible();
-    void openAs;
+    await expect(
+      author.getByRole('list', { name: 'Respostas a Autora Principal' }).getByText(answer),
+    ).toBeVisible();
   });
 
   test('sessão com comentários fechados não tem formulário', async ({ signedIn }) => {
@@ -152,10 +166,14 @@ test.describe('comentários', () => {
     }
     const fourth = unique('Quarto comentário');
     await post(page, fourth, { expectError: true });
-    await expect(page.getByRole('alert').filter({ hasText: 'rápido demais' })).toHaveText('Você está comentando rápido demais. Espere um pouco e tente de novo.');
+    await expect(page.getByRole('alert').filter({ hasText: 'rápido demais' })).toHaveText(
+      'Você está comentando rápido demais. Espere um pouco e tente de novo.',
+    );
     // O texto digitado continua no campo para a pessoa tentar de novo depois.
     await expect(page.getByLabel('Seu comentário')).toHaveValue(fourth);
-    expect(sql(`select count(*) from public.comments where author_id = ${lit(user.id)};`)).toBe('3');
+    expect(sql(`select count(*) from public.comments where author_id = ${lit(user.id)};`)).toBe(
+      '3',
+    );
   });
 
   test('excluir o próprio comentário apaga o texto no banco', async ({ signedIn }) => {
@@ -171,11 +189,13 @@ test.describe('comentários', () => {
     await expect(page.getByText(text)).toHaveCount(0);
     await expect(page.getByRole('status').filter({ hasText: /exclu/i }).first()).toBeVisible();
 
-    const row = sql(`select status || '|' || body from public.comments where author_id = ${lit(user.id)};`);
+    const row = sql(
+      `select status || '|' || body from public.comments where author_id = ${lit(user.id)};`,
+    );
     expect(row).toBe('removed|[comentário removido pelo autor]');
   });
 
-  test('<script> e <img onerror> aparecem como texto, sem executar', async ({ signedIn, guard }) => {
+  test('<script> e <img onerror> aparecem como texto, sem executar', async ({ signedIn }) => {
     const { sessionPath: path } = claimPoolSlot();
     const marker = unique('xss');
     const text = `${marker} <script>window.__xss = 1</script> <img src=x onerror="window.__xss = 2">`;
@@ -185,7 +205,8 @@ test.describe('comentários', () => {
     await post(page, text);
     await expect(page.getByText(text)).toBeVisible();
     await expect(page.locator('li img[src="x"]')).toHaveCount(0);
-    expect(await page.evaluate(() => (window as unknown as { __xss?: number }).__xss)).toBeUndefined();
-    void guard;
+    expect(
+      await page.evaluate(() => (window as unknown as { __xss?: number }).__xss),
+    ).toBeUndefined();
   });
 });
