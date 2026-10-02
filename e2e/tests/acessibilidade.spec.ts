@@ -8,8 +8,16 @@ import { WORLD, sessionPath } from '../support/world';
 /** axe (WCAG 2.0 A e AA): falha com qualquer violação "serious" ou "critical". */
 async function expectNoSeriousViolations(page: Page, label: string) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
-  const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
-  const summary = serious.map((v) => `${v.id} (${v.impact}): ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' | ')}`);
+  const serious = results.violations.filter(
+    (v) => v.impact === 'serious' || v.impact === 'critical',
+  );
+  const summary = serious.map(
+    (v) =>
+      `${v.id} (${v.impact}): ${v.nodes
+        .slice(0, 3)
+        .map((n) => n.target.join(' '))
+        .join(' | ')}`,
+  );
   expect(summary, `${label}: violações de acessibilidade`).toEqual([]);
 }
 
@@ -44,7 +52,9 @@ test.describe('acessibilidade (axe, WCAG 2.0 A e AA)', () => {
   test('sessão com comentários e fita de capítulos, com progresso escolhido', async ({ page }) => {
     await page.goto(sessionPath(WORLD.readingSlug, WORLD.sessions.public.number));
     await page.getByLabel('Li até o').first().selectOption({ label: 'Capítulo 1' });
-    await expect(page.getByRole('button', { name: 'Mostrar o capítulo 2 mesmo assim' })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Mostrar o capítulo 2 mesmo assim' }),
+    ).toBeVisible();
     await expectNoSeriousViolations(page, 'sessão com capítulos cobertos');
   });
 
@@ -80,7 +90,10 @@ test.describe('acessibilidade (axe, WCAG 2.0 A e AA)', () => {
 
 test.describe('alvos de toque de 44px (iPhone)', () => {
   test.beforeEach(({}, testInfo) => {
-    test.skip(testInfo.project.name !== 'webkit-mobile', 'só o projeto de iPhone mede alvos de toque');
+    test.skip(
+      testInfo.project.name !== 'webkit-mobile',
+      'só o projeto de iPhone mede alvos de toque',
+    );
   });
 
   /**
@@ -89,18 +102,29 @@ test.describe('alvos de toque de 44px (iPhone)', () => {
    */
   async function smallTargets(page: Page) {
     return page.evaluate(() => {
-      const selector = 'a[href], button, summary, select, textarea, input:not([type=hidden]), [role=button], [role=tab], [role=switch], [role=radio]';
+      const selector =
+        'a[href], button, summary, select, textarea, input:not([type=hidden]), [role=button], [role=tab], [role=switch], [role=radio]';
       const out: string[] = [];
       for (const element of document.querySelectorAll<HTMLElement>(selector)) {
         const style = getComputedStyle(element);
         const box = element.getBoundingClientRect();
-        if (style.visibility === 'hidden' || style.display === 'none' || box.width === 0 || box.height === 0) continue;
+        if (
+          style.visibility === 'hidden' ||
+          style.display === 'none' ||
+          box.width === 0 ||
+          box.height === 0
+        )
+          continue;
         if (element.closest('[inert], [hidden]') || element.closest('.srOnly')) continue;
         if (element.tagName === 'A' && element.closest('p, small, li p')) continue;
         if (element.matches('a.skip, [class*="skip"]')) continue;
         if (box.width < 43.5 || box.height < 43.5) {
-          const name = (element.getAttribute('aria-label') || element.textContent || '').trim().slice(0, 40);
-          out.push(`${element.tagName.toLowerCase()} "${name}" ${Math.round(box.width)}x${Math.round(box.height)}`);
+          const name = (element.getAttribute('aria-label') || element.textContent || '')
+            .trim()
+            .slice(0, 40);
+          out.push(
+            `${element.tagName.toLowerCase()} "${name}" ${Math.round(box.width)}x${Math.round(box.height)}`,
+          );
         }
       }
       return out;

@@ -1,7 +1,7 @@
 import { lit, sql } from '../support/db';
 import { expect, test } from '../support/fixtures';
-import { createAdmin, createModerator, createUser } from '../support/users';
-import { poolSlug } from '../support/world';
+import { createModerator, createUser } from '../support/users';
+import { WORLD, poolSlug } from '../support/world';
 
 /**
  * A fila "Para aprovar" é global (todos os testes deixam itens pendentes) e a aprovação em lote age
@@ -16,10 +16,19 @@ test.describe.serial('moderação', () => {
     await expect(page).toHaveURL(/\/painel\/comentarios/);
     await expect(page.getByRole('link', { name: /^Comentários/ }).first()).toBeVisible();
 
-    for (const path of ['/painel/livros', '/painel/sessoes', '/painel/sessoes/nova', '/painel/membros', '/painel/votacoes', '/painel/configuracoes']) {
+    for (const path of [
+      '/painel/livros',
+      '/painel/sessoes',
+      '/painel/sessoes/nova',
+      '/painel/membros',
+      '/painel/votacoes',
+      '/painel/configuracoes',
+    ]) {
       const response = await page.goto(path);
       expect(response?.status(), path).toBe(403);
-      await expect(page.getByRole('heading', { level: 1, name: 'Você não tem acesso a esta página' })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Você não tem acesso a esta página' }),
+      ).toBeVisible();
     }
   });
 
@@ -28,7 +37,7 @@ test.describe.serial('moderação', () => {
     sql(`update public.comments set status = 'removed' where status = 'pending';`);
     const author = await createUser({ name: 'Autor do Lote' });
     const sessionId = sql(
-      `select s.id from public.reading_sessions s join public.books b on b.id = s.book_id where b.slug = ${lit(poolSlug(150))};`,
+      `select s.id from public.reading_sessions s join public.books b on b.id = s.book_id where b.slug = ${lit(poolSlug(WORLD.poolSize))};`,
     );
     sql(`
       insert into public.comments (session_id, author_id, body, read_up_to, status, created_at)
@@ -42,7 +51,9 @@ test.describe.serial('moderação', () => {
     await page.goto('/painel/comentarios?aba=pendentes');
     const items = page.locator('li[id^="moderar-"]');
     await expect(items).toHaveCount(20);
-    const visibleIds = (await items.evaluateAll((nodes) => nodes.map((n) => n.id.replace('moderar-', ''))));
+    const visibleIds = await items.evaluateAll((nodes) =>
+      nodes.map((n) => n.id.replace('moderar-', '')),
+    );
     const flagged = page.locator('li[id^="moderar-"]', { hasText: 'lote-5' });
     await expect(flagged.getByText('Alerta: Contém link')).toBeVisible();
 
@@ -51,10 +62,19 @@ test.describe.serial('moderação', () => {
 
     const inList = visibleIds.map(lit).join(', ');
     // Os 19 visíveis sem alerta foram aprovados.
-    expect(sql(`select count(*) from public.comments where id in (${inList}) and status = 'approved';`)).toBe('19');
+    expect(
+      sql(`select count(*) from public.comments where id in (${inList}) and status = 'approved';`),
+    ).toBe('19');
     // O que tem alerta continua para a moderadora decidir, e o que não estava na página nem foi tocado.
-    expect(sql(`select count(*) from public.comments where author_id = ${lit(author.id)} and status = 'pending';`)).toBe('6');
-    expect(sql(`select status from public.comments where body = 'lote-5' and author_id = ${lit(author.id)};`)).toBe('pending');
-    void createAdmin;
+    expect(
+      sql(
+        `select count(*) from public.comments where author_id = ${lit(author.id)} and status = 'pending';`,
+      ),
+    ).toBe('6');
+    expect(
+      sql(
+        `select status from public.comments where body = 'lote-5' and author_id = ${lit(author.id)};`,
+      ),
+    ).toBe('pending');
   });
 });

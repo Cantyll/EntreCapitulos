@@ -10,9 +10,13 @@ const DEFAULT_ROSE_2 = '#b04c69';
 
 /** Valor do token no `<html>` da página atual (o tema vem do servidor, em `style`). */
 const token = (page: Page, name: string) =>
-  page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim().toLowerCase(), name);
+  page.evaluate(
+    (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim().toLowerCase(),
+    name,
+  );
 
-const saved = (page: Page) => page.getByRole('status').filter({ hasText: /^(Rascunho salvo|Salvo)$/ });
+const saved = (page: Page) =>
+  page.getByRole('status').filter({ hasText: /^(Rascunho salvo|Salvo)$/ });
 
 /**
  * O painel mexe no estado GLOBAL do banco (só um livro "em leitura", numeração das sessões), então
@@ -39,7 +43,9 @@ test.describe.serial('painel da administradora', () => {
     await page.getByRole('button', { name: 'Marcar livro como terminado' }).click();
     await page.getByLabel('Nota do livro').selectOption({ label: '4,0 de 5' });
     await page.getByRole('button', { name: 'Marcar como terminado' }).click();
-    await expect(page.getByRole('region', { name: 'Leitura atual' })).not.toContainText('O Livro de Azrael');
+    await expect(page.getByRole('region', { name: 'Leitura atual' })).not.toContainText(
+      'O Livro de Azrael',
+    );
 
     await page.goto('/painel/livros/novo');
     await page.getByLabel('Título', { exact: true }).fill(bookTitle);
@@ -47,7 +53,9 @@ test.describe.serial('painel da administradora', () => {
     await page.getByLabel('Sinopse').fill('Sinopse de teste do painel.');
     await page.getByLabel('Total de capítulos').fill('12');
     await page.getByLabel('Estado inicial').selectOption('queued');
-    await page.getByLabel('Capa').setInputFiles({ name: 'capa.png', mimeType: 'image/png', buffer: await coverPng() });
+    await page
+      .getByLabel('Capa')
+      .setInputFiles({ name: 'capa.png', mimeType: 'image/png', buffer: await coverPng() });
     await expect(page.getByAltText('Prévia da capa escolhida')).toBeVisible();
     await page.getByRole('button', { name: 'Criar livro' }).click();
     // Só segue depois de o servidor criar o livro (e enviar a capa): a tela sai do formulário.
@@ -59,7 +67,10 @@ test.describe.serial('painel da administradora', () => {
     bookSlug = sql(`select slug from public.books where title = ${lit(bookTitle)};`);
   });
 
-  test('o tema da capa vale no site e no painel e some ao desligar o tema automático', async ({ openAs, browser }) => {
+  test('o tema da capa vale no site e no painel e some ao desligar o tema automático', async ({
+    openAs,
+    browser,
+  }) => {
     const { page } = await openAs(admin);
     const visitor = await (await browser.newContext()).newPage();
 
@@ -69,7 +80,10 @@ test.describe.serial('painel da administradora', () => {
     expect(await token(page, '--rose-2')).not.toBe(DEFAULT_ROSE_2);
 
     await page.getByRole('switch', { name: 'Tema automático pela capa' }).click();
-    await expect(page.getByRole('switch', { name: 'Tema automático pela capa' })).toHaveAttribute('aria-checked', 'false');
+    await expect(page.getByRole('switch', { name: 'Tema automático pela capa' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
 
     await visitor.goto('/');
     await expect.poll(() => token(visitor, '--rose-2')).toBe(DEFAULT_ROSE_2);
@@ -121,7 +135,11 @@ test.describe.serial('painel da administradora', () => {
       notes.getByRole('button', { name: 'Adicionar' }),
     );
     await notes.getByRole('button', { name: 'Adicionar' }).click();
-    await expect(page.getByRole('region', { name: 'Trechos e anotações' }).getByText('Um trecho curto de teste.')).toBeVisible();
+    await expect(
+      page
+        .getByRole('region', { name: 'Trechos e anotações' })
+        .getByText('Um trecho curto de teste.'),
+    ).toBeVisible();
     const questions = page.getByRole('region', { name: 'Perguntas para a discussão' });
     await fillUntilEnabled(
       page.getByLabel('Nova pergunta'),
@@ -129,18 +147,27 @@ test.describe.serial('painel da administradora', () => {
       questions.getByRole('button', { name: 'Adicionar' }),
     );
     await questions.getByRole('button', { name: 'Adicionar' }).click();
-    await expect(page.getByRole('region', { name: 'Perguntas para a discussão' }).getByText('O que você achou do começo?')).toBeVisible();
+    await expect(
+      page
+        .getByRole('region', { name: 'Perguntas para a discussão' })
+        .getByText('O que você achou do começo?'),
+    ).toBeVisible();
 
     // Retomada: depois de recarregar, tudo volta do servidor.
     await page.reload();
     await expect(page.getByLabel('Título da sessão')).toHaveValue(sessionTitle);
-    await expect(page.getByRole('textbox', { name: 'Relato da sessão' }).locator('strong')).toHaveText('texto em negrito');
+    await expect(
+      page.getByRole('textbox', { name: 'Relato da sessão' }).locator('strong'),
+    ).toHaveText('texto em negrito');
     await expect(page.getByLabel('Título do capítulo 1')).toHaveValue('Um começo');
     await expect(page.getByText('Um trecho curto de teste.')).toBeVisible();
     await expect(page.getByText('O que você achou do começo?')).toBeVisible();
   });
 
-  test('publica a sessão e ela aparece na home e na página do livro', async ({ openAs, browser }) => {
+  test('publica a sessão e ela aparece na home e na página do livro', async ({
+    openAs,
+    browser,
+  }) => {
     const { page } = await openAs(admin);
     await page.goto(editUrl);
     await page.getByRole('button', { name: 'Publicar sessão' }).click();
@@ -159,7 +186,9 @@ test.describe.serial('painel da administradora', () => {
     await visitor.context().close();
   });
 
-  test('capítulos que já pertencem a outra sessão são recusados com mensagem clara', async ({ openAs }) => {
+  test('capítulos que já pertencem a outra sessão são recusados com mensagem clara', async ({
+    openAs,
+  }) => {
     const { page } = await openAs(admin);
     await page.goto('/painel/sessoes/nova');
     // Com a sessão 1 publicada (capítulos 1 a 3), a próxima nasce em 4 a 6: puxar o início para o 3 sobrepõe.
@@ -170,7 +199,11 @@ test.describe.serial('painel da administradora', () => {
     await title.fill('Sessão sobreposta');
     await expect(page.getByText(/já pertence à sessão 1\./).first()).toBeVisible();
     // Nada foi criado: continua só a primeira sessão do livro.
-    expect(sql(`select count(*) from public.reading_sessions s join public.books b on b.id = s.book_id where b.title = ${lit(bookTitle)};`)).toBe('1');
+    expect(
+      sql(
+        `select count(*) from public.reading_sessions s join public.books b on b.id = s.book_id where b.title = ${lit(bookTitle)};`,
+      ),
+    ).toBe('1');
   });
 
   test('voltar para rascunho é recusado quando a sessão já tem comentários', async ({ openAs }) => {
@@ -187,7 +220,11 @@ test.describe.serial('painel da administradora', () => {
     await untilHydrated(field);
     await field.fill('Um comentário para travar o rascunho.');
     await reader.getByRole('button', { name: 'Publicar comentário' }).click();
-    await expect(reader.getByRole('status').filter({ hasText: /Recebemos seu comentário|Comentário publicado/ })).toBeVisible();
+    await expect(
+      reader
+        .getByRole('status')
+        .filter({ hasText: /Recebemos seu comentário|Comentário publicado/ }),
+    ).toBeVisible();
 
     await back.click();
     await page.getByRole('dialog').getByRole('button', { name: 'Voltar para rascunho' }).click();
@@ -199,7 +236,9 @@ test.describe.serial('painel da administradora', () => {
     await expect(page.getByRole('button', { name: 'Voltar para rascunho' })).toHaveCount(0);
   });
 
-  test('sem conexão o rascunho fica salvo só no aparelho e sincroniza sozinho ao voltar a rede', async ({ openAs }) => {
+  test('sem conexão o rascunho fica salvo só no aparelho e sincroniza sozinho ao voltar a rede', async ({
+    openAs,
+  }) => {
     const { page, context } = await openAs(admin);
     await page.goto('/painel/sessoes/nova');
     const title = page.getByLabel('Título da sessão');
@@ -214,12 +253,16 @@ test.describe.serial('painel da administradora', () => {
     await editor.click();
     await context.setOffline(true);
     await page.keyboard.type('Texto escrito sem rede');
-    await expect(page.getByRole('status').filter({ hasText: 'Sem conexão: salvo só neste aparelho' })).toBeVisible();
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Sem conexão: salvo só neste aparelho' }),
+    ).toBeVisible();
 
     await context.setOffline(false);
     await expect(saved(page)).toBeVisible();
     await expect
-      .poll(() => sql(`select body::text from public.reading_sessions where title = 'Rascunho do autosave';`))
+      .poll(() =>
+        sql(`select body::text from public.reading_sessions where title = 'Rascunho do autosave';`),
+      )
       .toContain('Texto escrito sem rede');
   });
 
@@ -231,13 +274,22 @@ test.describe.serial('painel da administradora', () => {
     const second = await context.newPage();
     await second.goto(draftUrl);
     for (const page of [first, second]) {
-      await expect(page.getByRole('textbox', { name: 'Relato da sessão' })).toHaveAttribute('contenteditable', 'true');
+      await expect(page.getByRole('textbox', { name: 'Relato da sessão' })).toHaveAttribute(
+        'contenteditable',
+        'true',
+      );
       await untilHydrated(page.getByLabel('Título da sessão'));
     }
 
     await first.getByLabel('Título da sessão').fill('Título pela primeira aba');
     await expect(saved(first)).toBeVisible();
-    await expect.poll(() => sql(`select count(*) from public.reading_sessions where title = 'Título pela primeira aba';`)).toBe('1');
+    await expect
+      .poll(() =>
+        sql(
+          `select count(*) from public.reading_sessions where title = 'Título pela primeira aba';`,
+        ),
+      )
+      .toBe('1');
 
     await second.getByLabel('Título da sessão').fill('Título pela segunda aba');
     await expect(second.getByText('Esta sessão foi alterada em outro lugar')).toBeVisible();
@@ -252,7 +304,9 @@ test.describe.serial('painel da administradora', () => {
   // Causa: `useSessionAutosave` troca a URL para /<id> com `history.replaceState`; a ação de trecho ou
   // pergunta expira a tag da sessão e o Next busca de novo a rota /<id>, que é outra página que /nova,
   // então o editor é montado do zero com o texto do servidor.
-  test.fixme('digitar e adicionar um trecho logo em seguida, num rascunho novo, não perde o texto', async ({ openAs }) => {
+  test.fixme('digitar e adicionar um trecho logo em seguida, num rascunho novo, não perde o texto', async ({
+    openAs,
+  }) => {
     const { page } = await openAs(admin);
     await page.goto('/painel/sessoes/nova');
     const title = page.getByLabel('Título da sessão');
@@ -263,7 +317,11 @@ test.describe.serial('painel da administradora', () => {
     await editor.click();
     await page.keyboard.type('Texto ainda não enviado');
     const notes = page.getByRole('region', { name: 'Trechos e anotações' });
-    await fillUntilEnabled(page.getByRole('textbox', { name: 'Trecho' }), 'Trecho curto.', notes.getByRole('button', { name: 'Adicionar' }));
+    await fillUntilEnabled(
+      page.getByRole('textbox', { name: 'Trecho' }),
+      'Trecho curto.',
+      notes.getByRole('button', { name: 'Adicionar' }),
+    );
     await notes.getByRole('button', { name: 'Adicionar' }).click();
     await expect(notes.getByText('Trecho curto.')).toBeVisible();
     await expect(editor).toContainText('Texto ainda não enviado');
