@@ -2,11 +2,11 @@
 // Só para testes. O app roda como em produção (NODE_ENV=production, build já feito) e confia no
 // certificado local por NODE_EXTRA_CA_CERTS: a verificação TLS do servidor NÃO é desligada.
 import { spawn } from 'node:child_process';
-import { readFileSync, rmSync } from 'node:fs';
+import { createWriteStream, readFileSync, rmSync } from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
 
-import { CERT_PATH, KEY_PATH, ensureCert } from './certs.mjs';
+import { CERT_PATH, KEY_PATH, TMP_DIR, ensureCert } from './certs.mjs';
 import { readStatus, saveKeys } from './keys.mjs';
 
 const APP_PORT = 3000;
@@ -72,8 +72,10 @@ const servers = [
   }),
 ];
 
+// O log do app vai para a tela e para e2e/.tmp/app.log (o workflow imprime o arquivo quando algo falha).
+const appLog = createWriteStream(`${TMP_DIR}/app.log`);
 const app = spawn('npx', ['next', 'start', '-p', String(APP_PORT)], {
-  stdio: 'inherit',
+  stdio: ['ignore', 'pipe', 'pipe'],
   env: {
     ...process.env,
     NODE_ENV: 'production',
@@ -82,6 +84,13 @@ const app = spawn('npx', ['next', 'start', '-p', String(APP_PORT)], {
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: keys.publishableKey,
   },
 });
+
+for (const stream of [app.stdout, app.stderr]) {
+  stream.on('data', (chunk) => {
+    appLog.write(chunk);
+    process.stdout.write(chunk);
+  });
+}
 
 function stop() {
   for (const s of servers) s.close();

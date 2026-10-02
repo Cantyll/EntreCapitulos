@@ -1,0 +1,75 @@
+name: E2E
+
+# Testes de ponta a ponta (Playwright) contra um build de PRODUÇÃO e um Supabase local, ambos atrás de
+# HTTPS local. Sem nenhum secret. Não é obrigatório para o merge: serve de rede de segurança.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright (Chromium e WebKit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache dos navegadores do Playwright
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      # Com o cache cheio só instala as bibliotecas do sistema; sem ele baixa os navegadores também.
+      - name: Navegadores do Playwright
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium webkit
+          else
+            npx playwright install --with-deps chromium webkit
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      # Auth, Storage, Postgres, PostgREST e Mailpit ficam; o resto não é usado pelos testes.
+      - name: Start local Supabase
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,postgres-meta,realtime,supavisor
+
+      - name: Build de produção do app
+        run: npm run e2e:build
+
+      - name: Testes E2E
+        run: npx playwright test
+
+      - name: Log do app (só em falha)
+        if: failure()
+        run: tail -n 300 e2e/.tmp/app.log || true
+
+      - name: Relatório, traces e screenshots (só em falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-falha
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
