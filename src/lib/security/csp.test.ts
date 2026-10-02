@@ -90,11 +90,12 @@ describe('buildCsp (produção)', () => {
 });
 
 describe('buildCsp (variações)', () => {
-  it('só-relatório: outro cabeçalho, mesma política', () => {
+  it('só-relatório: outro cabeçalho, mesma política (sem upgrade-insecure-requests, que o navegador ignora e avisa)', () => {
     const blocking = buildCsp(base);
     const report = buildCsp({ ...base, reportOnly: true });
     expect(report.name).toBe('Content-Security-Policy-Report-Only');
-    expect(report.value).toBe(blocking.value);
+    expect(report.value).toBe(blocking.value.replace('; upgrade-insecure-requests', ''));
+    expect(report.value).not.toContain('upgrade-insecure-requests');
   });
 
   it('desenvolvimento: unsafe-eval e WebSocket do HMR, sem upgrade-insecure-requests', () => {

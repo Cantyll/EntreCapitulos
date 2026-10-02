@@ -133,7 +133,8 @@ export function buildCsp(options: CspOptions): CspHeader {
   ];
 
   const parts = directives.map(([name, sources]) => `${name} ${sources.join(' ')}`);
-  if (production) parts.push('upgrade-insecure-requests');
+  // No modo só-relatório o navegador ignora esta diretiva e avisa no console: só entra quando bloqueia.
+  if (production && !options.reportOnly) parts.push('upgrade-insecure-requests');
 
   return {
     name: options.reportOnly ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy',
