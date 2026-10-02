@@ -29,7 +29,22 @@ export default defineConfig([
     files: ['src/lib/supabase/env.ts', 'src/lib/supabase/env.test.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },
+  // Os testes E2E (Playwright) chamam `use(...)` dentro das fixtures, o que a regra de hooks do React
+  // confunde com um hook. Nada de React nessa pasta.
+  {
+    files: ['e2e/**/*.ts'],
+    rules: { 'react-hooks/rules-of-hooks': 'off' },
+  },
   // Precisa ficar por último: desliga regras de estilo que brigam com o Prettier.
   prettier,
-  globalIgnores(['.next/**', 'out/**', 'build/**', 'coverage/**', 'docs/**', 'next-env.d.ts']),
+  globalIgnores([
+    '.next/**',
+    'out/**',
+    'build/**',
+    'coverage/**',
+    'docs/**',
+    'playwright-report/**',
+    'test-results/**',
+    'next-env.d.ts',
+  ]),
 ]);
