@@ -3,7 +3,13 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { A_DEFINIR, legalConfig, pendingFields, type LegalData } from '../legal-config';
+import {
+  A_DEFINIR,
+  legalConfig,
+  pendingFields,
+  pendingItems,
+  type LegalData,
+} from '../legal-config';
 import { SOBRE } from '../sobre';
 import { SITE_COOKIES } from './cookies';
 import { buildPrivacy } from './privacy';
@@ -30,18 +36,18 @@ const allText = (doc: LegalDoc): string =>
     ]),
   ].join('\n');
 
+/** A configuração de antes dos campos serem preenchidos (tudo A DEFINIR). */
+const pending: LegalData = {
+  ...legalConfig,
+  regions: { ...legalConfig.regions, cloudflareTurnstile: A_DEFINIR, google: A_DEFINIR },
+  legalBases: A_DEFINIR,
+  internationalTransfer: A_DEFINIR,
+  retention: A_DEFINIR,
+  requestDeadline: A_DEFINIR,
+};
+
 const OFF = { google: false, turnstile: false };
 const ON = { google: true, turnstile: true };
-
-const filled: LegalData = {
-  ...legalConfig,
-  legalReviewed: true,
-  regions: { ...legalConfig.regions, cloudflareTurnstile: 'Global', google: 'Global' },
-  legalBases: 'consentimento e execução de contrato',
-  internationalTransfer: 'cláusulas-padrão',
-  retention: '5 anos',
-  requestDeadline: '15 dias',
-};
 
 describe('política de privacidade', () => {
   const text = allText(buildPrivacy(legalConfig, OFF));
@@ -56,16 +62,41 @@ describe('política de privacidade', () => {
     expect(text).toContain('São Paulo (sa-east-1)');
   });
 
-  it('deixa A DEFINIR o que depende de análise jurídica', () => {
+  it('campo ainda pendente: a frase única com A DEFINIR (e nada mais)', () => {
+    const t = allText(buildPrivacy(pending, OFF));
     for (const label of [
-      'Bases legais',
-      'Transferência internacional',
-      'Prazos de retenção',
-      'Prazo para responder',
+      'bases legais da LGPD \\(art. 7º\\) que justificam cada finalidade',
+      'Transferência internacional de dados',
+      'Por quanto tempo guardamos cada tipo de dado',
+      'Prazo para responder aos pedidos',
     ]) {
-      expect(text).toMatch(new RegExp(`${label}[^\\n]*${A_DEFINIR}`, 'i'));
+      expect(t).toMatch(new RegExp(`${label}: ${A_DEFINIR}\\.`, 'i'));
     }
-    expect(text).toMatch(/bases legais[^\n]*A DEFINIR/i);
+  });
+
+  it('campo preenchido: mostra o conteúdo da proposta, em lista quando é lista', () => {
+    const doc = buildPrivacy(legalConfig, OFF);
+    const bases = doc.sections.find((s) => s.id === 'bases-legais')!;
+    const retention = doc.sections.find((s) => s.id === 'retencao')!;
+    expect(bases.blocks.some((b) => b.type === 'ul' && b.items.length === 4)).toBe(true);
+    expect(retention.blocks.some((b) => b.type === 'ul' && b.items.length === 6)).toBe(true);
+    expect(text).toContain('execução de contrato (art. 7º, V, da LGPD)');
+    expect(text).toContain('legítimo interesse (art. 7º, IX)');
+    expect(text).toContain('Respondemos aos pedidos em até 15 dias');
+    expect(text).toContain('Cópias de segurança');
+  });
+
+  it('enquanto não houver revisão, cada ponto preenchido avisa que precisa de um advogado', () => {
+    expect(text.match(/ainda precisa ser validado por um advogado/g)).toHaveLength(4);
+    const reviewed = allText(buildPrivacy({ ...legalConfig, legalReviewed: true }, OFF));
+    expect(reviewed).not.toContain('validado por um advogado');
+  });
+
+  it('com a transferência preenchida, não repete o parágrafo genérico', () => {
+    expect(text).not.toContain('Esses serviços são de empresas internacionais');
+    expect(allText(buildPrivacy(pending, OFF))).toContain(
+      'Esses serviços são de empresas internacionais',
+    );
   });
 
   it('NUNCA afirma que os dados não saem do Brasil nem que não há transferência internacional', () => {
@@ -75,16 +106,17 @@ describe('política de privacidade', () => {
       expect(t).not.toMatch(/n[ãa]o h[áa] transfer[êe]ncia internacional/);
       expect(t).not.toMatch(/ficam (todos )?no brasil/);
     }
-    expect(text).toContain('podem envolver outros países');
+    expect(text).toContain('podem ocorrer fora do Brasil');
   });
 
-  it('lista os serviços usados pelo código; Google e Turnstile só se ativados', () => {
-    for (const name of ['Supabase', 'Vercel', 'Resend']) expect(text).toContain(name);
-    expect(text).not.toContain('Google');
-    expect(text).not.toContain('Turnstile');
+  it('lista os serviços usados pelo código; Google e Turnstile só na TABELA se ativados', () => {
+    const rows = (features: typeof OFF) =>
+      buildPrivacy(legalConfig, features)
+        .sections.find((s) => s.id === 'compartilhamento')!
+        .blocks.flatMap((b) => (b.type === 'table' ? b.rows.map((r) => r[0]) : []));
+    expect(rows(OFF)).toEqual(['Supabase', 'Vercel', 'Resend']);
+    expect(rows(ON)).toEqual(['Supabase', 'Vercel', 'Resend', 'Google', 'Cloudflare Turnstile']);
     const on = allText(buildPrivacy(legalConfig, ON));
-    expect(on).toContain('Google');
-    expect(on).toContain('Cloudflare Turnstile');
     expect(on).toContain('nome e o endereço da foto do seu perfil Google');
     expect(on).toContain('ec_next');
     expect(text).not.toContain('ec_next');
@@ -126,13 +158,19 @@ describe('política de privacidade', () => {
     for (const name of ['ec_progress', 'sb-…-auth-token']) expect(text).toContain(name);
   });
 
-  it('com tudo preenchido, não sobra "A DEFINIR" no texto (menos a conferência do Turnstile)', () => {
-    const t = allText(buildPrivacy(filled, { google: true, turnstile: false }));
-    expect(t).not.toContain(A_DEFINIR);
+  it('com a configuração entregue, não sobra "A DEFINIR" no texto (menos a conferência do Turnstile)', () => {
+    expect(allText(buildPrivacy(legalConfig, { google: true, turnstile: false }))).not.toContain(
+      A_DEFINIR,
+    );
   });
 
   it('conferir antes de ativar o Turnstile fica visível como A DEFINIR no texto', () => {
-    expect(allText(buildPrivacy(filled, ON))).toContain(A_DEFINIR);
+    expect(allText(buildPrivacy(legalConfig, ON))).toContain(A_DEFINIR);
+  });
+
+  it('o Resend é contratado por nós e acionado pelo Supabase (não "contratado pelo Supabase")', () => {
+    expect(text).toContain('contratado por nós e acionado pelo Supabase');
+    expect(text).not.toContain('contratado pelo Supabase');
   });
 
   it('ids de seção únicos (âncoras do sumário)', () => {
@@ -193,8 +231,13 @@ describe('lista de cookies', () => {
 });
 
 describe('detecção dos pendentes na configuração entregue', () => {
-  it('lista os campos A DEFINIR (e só eles)', () => {
-    expect(pendingFields(legalConfig).sort()).toEqual(
+  it('nenhum campo ficou A DEFINIR; a única pendência é a revisão profissional', () => {
+    expect(pendingFields(legalConfig)).toEqual([]);
+    expect(pendingItems(legalConfig)).toEqual(['legalReviewed']);
+  });
+
+  it('a configuração de antes (tudo pendente) é detectada campo a campo', () => {
+    expect(pendingFields(pending).sort()).toEqual(
       [
         'internationalTransfer',
         'legalBases',

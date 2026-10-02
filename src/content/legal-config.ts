@@ -9,6 +9,9 @@
  * (ou houver qualquer campo A DEFINIR), as páginas mostram "Rascunho em revisão" e ficam com noindex.
  * Preencher os campos NÃO remove o aviso: só mudar `legalReviewed` para `true`, depois da revisão.
  *
+ * Os campos marcados "// PROPOSTA: validar com advogado" foram preenchidos com propostas dos controladores:
+ * valem como rascunho até um advogado validar. Enquanto isso `legalReviewed` continua `false`.
+ *
  * Não escreva aqui (nem nos textos) que os dados "não saem do Brasil": os provedores são empresas
  * internacionais, e a rede de entrega, os registros e o suporte podem envolver outros países. Descreva
  * a região onde o banco e as funções rodam e deixe a análise para o profissional.
@@ -30,12 +33,17 @@ export type LegalData = {
     cloudflareTurnstile: string;
     google: string;
   };
-  legalBases: string;
+  /** Uma frase única ou uma lista (um item por finalidade). */
+  legalBases: LegalText;
   internationalTransfer: string;
-  retention: string;
+  /** Uma frase única ou uma lista (um item por tipo de dado). */
+  retention: LegalText;
   /** Prazo para responder pedidos dos titulares (art. 18). */
   requestDeadline: string;
 };
+
+/** Texto de um campo: uma frase ou uma lista de itens. */
+export type LegalText = string | readonly string[];
 
 export const legalConfig = {
   /** `true` só depois da revisão de um profissional. Padrão: `false`. */
@@ -54,16 +62,39 @@ export const legalConfig = {
     supabase: 'São Paulo (Brasil)',
     vercel: 'São Paulo (gru1, Brasil)',
     resend: 'São Paulo (sa-east-1)',
-    // Serviços globais: a região não é informada.
-    cloudflareTurnstile: A_DEFINIR,
-    google: A_DEFINIR,
+    // PROPOSTA: validar com advogado
+    cloudflareTurnstile:
+      'Rede global da Cloudflare, sem região fixa. O processamento pode ocorrer fora do Brasil.',
+    // PROPOSTA: validar com advogado
+    google:
+      'Infraestrutura global do Google, sem região fixa. O processamento pode ocorrer fora do Brasil.',
   },
 
-  /** Dependem de análise jurídica. */
-  legalBases: A_DEFINIR,
-  internationalTransfer: A_DEFINIR,
-  retention: A_DEFINIR,
-  requestDeadline: A_DEFINIR,
+  // PROPOSTA: validar com advogado
+  legalBases: [
+    'Criar e manter sua conta, enviar o código de acesso por e-mail e, se você escolher entrar com o Google, receber seu nome, e-mail e foto de perfil: execução de contrato (art. 7º, V, da LGPD), porque são necessários para oferecer o serviço que você pediu.',
+    'Exibir seu nome e seus comentários e guardar seu progresso de leitura: execução de contrato (art. 7º, V).',
+    'Moderar comentários e proteger a comunidade e o serviço contra abuso, incluindo limites de uso e verificação anti-robô: legítimo interesse (art. 7º, IX), respeitando seus direitos e suas expectativas.',
+    'Cumprir obrigações legais e exercer direitos em eventual disputa: cumprimento de obrigação legal ou regulatória (art. 7º, II) e exercício regular de direitos (art. 7º, VI).',
+  ],
+
+  // PROPOSTA: validar com advogado
+  internationalTransfer:
+    'O banco de dados e as funções do site rodam em servidores em São Paulo (Brasil). Mesmo assim, os provedores que usamos (Supabase, Vercel, Resend, Cloudflare Turnstile e, se você escolher entrar com ele, o Google) são empresas com operações em outros países, e partes do tratamento, como a entrega de e-mails, a proteção contra robôs, a rede de distribuição de conteúdo, os registros técnicos e o suporte, podem ocorrer fora do Brasil. Nesses casos, buscamos as garantias previstas na LGPD por meio dos contratos de tratamento de dados e dos termos desses provedores. Você pode pedir informações sobre isso pelo e-mail de contato.',
+
+  // PROPOSTA: validar com advogado
+  retention: [
+    'Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados.',
+    'Comentários: enquanto a conta existir ou até você excluir o comentário. Ao excluir, o texto é substituído por um aviso e o original deixa de ser guardado. Comentários removidos pela moderação ficam guardados, sem exibição pública, até a exclusão da conta de quem os escreveu.',
+    'Progresso de leitura: enquanto a conta existir. Para quem não tem conta, por até 1 ano no próprio navegador (cookie).',
+    'Registros técnicos e de segurança: mantidos pelos provedores por períodos definidos por eles, em regra curtos, e pelo prazo que a lei exigir.',
+    'Pedidos de privacidade enviados por e-mail: pelo tempo necessário para atender e comprovar o atendimento.',
+    'Cópias de segurança: as mantidas pelo provedor do banco de dados podem conter os dados por um período limitado depois da exclusão.',
+  ],
+
+  // PROPOSTA: validar com advogado
+  requestDeadline:
+    'Respondemos aos pedidos em até 15 dias, contados do recebimento. Acessar seus dados, corrigir seu nome e excluir sua conta você faz na hora, em "Minha conta".',
 } as const satisfies LegalData;
 
 export type LegalConfig = {
@@ -73,6 +104,14 @@ export type LegalConfig = {
 
 /** Texto que o site mostra no lugar de um valor ainda não decidido. */
 export const PENDING_LABEL = A_DEFINIR;
+
+/**
+ * Tudo o que ainda falta para as páginas legais deixarem de ser rascunho: os campos A DEFINIR e a revisão
+ * profissional (`legalReviewed`). É a lista que o teste mostra no CI.
+ */
+export function pendingItems(config: LegalConfig = legalConfig): string[] {
+  return [...pendingFields(config), ...(config.legalReviewed ? [] : ['legalReviewed'])];
+}
 
 /** Caminhos (`regions.google`) de todos os campos ainda marcados A DEFINIR. */
 export function pendingFields(value: unknown, prefix = ''): string[] {
