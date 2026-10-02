@@ -255,7 +255,7 @@ Para conferir, use a consulta de conferência de "Promover a primeira administra
 
 ## Privacidade e dados pessoais
 
-> **Os textos legais são RASCUNHO.** Nenhum texto sobre privacidade ou termos foi escrito por um profissional. Eles precisam de revisão jurídica antes de valerem. Os dados que dependem de decisão ou de análise (bases legais, transferência internacional, prazos de retenção e a região de serviços globais) estão marcados **A DEFINIR** em **um único arquivo**, `src/content/legal-config.ts`. Enquanto houver campo **A DEFINIR**, **ou** enquanto `legalReviewed` for `false`, as páginas `/privacidade` e `/termos` mostram o aviso "Rascunho em revisão" e ficam com `noindex`. **Preencher os campos não remove o aviso:** só mudar `legalReviewed` para `true`, depois da revisão de um profissional. O teste `src/content/legal-config.test.ts` lista os campos pendentes no resultado do CI, sem falhar.
+> **Os textos legais são RASCUNHO.** Nenhum texto sobre privacidade ou termos foi escrito por um profissional. Eles precisam de revisão jurídica antes de valerem. Os dados que dependem de decisão ou de análise (bases legais, transferência internacional, prazos de retenção, prazo de resposta e a região de serviços globais) vivem em **um único arquivo**, `src/content/legal-config.ts`, hoje preenchidos com **propostas a validar com advogado** (cada campo tem o comentário `// PROPOSTA: validar com advogado`); o que ainda não tiver valor fica como **A DEFINIR**. Enquanto houver campo **A DEFINIR**, **ou** enquanto `legalReviewed` for `false`, as páginas `/privacidade` e `/termos` mostram o aviso "Rascunho em revisão" e ficam com `noindex`. **Preencher os campos não remove o aviso:** só mudar `legalReviewed` para `true`, depois da revisão de um profissional. O teste `src/content/legal-config.test.ts` lista os campos pendentes no resultado do CI, sem falhar.
 
 **O que cada pessoa pode fazer sozinha** (menu da conta → **Minha conta**, `/conta`):
 
@@ -274,7 +274,7 @@ Para conferir, use a consulta de conferência de "Promover a primeira administra
 
 ### Atender por e-mail um pedido de cópia ou de exclusão dos dados
 
-Use o e-mail de contato de `src/content/legal-config.ts` (campo `privacyContactEmail`). **Os prazos e as obrigações de resposta dependem de análise jurídica (A DEFINIR): não prometa prazo sem confirmar com um profissional.** Sempre que possível, peça que a própria pessoa use **Minha conta** (baixar os dados / excluir a conta): é mais seguro, porque quem pede já está logada. Quando ela não conseguir entrar, siga os passos abaixo no **SQL Editor** do Supabase. Ele roda com poderes totais e **não pede confirmação**: leia cada comando antes de executar.
+Use o e-mail de contato de `src/content/legal-config.ts` (campo `privacyContactEmail`). **O prazo de resposta (`requestDeadline` em `legal-config.ts`) hoje é uma PROPOSTA de 15 dias, a validar com um advogado: confirme antes de prometê-lo.** Sempre que possível, peça que a própria pessoa use **Minha conta** (baixar os dados / excluir a conta): é mais seguro, porque quem pede já está logada. Quando ela não conseguir entrar, siga os passos abaixo no **SQL Editor** do Supabase. Ele roda com poderes totais e **não pede confirmação**: leia cada comando antes de executar.
 
 1. **Confirme quem pede.** Responda **para o e-mail cadastrado na conta** e peça que a pessoa confirme o pedido a partir dele. Nunca envie dados para outro endereço.
 2. **Ache a conta** (troque o e-mail e confira que volta **uma** linha):
@@ -363,8 +363,8 @@ Com `true`, o site manda `Content-Security-Policy-Report-Only` em vez de `Conten
 **Como preencher** (pelo GitHub, no navegador): abra `src/content/legal-config.ts`, clique no lápis ("Edit this file"), troque o valor e faça o commit numa branch (peça um PR para a revisão). Os campos:
 
 - `controllerName`, `privacyContactEmail`, `minimumAge` e `lastUpdated`: quem controla os dados, o e-mail de contato, a idade mínima e a data da última atualização (mude a data a cada alteração dos textos).
-- `regions`: a região de cada serviço (Supabase, Vercel, Resend, Cloudflare Turnstile e Google). Hoje o Turnstile e o Google estão **A DEFINIR**.
-- `legalBases`, `internationalTransfer`, `retention` e `requestDeadline`: bases legais, transferência internacional, prazos de retenção e prazo para responder pedidos. Dependem de análise jurídica e estão **A DEFINIR**.
+- `regions`: a região de cada serviço (Supabase, Vercel, Resend, Cloudflare Turnstile e Google). Turnstile e Google (serviços globais) estão preenchidos como "sem região fixa", uma **proposta a validar com advogado**.
+- `legalBases`, `internationalTransfer`, `retention` e `requestDeadline`: bases legais, transferência internacional, prazos de retenção e prazo para responder pedidos. Estão preenchidos com **propostas, cada uma marcada no arquivo com `// PROPOSTA: validar com advogado`**. `legalBases` e `retention` podem ser uma lista (um item por finalidade ou por tipo de dado). Se algum campo voltar a ficar "A DEFINIR", a página mostra o marcador destacado.
 
 **O papel de `legalReviewed`:** enquanto houver **qualquer** campo "A DEFINIR" **ou** `legalReviewed` for `false` (o padrão), as duas páginas mostram o aviso **"Rascunho em revisão"** e ficam com `noindex`. **Preencher os campos não remove o aviso:** só mudar `legalReviewed` para `true`, e só depois de um profissional ter revisado os textos. Quando isso acontecer, o aviso some e as páginas passam a poder ser indexadas. O teste `src/content/legal-config.test.ts` lista no CI os campos que ainda faltam, sem falhar.
 

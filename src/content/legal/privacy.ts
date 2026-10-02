@@ -1,12 +1,39 @@
-import type { LegalData } from '../legal-config';
+import { A_DEFINIR, type LegalData, type LegalText } from '../legal-config';
 import { SITE_COOKIES } from './cookies';
-import type { LegalDoc, LegalFeatures, LegalSection } from './types';
+import type { LegalBlock, LegalDoc, LegalFeatures, LegalSection } from './types';
 
 /*
  * Política de Privacidade (RASCUNHO para revisão de um profissional). Tudo o que depende de decisão ou de
  * análise jurídica vem de `legal-config.ts` como "A DEFINIR". Só se afirma aqui o que o código faz de verdade.
  * Nunca escrever que os dados "não saem do Brasil" nem que "não há transferência internacional".
  */
+
+const isPending = (value: LegalText): boolean => value === A_DEFINIR;
+
+/** Enquanto não houver revisão profissional, todo ponto preenchido é só uma proposta. */
+function proposalNote(config: LegalData): LegalBlock[] {
+  return config.legalReviewed
+    ? []
+    : [{ type: 'p', text: 'Este ponto ainda precisa ser validado por um advogado.' }];
+}
+
+/**
+ * Um campo de `legal-config.ts` como texto. Pendente: a frase única de antes ("…: A DEFINIR. Este ponto
+ * depende de análise jurídica."). Preenchido: a introdução, o conteúdo (frase ou lista) e o aviso de proposta.
+ */
+function describeField(
+  config: LegalData,
+  intro: string,
+  value: LegalText,
+  pendingTail: string,
+): LegalBlock[] {
+  if (isPending(value)) {
+    return [{ type: 'p', text: `${intro}: ${value as string}. ${pendingTail}` }];
+  }
+  const content: LegalBlock =
+    typeof value === 'string' ? { type: 'p', text: value } : { type: 'ul', items: value };
+  return [{ type: 'p', text: `${intro}:` }, content, ...proposalNote(config)];
+}
 
 export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalDoc {
   const { regions } = config;
@@ -48,7 +75,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
     ['Vercel', 'Hospedagem do site e das funções que o executam.', regions.vercel],
     [
       'Resend',
-      'Envio do e-mail com o código de entrada, como operador contratado pelo Supabase (configurado no envio de e-mails do Supabase).',
+      'Envio do e-mail com o código de entrada, como operador contratado por nós e acionado pelo Supabase (o envio de e-mails do Supabase está configurado para usá-lo).',
       regions.resend,
     ],
     ...(features.google
@@ -110,10 +137,12 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
       id: 'bases-legais',
       title: '5. Bases legais',
       blocks: [
-        {
-          type: 'p',
-          text: `As bases legais da LGPD (art. 7º) que justificam cada finalidade: ${config.legalBases}. Este ponto depende de análise jurídica.`,
-        },
+        ...describeField(
+          config,
+          'As bases legais da LGPD (art. 7º) que justificam cada finalidade',
+          config.legalBases,
+          'Este ponto depende de análise jurídica.',
+        ),
       ],
     },
     {
@@ -130,24 +159,32 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           head: ['Serviço', 'Para quê', 'Região'],
           rows: providers,
         },
-        {
-          type: 'p',
-          text: 'Esses serviços são de empresas internacionais. A rede de entrega, os registros técnicos e o suporte deles podem envolver outros países, além da região indicada.',
-        },
-        {
-          type: 'p',
-          text: `Transferência internacional de dados: ${config.internationalTransfer}. Este ponto depende de análise jurídica.`,
-        },
+        ...(isPending(config.internationalTransfer)
+          ? [
+              {
+                type: 'p' as const,
+                text: 'Esses serviços são de empresas internacionais. A rede de entrega, os registros técnicos e o suporte deles podem envolver outros países, além da região indicada.',
+              },
+            ]
+          : []),
+        ...describeField(
+          config,
+          'Transferência internacional de dados',
+          config.internationalTransfer,
+          'Este ponto depende de análise jurídica.',
+        ),
       ],
     },
     {
       id: 'retencao',
       title: '7. Por quanto tempo guardamos',
       blocks: [
-        {
-          type: 'p',
-          text: `Prazos de retenção: ${config.retention}. Inclui as cópias de segurança dos provedores. Este ponto depende de análise jurídica.`,
-        },
+        ...describeField(
+          config,
+          'Por quanto tempo guardamos cada tipo de dado',
+          config.retention,
+          'Inclui as cópias de segurança dos provedores. Este ponto depende de análise jurídica.',
+        ),
         {
           type: 'p',
           text: 'Você pode apagar os seus dados a qualquer momento: "Excluir meu comentário" apaga o texto de um comentário, e "Excluir minha conta", em Minha conta, apaga o seu perfil, o seu e-mail, os seus comentários (e as respostas que outras pessoas escreveram a eles) e o seu progresso de leitura. A exclusão da conta não tem volta.',
@@ -173,10 +210,12 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
             `Qualquer outro pedido (por exemplo, confirmar o tratamento, corrigir algo que você não consegue editar ou pedir informações): escreva para ${config.privacyContactEmail}, a partir do e-mail cadastrado na conta.`,
           ],
         },
-        {
-          type: 'p',
-          text: `Prazo para responder aos pedidos: ${config.requestDeadline}. Este ponto depende de análise jurídica.`,
-        },
+        ...describeField(
+          config,
+          'Prazo para responder aos pedidos',
+          config.requestDeadline,
+          'Este ponto depende de análise jurídica.',
+        ),
       ],
     },
     {

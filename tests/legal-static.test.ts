@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { LegalDocument } from '@/components/legal/LegalDocument';
 import { LegalLinks } from '@/components/legal/LegalLinks';
-import { legalConfig } from '@/content/legal-config';
+import { A_DEFINIR, legalConfig, type LegalData } from '@/content/legal-config';
 import { buildPrivacy } from '@/content/legal/privacy';
 
 vi.mock('server-only', () => ({}));
@@ -41,10 +41,16 @@ describe('links das páginas legais', () => {
 });
 
 describe('rascunho em revisão e noindex', () => {
+  /** Com campos A DEFINIR, para ver o destaque. */
+  const pendingConfig: LegalData = {
+    ...legalConfig,
+    legalBases: A_DEFINIR,
+    retention: A_DEFINIR,
+  };
   const render = (draft: boolean) =>
     renderToStaticMarkup(
       createElement(LegalDocument, {
-        doc: buildPrivacy(legalConfig, { google: false, turnstile: false }),
+        doc: buildPrivacy(pendingConfig, { google: false, turnstile: false }),
         draft,
         other: { href: '/termos', label: 'Ler os Termos de Uso' },
       }),
