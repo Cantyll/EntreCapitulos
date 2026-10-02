@@ -6,6 +6,7 @@ import { retractComment } from '@/app/(public)/comment-actions';
 import { Icon } from '@/components/ui/Icon';
 
 import styles from './comments.module.css';
+import { useRetractNotice } from './RetractNotice';
 
 type Props = {
   commentId: string;
@@ -23,12 +24,14 @@ export function RetractButton({ commentId, replyCount, onDeleted }: Props) {
   const [error, setError] = useState('');
   const [pending, startTransition] = useTransition();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const notify = useRetractNotice();
 
   function confirm() {
     setError('');
     startTransition(async () => {
       const result = await retractComment(commentId);
       if (result.ok) {
+        notify('Comentário excluído.');
         onDeleted();
       } else {
         setError(result.message);

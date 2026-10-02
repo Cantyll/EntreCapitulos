@@ -12,6 +12,7 @@ import { effectiveProgress } from '@/lib/spoiler';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 import { CommentSort } from './CommentSort';
+import { RetractNoticeProvider } from './RetractNotice';
 import styles from './comments.module.css';
 
 type Props = {
@@ -106,22 +107,24 @@ export async function Discussion({
         </div>
       )}
 
-      <CommentList
-        key={order}
-        sessionId={sessionId}
-        order={order}
-        initialItems={items}
-        initialCursor={page.nextCursor}
-        progress={effectiveProgress(progress)}
-        progressKnown={progress !== null}
-        reply={{
-          sessionId,
-          chapterTo,
-          spoilerChoices: choices,
-          welcomeHref,
-          canReply: canComment,
-        }}
-      />
+      <RetractNoticeProvider>
+        <CommentList
+          key={order}
+          sessionId={sessionId}
+          order={order}
+          initialItems={items}
+          initialCursor={page.nextCursor}
+          progress={effectiveProgress(progress)}
+          progressKnown={progress !== null}
+          reply={{
+            sessionId,
+            chapterTo,
+            spoilerChoices: choices,
+            welcomeHref,
+            canReply: canComment,
+          }}
+        />
+      </RetractNoticeProvider>
     </section>
   );
 }

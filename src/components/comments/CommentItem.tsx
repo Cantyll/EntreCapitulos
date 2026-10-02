@@ -114,15 +114,8 @@ export function CommentArticle({
   const [deleted, setDeleted] = useState(false);
   const badge = comment.authorRole === 'member' ? null : ROLE_BADGE[comment.authorRole];
 
-  if (deleted) {
-    return (
-      <article id={`comentario-${comment.id}`} className={isReply ? styles.reply : styles.comment}>
-        <p role="status" className={styles.deleted}>
-          Comentário excluído.
-        </p>
-      </article>
-    );
-  }
+  // Já excluído: some da lista na hora (o aviso fica na região de status acima da lista).
+  if (deleted) return null;
 
   const canReply = reply.canReply && !comment.pending && onToggleReply;
 
