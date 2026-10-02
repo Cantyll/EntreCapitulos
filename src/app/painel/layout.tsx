@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
+import { AppBadge } from '@/components/admin/AppBadge';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminTabBar } from '@/components/admin/AdminTabBar';
 import { AdminTopbar } from '@/components/admin/AdminTopbar';
@@ -43,6 +44,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </div>
       </div>
       <AdminTabBar pendingComments={pendingCommentsCount} role={user.role} />
+      <AppBadge count={pendingCommentsCount} />
     </>
   );
 }

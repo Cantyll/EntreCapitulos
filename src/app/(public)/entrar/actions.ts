@@ -8,13 +8,15 @@ import {
   NEXT_COOKIE_MAX_AGE,
   NEXT_COOKIE_PATH,
   OTP_LENGTH,
+  CAPTCHA_FIELD,
+  CAPTCHA_TOKEN_MAX,
 } from '@/lib/auth/constants';
 import {
   classifyOtpSendError,
   classifyOtpVerifyError,
   type OtpErrorKey,
 } from '@/lib/auth/messages';
-import { isGoogleLoginEnabled } from '@/lib/auth/features';
+import { isGoogleLoginEnabled, isTurnstileEnabled } from '@/lib/auth/features';
 import { logAuthFailure } from '@/lib/auth/log';
 import { redirectTo } from '@/lib/auth/redirect';
 import { migrateVisitorProgress } from '@/lib/public/progress';
@@ -46,16 +48,32 @@ function readEmail(formData: FormData): string | null {
   return email.length <= 254 && EMAIL_PATTERN.test(email) ? email : null;
 }
 
+function readCaptchaToken(formData: FormData): string | null {
+  const value = formData.get(CAPTCHA_FIELD);
+  if (typeof value !== 'string') return null;
+  const token = value.trim();
+  return token.length > 0 && token.length <= CAPTCHA_TOKEN_MAX ? token : null;
+}
+
 export async function sendCode(_prev: SendCodeState, formData: FormData): Promise<SendCodeState> {
   const email = readEmail(formData);
   const typed = typeof formData.get('email') === 'string' ? String(formData.get('email')) : '';
   if (!email) return { sent: false, email: typed, sentAt: null, error: 'email_invalid' };
 
+  // Com o Turnstile ligado neste site, sem token nem se chama o Auth (cada envio gasta cota de e-mail).
+  // Sem a variável o comportamento é o de sempre: nenhum token, nenhuma exigência.
+  const captchaToken = isTurnstileEnabled() ? readCaptchaToken(formData) : null;
+  if (isTurnstileEnabled() && !captchaToken) {
+    return { sent: false, email, sentAt: null, error: 'captcha_failed' };
+  }
+
   try {
     const supabase = await createClient();
+    // O token vale uma vez. O Supabase só confere quando o CAPTCHA está ligado no painel dele; o `verifyOtp`
+    // (código de 6 dígitos) e o Google não levam token.
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: true, ...(captchaToken ? { captchaToken } : {}) },
     });
     if (error) {
       logAuthFailure('auth.signInWithOtp', error);

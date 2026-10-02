@@ -1,0 +1,129 @@
+.doc {
+  max-width: 720px;
+  padding: 40px 0 64px;
+}
+
+.doc h1 {
+  margin: 0 0 12px;
+  font-family: var(--serif);
+  font-size: clamp(32px, 4.5vw, 46px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.lead {
+  margin: 0 0 20px;
+  color: var(--ink-2);
+  font-size: 17px;
+}
+
+.doc h2 {
+  margin: 36px 0 10px;
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 500;
+  scroll-margin-top: 80px;
+}
+
+.doc p,
+.doc li {
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.doc p {
+  margin: 0 0 12px;
+}
+
+.doc ul {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+
+.doc li + li {
+  margin-top: 6px;
+}
+
+.draft {
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--danger);
+  border-radius: var(--r);
+  background: var(--danger-bg);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.pending {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--rose-tint);
+  color: var(--rose-deep);
+  font-weight: 600;
+}
+
+.note {
+  padding: 14px 16px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--soft);
+}
+
+.toc {
+  margin: 0 0 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+.toc ol {
+  margin: 0;
+  padding-left: 22px;
+  columns: 2 220px;
+}
+
+.toc a,
+.other a {
+  color: var(--rose-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tableWrap {
+  margin: 0 0 14px;
+  overflow-x: auto;
+}
+
+.tableWrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+
+.caption {
+  margin-bottom: 6px;
+  color: var(--ink-3);
+  font-size: 13px;
+  text-align: left;
+}
+
+.tableWrap th,
+.tableWrap td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tableWrap thead th {
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.other {
+  margin-top: 40px;
+}
