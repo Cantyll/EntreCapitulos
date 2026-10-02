@@ -24,6 +24,7 @@ export const OTP_MESSAGES = {
   verify_failed: 'Não conseguimos confirmar o código agora. Tente de novo em instantes.',
   code_format: 'Digite os 6 números do código que enviamos por e-mail.',
   code_invalid: 'Esse código não está certo ou já expirou. Confira ou peça um novo.',
+  captcha_failed: 'Não conseguimos confirmar que você é uma pessoa. Tente de novo.',
   generic: 'Algo deu errado. Tente de novo.',
 } as const;
 
@@ -42,6 +43,7 @@ function hasNoDetails(error: AuthErrorLike): boolean {
 /** Traduz o erro do Auth para uma chave de mensagem, olhando só o `code` e o status. */
 export function classifyOtpSendError(error: AuthErrorLike): OtpErrorKey {
   const code = error.code ?? '';
+  if (code === 'captcha_failed') return 'captcha_failed';
   if (error.status === 429 || code.includes('rate_limit')) return 'rate_limited';
   if (code === 'email_address_invalid' || code === 'validation_failed') return 'email_invalid';
   if (code === 'unexpected_failure' || (error.status ?? 0) >= 500 || hasNoDetails(error)) {

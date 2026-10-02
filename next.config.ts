@@ -31,6 +31,23 @@ function coverImagePatterns(): RemotePatterns {
   }
 }
 
+/**
+ * Cabeçalhos de segurança que não mudam por requisição. A Content-Security-Policy (que leva um nonce por
+ * requisição) é montada no `src/proxy.ts`.
+ *
+ *  - HSTS de 2 anos, SEM `includeSubDomains` e SEM `preload`: o domínio pode ter subdomínios que ainda não
+ *    servem HTTPS, e `preload` é praticamente irreversível. Só vale em HTTPS (o navegador ignora em HTTP).
+ *  - Permissions-Policy: desliga só o que o site nunca usa (câmera, microfone e localização).
+ *  - X-Frame-Options: reserva para navegadores sem `frame-ancestors`; a CSP já proíbe ser embutido.
+ */
+const securityHeaders = [
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000' },
+];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Links com rota inexistente viram erro de tipo (tipos gerados por `next typegen`).
@@ -42,6 +59,9 @@ const nextConfig: NextConfig = {
     remotePatterns: coverImagePatterns(),
     // O otimizador recusa IPs locais; só o Supabase local (desenvolvimento) precisa disto.
     dangerouslyAllowLocalIP: process.env.NODE_ENV !== 'production',
+  },
+  async headers() {
+    return [{ source: '/:path*', headers: securityHeaders }];
   },
   experimental: {
     // Habilita forbidden() e app/forbidden.tsx: página 403 de verdade para quem não tem papel.

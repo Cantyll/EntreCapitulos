@@ -114,3 +114,9 @@
   font-size: 13px;
   color: var(--ink-3);
 }
+
+.captcha {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+}

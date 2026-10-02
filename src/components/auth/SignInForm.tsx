@@ -15,6 +15,7 @@ import { OTP_MESSAGES } from '@/lib/auth/messages';
 
 import styles from './auth.module.css';
 import { GoogleIcon } from './GoogleIcon';
+import { Turnstile } from './Turnstile';
 
 type SignInFormProps = {
   /** Destino depois do login, já validado no servidor. */
@@ -23,18 +24,28 @@ type SignInFormProps = {
   initialError: string | null;
   /** Mostra "Continuar com Google". Desligado por padrão (ver `isGoogleLoginEnabled`). */
   googleEnabled?: boolean;
+  /** Site Key do Turnstile (`NEXT_PUBLIC_TURNSTILE_SITE_KEY`). Ausente: tudo funciona como antes. */
+  turnstileSiteKey?: string | null;
 };
 
 const INITIAL_SEND: SendCodeState = { sent: false, email: '', sentAt: null, error: null };
 const INITIAL_VERIFY: VerifyCodeState = { error: null };
 
-export function SignInForm({ next, initialError, googleEnabled = false }: SignInFormProps) {
+export function SignInForm({
+  next,
+  initialError,
+  googleEnabled = false,
+  turnstileSiteKey = null,
+}: SignInFormProps) {
   const [sendState, sendAction, sending] = useActionState(sendCode, INITIAL_SEND);
   const [verifyState, verifyAction, verifying] = useActionState(verifyCode, INITIAL_VERIFY);
   // "Usar outro e-mail": guarda de qual envio a pessoa voltou, sem precisar de um efeito.
   const [backedFrom, setBackedFrom] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const codeRef = useRef<HTMLInputElement>(null);
+  // Com o Turnstile ligado, só dá para enviar depois de passar na verificação (ver `Turnstile`).
+  const [captchaReady, setCaptchaReady] = useState(turnstileSiteKey === null);
+  const captchaOk = turnstileSiteKey === null || captchaReady;
 
   const showCode = sendState.sent && backedFrom !== sendState.sentAt;
   const sentAt = sendState.sentAt;
@@ -100,10 +111,17 @@ export function SignInForm({ next, initialError, googleEnabled = false }: SignIn
             <div className={styles.row}>
               <form action={sendAction}>
                 <input type="hidden" name="email" value={sendState.email} />
+                {turnstileSiteKey && (
+                  <Turnstile
+                    siteKey={turnstileSiteKey}
+                    resetKey={sendState}
+                    onReadyChange={setCaptchaReady}
+                  />
+                )}
                 <button
                   type="submit"
                   className={styles.linkBtn}
-                  disabled={remaining > 0 || sending}
+                  disabled={remaining > 0 || sending || !captchaOk}
                 >
                   {remaining > 0 ? `Reenviar código em ${remaining} s` : 'Reenviar código'}
                 </button>
@@ -148,7 +166,14 @@ export function SignInForm({ next, initialError, googleEnabled = false }: SignIn
                   required
                 />
               </div>
-              <Button type="submit" block disabled={sending}>
+              {turnstileSiteKey && (
+                <Turnstile
+                  siteKey={turnstileSiteKey}
+                  resetKey={sendState}
+                  onReadyChange={setCaptchaReady}
+                />
+              )}
+              <Button type="submit" block disabled={sending || !captchaOk}>
                 {sending ? 'Enviando…' : 'Receber código por e-mail'}
               </Button>
               <p className={styles.note}>

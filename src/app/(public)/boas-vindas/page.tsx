@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { WelcomeForm } from '@/components/auth/WelcomeForm';
+import { LegalLinks } from '@/components/legal/LegalLinks';
 import { PageHeader } from '@/components/site/PageHeader';
 import { Container } from '@/components/ui/Container';
 import { redirectTo } from '@/lib/auth/redirect';
@@ -28,6 +29,7 @@ export default async function WelcomePage({ searchParams }: { searchParams: Sear
         lead="Falta só um passo para participar das conversas."
       />
       <WelcomeForm next={next} initialName={initialName} />
+      <LegalLinks verb="continuar" />
     </Container>
   );
 }

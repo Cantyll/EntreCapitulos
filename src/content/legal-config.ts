@@ -16,6 +16,27 @@
 
 export const A_DEFINIR = 'A DEFINIR';
 
+/** Forma dos dados dos textos legais. Os builders de `src/content/legal/` recebem isto (e os testes passam variações). */
+export type LegalData = {
+  legalReviewed: boolean;
+  controllerName: string;
+  privacyContactEmail: string;
+  minimumAge: number;
+  lastUpdated: string;
+  regions: {
+    supabase: string;
+    vercel: string;
+    resend: string;
+    cloudflareTurnstile: string;
+    google: string;
+  };
+  legalBases: string;
+  internationalTransfer: string;
+  retention: string;
+  /** Prazo para responder pedidos dos titulares (art. 18). */
+  requestDeadline: string;
+};
+
 export const legalConfig = {
   /** `true` só depois da revisão de um profissional. Padrão: `false`. */
   legalReviewed: false,
@@ -42,12 +63,16 @@ export const legalConfig = {
   legalBases: A_DEFINIR,
   internationalTransfer: A_DEFINIR,
   retention: A_DEFINIR,
-} as const;
+  requestDeadline: A_DEFINIR,
+} as const satisfies LegalData;
 
 export type LegalConfig = {
   readonly legalReviewed: boolean;
   readonly [key: string]: unknown;
 };
+
+/** Texto que o site mostra no lugar de um valor ainda não decidido. */
+export const PENDING_LABEL = A_DEFINIR;
 
 /** Caminhos (`regions.google`) de todos os campos ainda marcados A DEFINIR. */
 export function pendingFields(value: unknown, prefix = ''): string[] {

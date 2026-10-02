@@ -8,3 +8,17 @@
 export function isGoogleLoginEnabled(): boolean {
   return process.env.NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED === 'true';
 }
+
+/**
+ * A verificação de segurança (Cloudflare Turnstile) do envio do código só liga com
+ * `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. Sem a variável o login funciona como sempre. A chave é pública (a Site
+ * Key); a Secret Key fica só no painel do Supabase.
+ */
+export function getTurnstileSiteKey(): string | null {
+  const key = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
+  return key ? key : null;
+}
+
+export function isTurnstileEnabled(): boolean {
+  return getTurnstileSiteKey() !== null;
+}

@@ -11,3 +11,8 @@ export const NEXT_COOKIE_MAX_AGE = 60 * 10;
 
 /** Cabeçalho que o proxy preenche com o caminho pedido, para o `requireUser` saber o `next`. */
 export const PATH_HEADER = 'x-ec-path';
+
+/** Campo que o widget do Cloudflare Turnstile escreve dentro do formulário de envio do código. */
+export const CAPTCHA_FIELD = 'cf-turnstile-response';
+/** Tamanho máximo do token do Turnstile (limite documentado pela Cloudflare). */
+export const CAPTCHA_TOKEN_MAX = 2048;

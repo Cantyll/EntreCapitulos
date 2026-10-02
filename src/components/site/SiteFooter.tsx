@@ -16,6 +16,8 @@ export function SiteFooter() {
             <Link href="/sessoes">Sessões</Link>
             <Link href="/estante">Estante</Link>
             <Link href="/sobre">Regras da comunidade</Link>
+            <Link href="/privacidade">Privacidade</Link>
+            <Link href="/termos">Termos</Link>
           </nav>
           <span>{SITE_TAGLINE}</span>
         </div>
