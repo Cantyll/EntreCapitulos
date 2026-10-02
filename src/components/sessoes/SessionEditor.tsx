@@ -23,7 +23,7 @@ import {
   suggestTitle,
   type BodyDoc,
 } from '@/lib/session-body';
-import { statusLabel } from '@/lib/session-editor/autosave';
+import { afterFlush, statusLabel } from '@/lib/session-editor/autosave';
 import type { EditorBook } from '@/lib/sessions/queries';
 import type { NoteItem, QuestionItem } from '@/lib/sessions/items';
 import { adminBookHref, adminSessionsNoticeHref, sessionHref } from '@/lib/routes';
@@ -163,6 +163,21 @@ export function SessionEditor({
     (patch: Partial<SessionSnapshot>) => {
       controller.edit({ ...controller.getState().current, ...patch });
     },
+    [controller],
+  );
+
+  /** Campos de escolha (visibilidade, nota, comentários abertos): mudam e já mandam, junto com o texto pendente. */
+  const updateAndSend = useCallback(
+    (patch: Partial<SessionSnapshot>) => {
+      update(patch);
+      void controller.flush();
+    },
+    [controller, update],
+  );
+
+  /** Antes de trecho ou pergunta (adicionar, editar, remover, reordenar): manda o texto pendente. */
+  const beforeServerAction = useCallback(
+    () => afterFlush(controller, async () => undefined),
     [controller],
   );
 
@@ -509,8 +524,12 @@ export function SessionEditor({
           )}
         </div>
 
-        <NotesPanel sessionId={sessionId} initial={notes} />
-        <QuestionsPanel sessionId={sessionId} initial={questions} />
+        <NotesPanel sessionId={sessionId} initial={notes} beforeAction={beforeServerAction} />
+        <QuestionsPanel
+          sessionId={sessionId}
+          initial={questions}
+          beforeAction={beforeServerAction}
+        />
       </div>
 
       <aside className={styles.side} aria-label="Opções da sessão">
@@ -525,7 +544,7 @@ export function SessionEditor({
                   value={value}
                   checked={current.visibility === value}
                   disabled={locked}
-                  onChange={() => update({ visibility: value })}
+                  onChange={() => updateAndSend({ visibility: value })}
                 />
                 <span>
                   {VISIBILITY_LABEL[value]}
@@ -627,7 +646,7 @@ export function SessionEditor({
               aria-labelledby="abrir-comentarios"
               className={styles.switch}
               disabled={locked}
-              onClick={() => update({ commentsOpen: !current.commentsOpen })}
+              onClick={() => updateAndSend({ commentsOpen: !current.commentsOpen })}
             />
           </div>
         </section>
@@ -646,7 +665,7 @@ export function SessionEditor({
           <StarPicker
             value={current.rating}
             disabled={locked}
-            onChange={(rating) => update({ rating })}
+            onChange={(rating) => updateAndSend({ rating })}
           />
         </section>
 

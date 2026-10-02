@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import { saveSessionAction } from '@/app/painel/sessoes/actions';
+import { newSessionHref } from '@/lib/routes';
 import { isBodyEmpty } from '@/lib/session-body';
 import {
   AutosaveController,
@@ -70,11 +71,14 @@ export function useSessionAutosave(options: Options) {
         switch (out.kind) {
           case 'ok': {
             if (request.sessionId === null) {
-              // A sessão virou linha no banco: a cópia local muda de chave e a URL passa a ser
-              // a do editor, sem remontar a página (o foco e o teclado continuam onde estavam).
+              // A sessão virou linha no banco: a cópia local muda de chave e a URL ganha o id do
+              // rascunho. Continua na MESMA página (/nova, com ?sessao=<id>) de propósito: o Next
+              // refaz a página atual depois de uma ação que expira cache (trecho, pergunta…), e se
+              // a URL já fosse a de OUTRA rota (/<id>) ele montaria o editor de novo, com o texto
+              // do servidor, e o que ainda não foi enviado sumiria (e o teclado fecharia no iPhone).
               await store.remove().catch(() => {});
               store.rekey(sessionKey(out.sessionId));
-              window.history.replaceState(null, '', `/painel/sessoes/${out.sessionId}`);
+              window.history.replaceState(null, '', newSessionHref(out.sessionId));
               onCreatedRef.current(out.sessionId, out.number);
             }
             return { kind: 'ok', updatedAt: out.updatedAt, sessionId: out.sessionId };

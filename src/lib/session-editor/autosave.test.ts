@@ -4,6 +4,7 @@ import type { BodyDoc } from '@/lib/session-body';
 
 import {
   AutosaveController,
+  afterFlush,
   DEBOUNCE_MS,
   decideRestore,
   RETRY_DELAYS_MS,
@@ -784,5 +785,70 @@ describe('snapshotKey', () => {
       snapshotKey({ ...base, excerpt: 'x' }),
     ]);
     expect(keys.size).toBe(9);
+  });
+});
+
+describe('afterFlush: manda o que está pendente ANTES de uma ação do servidor', () => {
+  it('envia o texto pendente primeiro e só então roda a ação', async () => {
+    const { controller, calls } = setup();
+    const order: string[] = [];
+    controller.edit(withBody('texto ainda não enviado'));
+    expect(calls).toHaveLength(0);
+
+    await afterFlush(controller, async () => {
+      order.push(`ação (envios até aqui: ${calls.length})`);
+    });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.snapshot.body).toEqual(body('texto ainda não enviado'));
+    expect(order).toEqual(['ação (envios até aqui: 1)']);
+    expect(controller.getState().dirty).toBe(false);
+    expect(controller.getState().saved.body).toEqual(body('texto ainda não enviado'));
+  });
+
+  it('espera um envio que já está em andamento e o texto digitado nesse meio-tempo', async () => {
+    const { controller, calls, transport } = setup();
+    let release: (() => void) | undefined;
+    transport.mockImplementationOnce(async (request) => {
+      calls.push(request);
+      await new Promise<void>((resolve) => (release = resolve));
+      return { kind: 'ok', updatedAt: '2026-10-01T12:00:00.000009+00:00', sessionId: 'sess-1' };
+    });
+    controller.edit(withBody('primeiro'));
+    const first = controller.flush();
+    await settle();
+    controller.edit(withBody('primeiro e segundo'));
+
+    const done = afterFlush(controller, async () => calls.length);
+    release?.();
+    await first;
+    expect(await done).toBe(2);
+    expect(calls.map((c) => c.snapshot.body)).toEqual([
+      body('primeiro'),
+      body('primeiro e segundo'),
+    ]);
+  });
+
+  it('a ação roda mesmo se o envio falhar, e o texto continua pendente (nunca é descartado)', async () => {
+    const { controller } = setup({ results: [{ kind: 'network' }] });
+    controller.edit(withBody('texto que não chegou'));
+    const ran = vi.fn();
+
+    await afterFlush(controller, async () => ran());
+
+    expect(ran).toHaveBeenCalledOnce();
+    expect(controller.getState().dirty).toBe(true);
+    expect(controller.getState().current.body).toEqual(body('texto que não chegou'));
+  });
+
+  it('numa sessão publicada não envia nada sozinha, mas a ação roda e o texto fica', async () => {
+    const { controller, calls } = setup({ mode: 'published' });
+    controller.edit(withBody('alteração de sessão no ar'));
+
+    const out = await afterFlush(controller, async () => 'feito');
+
+    expect(out).toBe('feito');
+    expect(calls).toHaveLength(0);
+    expect(controller.getState().current.body).toEqual(body('alteração de sessão no ar'));
   });
 });

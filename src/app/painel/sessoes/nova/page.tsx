@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
 import { AdminPage } from '@/components/admin/AdminPage';
 import { SessionEditor } from '@/components/sessoes/SessionEditor';
@@ -13,15 +14,63 @@ import {
   adminSessionHref,
 } from '@/lib/routes';
 import { EMPTY_BODY } from '@/lib/session-body';
-import { getNewSessionContext, type NewSessionContext } from '@/lib/sessions/queries';
+import {
+  getEditorData,
+  getNewSessionContext,
+  type EditorData,
+  type NewSessionContext,
+} from '@/lib/sessions/queries';
+import { uuidSchema } from '@/lib/sessions/validation';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Nova sessão' };
 
 const BACK = { href: ADMIN_SESSIONS_HREF, label: 'Voltar para Sessões' };
 
-export default async function NewSessionPage() {
+/** Chave fixa do editor: com ela o React mantém a MESMA instância quando a página é refeita no servidor. */
+const EDITOR_KEY = 'editor';
+
+export default async function NewSessionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sessao?: string | string[] }>;
+}) {
   await requireRole('admin');
+
+  // Rascunho que acabou de ser criado aqui (ver `newSessionHref`): a mesma página, agora com o id. A
+  // estrutura abaixo é igual à do editor de sessão nova (mesma chave), para o React só atualizar as props.
+  const { sessao } = await searchParams;
+  let reopened: EditorData | null = null;
+  if (typeof sessao === 'string' && uuidSchema.safeParse(sessao).success) {
+    try {
+      const load = await getEditorData(await createClient(), sessao);
+      if (load.kind === 'ok') reopened = load.data;
+    } catch (error) {
+      logFailure('sessions: reabrir o rascunho novo', error);
+    }
+  }
+  if (reopened) {
+    // Sessão que não é mais rascunho (já publicada): o lugar dela é a rota normal.
+    if (reopened.status !== 'draft') redirect(adminSessionHref(reopened.id));
+    return (
+      <AdminPage back={BACK}>
+        <SessionEditor
+          key={EDITOR_KEY}
+          book={reopened.book}
+          session={{
+            id: reopened.id,
+            number: reopened.number,
+            status: reopened.status,
+            updatedAt: reopened.updatedAt,
+            commentCount: reopened.commentCount,
+          }}
+          snapshot={reopened.snapshot}
+          notes={reopened.notes}
+          questions={reopened.questions}
+        />
+      </AdminPage>
+    );
+  }
 
   let context: NewSessionContext;
   try {
@@ -86,6 +135,7 @@ export default async function NewSessionPage() {
   return (
     <AdminPage back={BACK}>
       <SessionEditor
+        key={EDITOR_KEY}
         book={context.book}
         session={{
           id: null,

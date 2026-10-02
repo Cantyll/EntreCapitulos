@@ -40,28 +40,37 @@ export default defineConfig({
     {
       name: 'chromium-desktop',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: /\.serial\.spec\.ts$/,
+      testIgnore: /serial\.spec\.ts$/,
     },
     {
       name: 'webkit-desktop',
       use: { ...devices['Desktop Safari'] },
-      testIgnore: /\.serial\.spec\.ts$/,
+      testIgnore: /serial\.spec\.ts$/,
     },
     {
       name: 'webkit-mobile',
       use: { ...devices['iPhone 17'] },
       grep: /@mobile/,
-      testIgnore: /\.serial\.spec\.ts$/,
+      testIgnore: /serial\.spec\.ts$/,
     },
     {
       // Fluxos que mexem no estado GLOBAL do banco (só um livro "em leitura", numeração das sessões):
       // rodam em série e só depois dos outros projetos, para não pisar neles.
       name: 'chromium-admin',
       use: { ...devices['Desktop Chrome'] },
-      testMatch: /\.serial\.spec\.ts$/,
+      testMatch: /serial\.spec\.ts$/,
       fullyParallel: false,
       workers: 1,
       dependencies: ['chromium-desktop', 'webkit-desktop', 'webkit-mobile'],
+    },
+    {
+      // O mesmo estado global, agora no WebKit do iPhone: só os specs `*.mobile-serial.spec.ts`, depois do grupo do Chromium.
+      name: 'webkit-mobile-admin',
+      use: { ...devices['iPhone 17'] },
+      testMatch: /mobile-serial\.spec\.ts$/,
+      fullyParallel: false,
+      workers: 1,
+      dependencies: ['chromium-admin'],
     },
   ],
 });

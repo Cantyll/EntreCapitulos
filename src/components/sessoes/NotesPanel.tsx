@@ -33,9 +33,12 @@ function move<T>(list: T[], from: number, to: number): T[] {
 export function NotesPanel({
   sessionId,
   initial,
+  beforeAction,
 }: {
   sessionId: string | null;
   initial: NoteItem[];
+  /** Roda antes de cada ação do servidor (envia o texto pendente do relato). */
+  beforeAction: () => Promise<void>;
 }) {
   const [items, setItems] = useState(initial);
   const [draft, setDraft] = useState<Draft>(EMPTY);
@@ -48,6 +51,8 @@ export function NotesPanel({
     setError('');
     startTransition(async () => {
       try {
+        // O texto do relato que ainda não foi enviado vai antes: nada depende de a tela sobreviver.
+        await beforeAction();
         await work();
       } catch {
         setError('Não foi possível salvar agora. Tente de novo em instantes.');
