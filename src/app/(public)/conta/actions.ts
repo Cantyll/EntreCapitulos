@@ -65,9 +65,9 @@ export async function saveAccountName(
 
 export type DeleteAccountState = { error: string | null };
 
-/** Cookies do site e do Supabase Auth que somem junto com a conta. */
+/** Cookies do site e do Supabase Auth que somem junto com a conta (o `ec_next` só vive 10 minutos, entre o clique no Google e a volta). */
 function isSiteCookie(name: string): boolean {
-  return name.startsWith('sb-') || name === 'ec_progress' || name === 'ec_next';
+  return name.startsWith('sb-') || name === 'ec_progress';
 }
 
 /**

@@ -253,6 +253,78 @@ Para conferir, use a consulta de conferência de "Promover a primeira administra
 
 **Ordem para aplicar esta etapa:** faça o merge, aguarde o deploy da Vercel e rode **Actions → Database deploy** (primeiro com **dry run** ligado, depois desligado). A migration `…_comment_link_hold.sql` só acrescenta a regra do link e o alerta "Contém link". **Antes de aplicar, tudo funciona** com as regras que já existiam (comentar, responder, aprovar, spoiler): só os comentários com link não ficam segurados nem alertados. Nada quebra por aplicar a migration depois do deploy.
 
+## Privacidade e dados pessoais
+
+> **Os textos legais são RASCUNHO.** Nenhum texto sobre privacidade ou termos foi escrito por um profissional. Eles precisam de revisão jurídica antes de valerem. Os dados que dependem de decisão ou de análise (bases legais, transferência internacional, prazos de retenção e a região de serviços globais) estão marcados **A DEFINIR** em **um único arquivo**, `src/content/legal-config.ts`. Enquanto houver campo **A DEFINIR**, **ou** enquanto `legalReviewed` for `false`, as páginas `/privacidade` e `/termos` (etapa 7b) mostram o aviso "Rascunho em revisão" e ficam com `noindex`. **Preencher os campos não remove o aviso:** só mudar `legalReviewed` para `true`, depois da revisão de um profissional. O teste `src/content/legal-config.test.ts` lista os campos pendentes no resultado do CI, sem falhar.
+
+**O que cada pessoa pode fazer sozinha** (menu da conta → **Minha conta**, `/conta`):
+
+- **Trocar o nome** que aparece nos comentários (mesmas regras do primeiro acesso: sem `@`, até 60 caracteres).
+- **Baixar meus dados:** um arquivo JSON com perfil, e-mail, **todos** os comentários da pessoa (aprovados, em análise e removidos) e o progresso de leitura. Só dados dela: nada de outras pessoas, nem as sinalizações internas da equipe.
+- **Excluir um comentário:** "Excluir meu comentário", embaixo de cada comentário dela, inclusive os que ainda estão em análise. O texto é **apagado do banco** e trocado por "[comentário removido pelo autor]"; o comentário sai da página. **As respostas de outras pessoas a ele continuam no banco, mas não aparecem mais**, porque a página só mostra resposta embaixo de um comentário publicado (é a mesma regra de quando a moderação remove o comentário).
+- **Excluir a conta:** exige digitar `EXCLUIR`. Apaga o perfil, o e-mail, **todos os comentários da pessoa e as respostas que outras pessoas escreveram a eles**, e o progresso de leitura. Não tem volta. A pessoa sai da conta e os cookies do site são apagados. **Contas da equipe (administradora e moderadora) não podem ser excluídas por aqui:** o papel precisa ser retirado antes (veja abaixo).
+
+**Limites e regras do banco** (migration `…_privacy_abuse_controls.sql`):
+
+- Quem não é da equipe pode publicar **no máximo 3 comentários por minuto e 20 por hora** (contados em todos os estados: excluir um comentário não devolve a cota). A equipe não tem limite. O aviso na tela é "Você está comentando rápido demais. Espere um pouco e tente de novo."
+- O campo `avatar_url` do perfil deixou de poder ser alterado pelo próprio usuário (a interface só mostra as iniciais ou a foto que veio do Google no primeiro acesso).
+- A pessoa passa a poder **ler os próprios comentários em qualquer estado** (antes só os pendentes), para que o arquivo de dados seja completo. Nada muda na tela para ninguém.
+
+**Ordem para aplicar:** faça o merge, aguarde o deploy da Vercel e rode **Actions → Database deploy** (primeiro com **dry run** ligado, depois desligado). **Antes de aplicar, nada quebra:** `/conta`, trocar o nome e baixar os dados funcionam (o arquivo só traz os comentários que a pessoa já conseguia ler); "Excluir meu comentário" e "Excluir minha conta" mostram "Este recurso ainda não está disponível. Tente de novo mais tarde." e não alteram nada; e não há limite de frequência.
+
+### Atender por e-mail um pedido de cópia ou de exclusão dos dados
+
+Use o e-mail de contato de `src/content/legal-config.ts` (campo `privacyContactEmail`). **Os prazos e as obrigações de resposta dependem de análise jurídica (A DEFINIR): não prometa prazo sem confirmar com um profissional.** Sempre que possível, peça que a própria pessoa use **Minha conta** (baixar os dados / excluir a conta): é mais seguro, porque quem pede já está logada. Quando ela não conseguir entrar, siga os passos abaixo no **SQL Editor** do Supabase. Ele roda com poderes totais e **não pede confirmação**: leia cada comando antes de executar.
+
+1. **Confirme quem pede.** Responda **para o e-mail cadastrado na conta** e peça que a pessoa confirme o pedido a partir dele. Nunca envie dados para outro endereço.
+2. **Ache a conta** (troque o e-mail e confira que volta **uma** linha):
+
+   ```sql
+   select u.id, u.email, u.created_at, p.display_name, p.role
+   from auth.users u join public.profiles p on p.id = u.id
+   where u.email = 'email-da-pessoa@exemplo.com';
+   ```
+
+3. **Pedido de cópia dos dados.** Troque o `ID` pelo `id` do passo 2 (o mesmo valor nas três consultas). Depois de cada uma, use o botão de exportar do resultado (CSV ou JSON) e junte tudo num arquivo enviado só ao e-mail confirmado:
+
+   ```sql
+   select * from public.profiles where id = 'ID';
+   select c.id, c.status, c.body, c.parent_id, c.session_id, c.read_up_to, c.spoiler_up_to, c.created_at
+   from public.comments c where c.author_id = 'ID' order by c.created_at;
+   select rp.chapter, rp.updated_at, b.title from public.reading_progress rp
+   join public.books b on b.id = rp.book_id where rp.user_id = 'ID';
+   ```
+
+   Não inclua comentários de outras pessoas nem as sinalizações da equipe (`comment_flags`).
+
+4. **Pedido de exclusão da conta.** Primeiro confira o papel (passo 2). Se for `member`, vá ao passo seguinte. Se for `admin` ou `moderator`, só continue se a pessoa realmente deixará a equipe, e retire o papel antes:
+
+   ```sql
+   update public.profiles set role = 'member' where id = 'ID';
+   ```
+
+5. **Confira o que será apagado** (um só usuário, e quantos comentários vão junto):
+
+   ```sql
+   select (select count(*) from auth.users where id = 'ID') as usuarios,
+          (select count(*) from public.comments where author_id = 'ID') as comentarios;
+   ```
+
+6. **Exclua.** É definitivo. Apaga em cascata o perfil, os comentários da pessoa, as respostas de outras pessoas a eles, as sinalizações e o progresso:
+
+   ```sql
+   delete from auth.users where id = 'ID';
+   ```
+
+   Confira que `usuarios` volta a `0` repetindo a consulta do passo 5. Nas páginas das sessões, os comentários apagados podem continuar aparecendo por **até 5 minutos** (o cache público). Se precisar sumir na hora, use **Redeploy** na Vercel.
+
+7. **Responda por e-mail** dizendo o que foi feito. Se a exclusão for feita pelo SQL, as cópias de segurança do Supabase podem reter os dados por um período: **o que dizer sobre isso depende do plano contratado e de análise jurídica (A DEFINIR)**; não afirme prazos que você não conferiu.
+
+## Proteção contra abuso
+
+- **Comentários:** o limite de 3 por minuto e 20 por hora (equipe isenta) é aplicado pelo banco, e comentários com link esperam aprovação (ver "Moderar comentários"). Se alguém reclamar do aviso "Você está comentando rápido demais", é só esperar um minuto.
+- **CAPTCHA no envio do código por e-mail e limites de envio do Supabase** (Authentication → Rate Limits): chegam na etapa 7b e serão descritos aqui, com a ordem segura de ativação.
+
 ## Solução de problemas
 
 Os nomes dos menus da Vercel mudam de vez em quando e **não foram conferidos na tela do projeto** (a documentação da Vercel consultada só descreve a CLI e a API). Se algo não estiver onde está escrito, procure pelo nome em destaque.
@@ -308,9 +380,9 @@ Ele só aparece com `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED` igual a `true` (e **fica 
 
 ## Decisões conhecidas
 
-- **Excluir uma conta apaga os comentários da pessoa e, por consequência, as respostas de outras pessoas a eles.** É uma cascata no banco (`profiles → comments → respostas`), escolhida para que a exclusão da conta realmente remova o que a pessoa escreveu. Nenhuma tela exclui contas por enquanto; isso só acontece pelo painel do Supabase.
+- **Excluir uma conta apaga os comentários da pessoa e, por consequência, as respostas de outras pessoas a eles.** É uma cascata no banco (`profiles → comments → respostas`), escolhida para que a exclusão da conta realmente remova o que a pessoa escreveu. A própria pessoa exclui a conta em **Minha conta** (contas da equipe não podem); um pedido por e-mail segue o passo a passo de "Privacidade e dados pessoais".
 - **Os perfis são legíveis publicamente.** Qualquer visitante, sem login, consegue ler o nome de exibição e o avatar de todos os membros (e quem é administradora ou moderadora). O e-mail nunca está no perfil, e quem se cadastra sem informar nome aparece como "Leitor". Isso precisa constar da política de privacidade (etapa 7).
-- **Comentários nunca são apagados pelo site.** A moderação marca como `removed` (exclusão lógica). Uma sessão que já recebeu comentários não pode ser excluída.
+- **A moderação não apaga comentários:** ela marca como `removed` (exclusão lógica). Quem apaga é o autor, em "Excluir meu comentário" (o texto é sobrescrito no banco), ou a pessoa ao excluir a conta. Uma sessão que já recebeu comentários não pode ser excluída.
 - **O painel só abre para quem tem papel no banco.** O proxy (`src/proxy.ts`) redireciona quem não está logado, mas a autorização real é `requireRole` (lê `profiles.role`) e o RLS. A moderadora só acessa Comentários; o resto do painel dá 403.
 - **Livros são públicos.** Sessões publicadas como públicas aparecem para todo mundo; as marcadas como "só membros" exigem login. Rascunhos só a administradora vê.
 - **O total de capítulos de cada livro é uma estimativa.** O banco não trava uma sessão por passar do total.

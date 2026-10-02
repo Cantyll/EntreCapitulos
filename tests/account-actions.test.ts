@@ -168,7 +168,7 @@ describe('deleteAccount', () => {
     expect(calls.filter((c) => c.startsWith('rpc:'))).toEqual(['rpc:delete_my_account:null']);
     expect(calls).toContain('signOut');
     expect(cookieStore.deleted.sort()).toEqual(
-      ['ec_next', 'ec_progress', 'sb-abc-auth-token', 'sb-abc-auth-token.0'].sort(),
+      ['ec_progress', 'sb-abc-auth-token', 'sb-abc-auth-token.0'].sort(),
     );
     // A ordem: banco, depois sessão, depois cache, depois o redirect.
     expect(calls.indexOf('rpc:delete_my_account:null')).toBeLessThan(calls.indexOf('signOut'));
