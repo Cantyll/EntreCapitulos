@@ -1,0 +1,49 @@
+name: Smoke test da produção
+
+# Só leitura, sem login e sem nenhum secret: abre o site público e confere rotas, cabeçalhos, manifest,
+# robots, console limpo, redirecionamento do painel e o 404. Roda todo dia e sob demanda. Se falhar, o
+# GitHub avisa por e-mail e pelas notificações (quem editou o agendamento por último).
+on:
+  workflow_dispatch:
+  schedule:
+    # 09:17 UTC (06:17 em Brasília), fora do horário cheio.
+    - cron: '17 9 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-prod
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Site em produção
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test
+        run: npx playwright test --config=playwright.smoke.config.ts
+
+      - name: Relatório e screenshots (só em falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-falha
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
