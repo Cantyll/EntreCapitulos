@@ -221,6 +221,38 @@ Quem lê escolhe "Li até o capítulo N" (na barra da sessão, na home ou na pá
 
 O filtro é uma cortesia de leitura, **não uma trava de segurança**: o texto coberto continua no código da página e quem inspecionar o navegador consegue ler. Para esconder algo de verdade, use uma sessão só para membros ou deixe como rascunho.
 
+## Moderar comentários
+
+Tudo isto é feito em **Painel → Comentários**, pelo celular ou pelo computador. A administradora e as moderadoras usam a mesma tela.
+
+**Quando um comentário vai para "Para aprovar":**
+
+- É um dos **3 primeiros comentários de uma pessoa**. Depois que 3 forem aprovados, os próximos dela ou dele são publicados direto.
+- Tem um **link** (`http://`, `https://` ou `www.`). Vai para a análise **mesmo que a pessoa já seja de confiança** e chega com o alerta "Contém link". (Endereço sem esses começos, como `exemplo.com`, não é segurado.)
+- Comentários da administradora e das moderadoras são publicados direto.
+
+**O que você pode fazer:**
+
+- **Aprovar:** o comentário aparece na sessão. **Aprovar como spoiler:** aprova e marca até que capítulo ele fala; quem ainda não leu até lá vê o texto coberto.
+- **Remover:** tira do ar. Nada é apagado: o comentário vai para a aba "Removidos", e **Restaurar** devolve para "Para aprovar" (nunca volta ao ar sozinho).
+- **Marcar spoiler / Tirar spoiler:** nos já aprovados.
+- **"Aprovar os N desta página sem alerta":** aprova só os da página que você está vendo e que **não têm alerta**. Os de outras páginas ficam como estão, de propósito: aprovar sem ler faria o contador de aprovados da pessoa subir e a liberaria para publicar direto.
+- Se outra pessoa já moderou o mesmo comentário, a tela avisa e nada muda.
+
+O número ao lado de "Comentários" no menu é o de comentários esperando aprovação.
+
+**Para tornar alguém moderadora**, no **SQL Editor** do Supabase (a pessoa precisa já ter entrado no site uma vez):
+
+```sql
+update public.profiles
+set role = 'moderator'
+where id = (select id from auth.users where email = 'email-da-moderadora@exemplo.com');
+```
+
+Para conferir, use a consulta de conferência de "Promover a primeira administradora" (acima) e veja a linha com `moderator`. Para voltar a ser membro, troque `'moderator'` por `'member'`. A moderadora só abre a tela de Comentários; as outras áreas do painel respondem "sem permissão". Nome e papel que aparecem ao lado dos comentários podem levar até 5 minutos para mudar na página das sessões.
+
+**Ordem para aplicar esta etapa:** faça o merge, aguarde o deploy da Vercel e rode **Actions → Database deploy** (primeiro com **dry run** ligado, depois desligado). A migration `…_comment_link_hold.sql` só acrescenta a regra do link e o alerta "Contém link". **Antes de aplicar, tudo funciona** com as regras que já existiam (comentar, responder, aprovar, spoiler): só os comentários com link não ficam segurados nem alertados. Nada quebra por aplicar a migration depois do deploy.
+
 ## Solução de problemas
 
 Os nomes dos menus da Vercel mudam de vez em quando e **não foram conferidos na tela do projeto** (a documentação da Vercel consultada só descreve a CLI e a API). Se algo não estiver onde está escrito, procure pelo nome em destaque.
