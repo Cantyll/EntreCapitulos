@@ -89,3 +89,31 @@ export function isRecent(published: string | null, now: Date): boolean {
   const age = now.getTime() - date.getTime();
   return age >= 0 && age < RECENT_DAYS * 24 * 60 * 60 * 1000;
 }
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+/**
+ * Tempo relativo em pt-BR para comentários: "agora", "há 5 min", "há 3 horas", "ontem", "há 4 dias" e,
+ * a partir de uma semana, a data ("29 de setembro", com o ano se não for o corrente). É calculado no
+ * SERVIDOR e vai pronto para a tela: calcular no navegador mudaria o texto entre o HTML e a hidratação.
+ */
+export function formatRelativeTime(value: DateInput, now: Date): string {
+  const date = toDate(value);
+  if (!date) return '';
+  const diff = now.getTime() - date.getTime();
+  if (diff < MINUTE) return 'agora';
+  if (diff < HOUR) return `há ${Math.floor(diff / MINUTE)} min`;
+  if (diff < DAY) {
+    const hours = Math.floor(diff / HOUR);
+    return hours === 1 ? 'há 1 hora' : `há ${hours} horas`;
+  }
+  const days = Math.floor(diff / DAY);
+  if (days === 1) return 'ontem';
+  if (days < 7) return `há ${days} dias`;
+  const sameYear =
+    format(date, { year: 'numeric' }, SITE_TIME_ZONE) ===
+    format(now, { year: 'numeric' }, SITE_TIME_ZONE);
+  return sameYear ? formatDayMonth(date) : formatFullDate(date);
+}
