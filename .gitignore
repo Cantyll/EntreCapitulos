@@ -9,3 +9,9 @@ test-results/
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
+
+# E2E (Playwright): certificado local, chaves lidas do `supabase status` e relatórios nunca vão para o git
+/e2e/.tmp/
+/playwright-report/
+/test-results/
+/blob-report/

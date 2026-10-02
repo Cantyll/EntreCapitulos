@@ -242,6 +242,16 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Os mesmos e-mails da nuvem (só o código, sem link): o login por código e os testes E2E leem o
+# código do Mailpit local. Na nuvem os modelos são colados à mão no painel (README, "Login").
+[auth.email.template.confirmation]
+subject = "Seu código para entrar no Entre Capítulos"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.magic_link]
+subject = "Seu código para entrar no Entre Capítulos"
+content_path = "./supabase/templates/magic_link.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
