@@ -80,6 +80,7 @@ export function CoverUploader({
         className={styles.fileInput}
         onChange={onChange}
         disabled={pending}
+        aria-label="Escolher o arquivo da capa"
         aria-describedby={`${inputId}-status`}
       />
       <Button
