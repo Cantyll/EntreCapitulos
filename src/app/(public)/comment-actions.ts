@@ -8,7 +8,9 @@ import { logFailure } from '@/lib/auth/log';
 import { requireUser } from '@/lib/auth/session';
 import {
   COMMENT_MESSAGES,
+  RETRACT_MESSAGES,
   classifyCommentError,
+  classifyRetractError,
   isUuid,
   parseCommentOrder,
   parseCursor,
@@ -127,6 +129,35 @@ export async function createComment(
   } catch (error) {
     logFailure('comments.create', error);
     return fail('generic');
+  }
+}
+
+export type RetractResult = { ok: true } | { ok: false; message: string };
+
+/**
+ * A pessoa exclui o PRÓPRIO comentário (LGPD). A função do banco (`retract_comment`) confere que quem
+ * chama é o autor, que o comentário ainda não foi removido e que não é login anônimo; ela apaga o texto
+ * original e devolve a sessão, para expirar o cache certo. O cliente só manda o id do comentário.
+ */
+export async function retractComment(commentId: string): Promise<RetractResult> {
+  // Fora do try: o redirect do Next é uma exceção e não pode ser engolida.
+  await requireUser();
+  if (!isUuid(commentId)) return { ok: false, message: RETRACT_MESSAGES.not_found };
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc('retract_comment', { p_comment_id: commentId });
+    if (error) {
+      const code = classifyRetractError(error);
+      if (code === 'generic') logFailure('comments.retract', error);
+      return { ok: false, message: RETRACT_MESSAGES[code] };
+    }
+    invalidateComments(data);
+    revalidatePath('/', 'layout');
+    return { ok: true };
+  } catch (error) {
+    logFailure('comments.retract', error);
+    return { ok: false, message: RETRACT_MESSAGES.generic };
   }
 }
 

@@ -8,10 +8,12 @@ export type { BodyCheck } from './body';
 export {
   COMMENT_MESSAGES,
   MODERATION_MESSAGES,
+  RETRACT_MESSAGES,
   classifyCommentError,
   classifyModerationError,
+  classifyRetractError,
 } from './errors';
-export type { CommentMessageKey, ModerationMessageKey } from './errors';
+export type { CommentMessageKey, ModerationMessageKey, RetractMessageKey } from './errors';
 export {
   MODERATION_TABS,
   TAB_STATUS,

@@ -63,6 +63,10 @@ export function AccountMenu({ displayName, panelHref }: AccountMenuProps) {
               Ir ao painel
             </Link>
           )}
+          <Link href="/conta" className={styles.item} onClick={() => setOpen(false)}>
+            <Icon name="settings" size="sm" />
+            Minha conta
+          </Link>
           <form action={signOut}>
             <button type="submit" className={styles.item}>
               <Icon name="logout" size="sm" />

@@ -60,3 +60,15 @@ export function ButtonLink({
 }: ButtonStyleProps & ComponentProps<typeof Link>) {
   return <Link className={buttonClass({ variant, size, block, danger, className })} {...rest} />;
 }
+
+/** Link com cara de botão para um ARQUIVO (download) ou endereço fora das páginas: `<a>` comum, sem o roteador. */
+export function ButtonAnchor({
+  variant,
+  size,
+  block,
+  danger,
+  className,
+  ...rest
+}: ButtonStyleProps & ComponentProps<'a'>) {
+  return <a className={buttonClass({ variant, size, block, danger, className })} {...rest} />;
+}
