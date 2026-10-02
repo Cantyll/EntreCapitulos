@@ -36,6 +36,30 @@ describe('painel', () => {
     expect(source).toMatch(/requireRole\(\s*'(admin|staff)'\s*\)/);
   });
 
+  // Comentários é a única área da moderadora (`staff`: administradora e moderadora); o resto do painel é
+  // só da administradora. Duas exceções, ambas `staff` de propósito: o layout (a moderadora precisa
+  // dele para abrir Comentários) e `/painel`, que manda a moderadora para Comentários.
+  const STAFF_PATHS = (file: string) =>
+    file.endsWith('/layout.tsx') && file.split('/').length === 2
+      ? true
+      : file === '/page.tsx' || file.startsWith('/comentarios/');
+
+  it.each(guarded.map((f) => [f.slice(PAINEL.length)]))('%s exige o papel certo', (file) => {
+    const source = readFileSync(join(PAINEL, file as string), 'utf8');
+    const roles = [...source.matchAll(/requireRole\(\s*'(admin|staff)'\s*\)/g)].map((m) => m[1]);
+    const expected = STAFF_PATHS(file as string) ? 'staff' : 'admin';
+    expect(new Set(roles)).toEqual(new Set([expected]));
+  });
+
+  it('a moderadora só abre Comentários: nenhuma outra página aceita `staff`', () => {
+    const staffFiles = guarded
+      .map((f) => f.slice(PAINEL.length))
+      .filter((f) => readFileSync(join(PAINEL, f), 'utf8').includes("requireRole('staff')"));
+    expect(staffFiles.sort()).toEqual(
+      ['/comentarios/actions.ts', '/comentarios/page.tsx', '/layout.tsx', '/page.tsx'].sort(),
+    );
+  });
+
   // Em arquivo de Server Actions, CADA action chama `requireRole` (um só no arquivo não basta).
   const actionFiles = files.filter((f) => /^['"]use server['"]/m.test(readFileSync(f, 'utf8')));
 
@@ -68,7 +92,7 @@ describe('painel', () => {
         const name = part.slice(0, part.indexOf('('));
         if (NO_PUBLIC_CACHE.has(name)) continue;
         expect(part, `${name} precisa chamar invalidate… ou updateTag`).toMatch(
-          /invalidate(Books|Session)\(|refreshAfterBookChange\(|refreshPublic\(|updateTag\(/,
+          /invalidate(Books|Session|Comments)\(|refreshAfterBookChange\(|refreshPublic\(|moderate\(|refresh\(|updateTag\(/,
         );
       }
     },

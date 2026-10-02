@@ -24,6 +24,7 @@ import {
   unflaggedPending,
   validateCommentBody,
 } from './index';
+import { countCovered, toDisplayThread } from './display';
 import type { CommentRecord, CommentWithReplies } from './types';
 
 describe('normalizeCommentBody', () => {
@@ -459,5 +460,57 @@ describe('formatRelativeTime', () => {
   it('data inválida vira vazio, e um instante no futuro (relógio torto) vira "agora"', () => {
     expect(formatRelativeTime('não é data', now)).toBe('');
     expect(formatRelativeTime(new Date(now.getTime() + 5 * min), now)).toBe('agora');
+  });
+});
+
+describe('toDisplayThread e countCovered', () => {
+  const now = new Date('2026-10-02T15:00:00Z');
+  const t = '2026-10-01T15:00:00+00:00';
+  const page: CommentWithReplies[] = [
+    {
+      ...top({ id: 'c1', createdAt: t, authorId: 'me', spoilerUpTo: 20, readUpTo: 0 }),
+      replies: [
+        rec({
+          id: 'r1',
+          parentId: 'c1',
+          createdAt: t,
+          authorId: 'other',
+          spoilerUpTo: 30,
+          readUpTo: 5,
+        }),
+      ],
+      repliesTruncated: true,
+    },
+  ];
+
+  it('"é meu" vem do id de quem vê, e o id de quem vê não vai para a tela', () => {
+    const [thread] = toDisplayThread(page, 'me', now);
+    expect(thread!.isOwn).toBe(true);
+    expect(thread!.replies[0]!.isOwn).toBe(false);
+    expect(JSON.stringify(thread)).not.toContain('"authorId"');
+    expect(toDisplayThread(page, null, now)[0]!.isOwn).toBe(false);
+  });
+
+  it('tempo relativo já calculado, "leu até" 0 some e o aviso de respostas cortadas passa', () => {
+    const [thread] = toDisplayThread(page, 'me', now);
+    expect(thread!.timeText).toBe('ontem');
+    expect(thread!.readUpTo).toBeNull();
+    expect(thread!.replies[0]!.readUpTo).toBe(5);
+    expect(thread!.repliesTruncated).toBe(true);
+  });
+
+  it('pendente vira boolean', () => {
+    const pending = [top({ id: 'p', createdAt: t, status: 'pending' })];
+    expect(toDisplayThread(pending, 'u1', now)[0]!.pending).toBe(true);
+  });
+
+  it('conta os cobertos, respostas incluídas, e o autor não conta', () => {
+    const items = toDisplayThread(page, 'me', now);
+    const covered = (c: (typeof items)[number]) =>
+      isCommentCovered({ spoilerUpTo: c.spoilerUpTo, progress: 12, isAuthor: c.isOwn });
+    // c1 é meu (não cobre); a resposta r1 (cap. 30) cobre.
+    expect(countCovered(items, covered)).toBe(1);
+    const visitor = toDisplayThread(page, null, now);
+    expect(countCovered(visitor, covered)).toBe(2);
   });
 });

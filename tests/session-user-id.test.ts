@@ -58,19 +58,42 @@ describe('requireUserId', () => {
 });
 
 describe('getCurrentUser', () => {
+  const profile = (confirmedAt: string | null) => ({
+    data: {
+      display_name: 'Marina',
+      avatar_url: null,
+      role: 'member',
+      display_name_confirmed_at: confirmedAt,
+    },
+    error: null,
+  });
+
   it('continua lendo o perfil (nome e papel vêm do banco)', async () => {
     getClaims.mockResolvedValue({ data: { claims: { sub: 'user-1' } }, error: null });
-    maybeSingle.mockResolvedValue({
-      data: { display_name: 'Marina', avatar_url: null, role: 'member' },
-      error: null,
-    });
+    maybeSingle.mockResolvedValue(profile('2026-09-01T00:00:00Z'));
 
     await expect(getCurrentUser()).resolves.toEqual({
       id: 'user-1',
       displayName: 'Marina',
       avatarUrl: null,
       role: 'member',
+      nameConfirmed: true,
     });
     expect(from).toHaveBeenCalledWith('profiles');
+  });
+
+  it('nome ainda não confirmado (coluna nula)', async () => {
+    getClaims.mockResolvedValue({ data: { claims: { sub: 'user-1' } }, error: null });
+    maybeSingle.mockResolvedValue(profile(null));
+    await expect(getCurrentUser()).resolves.toMatchObject({ nameConfirmed: false });
+  });
+
+  it('um erro de coluna (42703) falha de forma visível: sem reserva que finja que está tudo certo', async () => {
+    getClaims.mockResolvedValue({ data: { claims: { sub: 'user-1' } }, error: null });
+    maybeSingle.mockResolvedValue({ data: null, error: { code: '42703' } });
+    await expect(getCurrentUser()).rejects.toMatchObject({
+      name: 'CurrentUserError',
+      code: '42703',
+    });
   });
 });

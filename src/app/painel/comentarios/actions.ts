@@ -45,7 +45,7 @@ type Change = {
   done: string;
 };
 
-async function change(id: string, spec: Change): Promise<ModerationResult> {
+async function moderate(id: string, spec: Change): Promise<ModerationResult> {
   if (!isUuid(id)) return fail('invalid_input');
   try {
     const supabase = await createClient();
@@ -71,7 +71,7 @@ async function change(id: string, spec: Change): Promise<ModerationResult> {
 
 export async function approveComment(id: string): Promise<ModerationResult> {
   await requireRole('staff');
-  return change(id, {
+  return moderate(id, {
     patch: { status: 'approved' },
     from: ['pending'],
     done: 'Comentário aprovado.',
@@ -80,7 +80,7 @@ export async function approveComment(id: string): Promise<ModerationResult> {
 
 export async function removeComment(id: string): Promise<ModerationResult> {
   await requireRole('staff');
-  return change(id, {
+  return moderate(id, {
     patch: { status: 'removed' },
     from: ['pending', 'approved'],
     done: 'Comentário removido.',
@@ -90,7 +90,7 @@ export async function removeComment(id: string): Promise<ModerationResult> {
 /** Restaurar devolve o comentário para "Para aprovar": nada volta ao ar sem uma decisão. */
 export async function restoreComment(id: string): Promise<ModerationResult> {
   await requireRole('staff');
-  return change(id, {
+  return moderate(id, {
     patch: { status: 'pending' },
     from: ['removed'],
     done: 'Comentário restaurado. Ele voltou para "Para aprovar".',
@@ -124,7 +124,7 @@ export async function approveAsSpoiler(id: string, upTo: unknown): Promise<Moder
     const value = await validSpoiler(id, upTo);
     if (value === 'missing') return fail('not_found');
     if (value === 'invalid') return fail('invalid_spoiler');
-    return await change(id, {
+    return await moderate(id, {
       patch: { status: 'approved', spoiler_up_to: value },
       from: ['pending'],
       done: `Comentário aprovado como spoiler até o capítulo ${value}.`,
@@ -140,7 +140,7 @@ export async function setCommentSpoiler(id: string, upTo: unknown): Promise<Mode
   await requireRole('staff');
   if (!isUuid(id)) return fail('invalid_input');
   if (upTo === null) {
-    return change(id, {
+    return moderate(id, {
       patch: { spoiler_up_to: null },
       from: ['approved'],
       done: 'Aviso de spoiler retirado.',
@@ -150,7 +150,7 @@ export async function setCommentSpoiler(id: string, upTo: unknown): Promise<Mode
     const value = await validSpoiler(id, upTo);
     if (value === 'missing') return fail('not_found');
     if (value === 'invalid') return fail('invalid_spoiler');
-    return await change(id, {
+    return await moderate(id, {
       patch: { spoiler_up_to: value },
       from: ['approved'],
       done: `Marcado como spoiler até o capítulo ${value}.`,
