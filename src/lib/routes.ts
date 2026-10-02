@@ -26,6 +26,14 @@ export function adminSessionHref(id: string): Route {
   return `/painel/sessoes/${id}` as Route;
 }
 
+/**
+ * Endereço de um rascunho recém-criado, ainda dentro da página de nova sessão. Não use `adminSessionHref`
+ * aqui: ver `useSessionAutosave` (trocar para a rota /<id> faz o editor ser montado de novo).
+ */
+export function newSessionHref(id: string): string {
+  return `/painel/sessoes/nova?sessao=${id}`;
+}
+
 /** Avisos que a lista de sessões mostra depois de uma ação (só estes valores são aceitos). */
 export const SESSION_NOTICES = ['publicada', 'rascunho', 'excluida'] as const;
 export type SessionNotice = (typeof SESSION_NOTICES)[number];

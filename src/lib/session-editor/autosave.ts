@@ -516,3 +516,22 @@ export function statusLabel(state: Pick<EditorState, 'status' | 'mode' | 'dirty'
       return draft ? 'Rascunho novo' : '';
   }
 }
+
+/**
+ * Roda uma ação do servidor (trecho, pergunta, faixa, publicar…) DEPOIS de mandar o que está pendente.
+ * Assim o texto digitado nunca depende de a tela sobreviver à ação: se o envio falhar, a ação roda
+ * mesmo assim (ela não depende do texto) e o texto continua pendente no controlador e na cópia local.
+ * Em sessão publicada o `flush` não envia nada (só o botão "Salvar alterações" envia).
+ */
+export async function afterFlush<T>(
+  controller: Pick<AutosaveController, 'flush' | 'idle'>,
+  action: () => Promise<T>,
+): Promise<T> {
+  try {
+    await controller.flush();
+    await controller.idle();
+  } catch {
+    // O controlador já guarda o erro e o texto pendente; a ação não depende do envio.
+  }
+  return action();
+}

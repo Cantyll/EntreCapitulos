@@ -119,14 +119,9 @@ test.describe.serial('painel da administradora', () => {
     // O título da divisória se edita no painel lateral, não dentro do editor.
     await page.getByLabel('Título do capítulo 1').fill('Um começo');
     await expect(saved(page)).toBeVisible();
-    expect(page.url()).toMatch(/\/painel\/sessoes\/[0-9a-f-]{36}$/);
-    editUrl = page.url();
+    expect(page.url()).toMatch(/\/painel\/sessoes\/nova\?sessao=[0-9a-f-]{36}$/);
+    editUrl = `/painel/sessoes/${new URL(page.url()).searchParams.get('sessao')}`;
 
-    // Trecho e pergunta só existem depois de o rascunho ser salvo. A tela é recarregada antes: ao
-    // criar o rascunho a URL muda de /nova para /<id> sem navegar, e a primeira ação de trecho ou de
-    // pergunta refaz a página inteira (ver o teste "fixme" no fim deste arquivo).
-    await page.reload();
-    await expect(page.getByLabel('Título da sessão')).toHaveValue(sessionTitle);
     const notes = page.getByRole('region', { name: 'Trechos e anotações' });
     await page.getByLabel('Capítulo e página').fill('Capítulo 1, página 10');
     await fillUntilEnabled(
@@ -296,34 +291,5 @@ test.describe.serial('painel da administradora', () => {
     await second.getByRole('button', { name: 'Carregar a versão do servidor' }).click();
     await expect(second.getByLabel('Título da sessão')).toHaveValue('Título pela primeira aba');
     await expect(second.getByText('Esta sessão foi alterada em outro lugar')).toHaveCount(0);
-  });
-
-  // BUG CONHECIDO (achado pelo E2E, ainda sem correção): num rascunho recém-criado em /painel/sessoes/nova,
-  // adicionar um trecho ou uma pergunta logo depois de digitar refaz a tela e o texto ainda não enviado
-  // some do editor (a cópia local continua guardada e volta pelo aviso "Restaurar?" ao recarregar).
-  // Causa: `useSessionAutosave` troca a URL para /<id> com `history.replaceState`; a ação de trecho ou
-  // pergunta expira a tag da sessão e o Next busca de novo a rota /<id>, que é outra página que /nova,
-  // então o editor é montado do zero com o texto do servidor.
-  test.fixme('digitar e adicionar um trecho logo em seguida, num rascunho novo, não perde o texto', async ({
-    openAs,
-  }) => {
-    const { page } = await openAs(admin);
-    await page.goto('/painel/sessoes/nova');
-    const title = page.getByLabel('Título da sessão');
-    await untilHydrated(title);
-    await title.fill('Rascunho do bug');
-    await expect(saved(page)).toBeVisible();
-    const editor = page.getByRole('textbox', { name: 'Relato da sessão' });
-    await editor.click();
-    await page.keyboard.type('Texto ainda não enviado');
-    const notes = page.getByRole('region', { name: 'Trechos e anotações' });
-    await fillUntilEnabled(
-      page.getByRole('textbox', { name: 'Trecho' }),
-      'Trecho curto.',
-      notes.getByRole('button', { name: 'Adicionar' }),
-    );
-    await notes.getByRole('button', { name: 'Adicionar' }).click();
-    await expect(notes.getByText('Trecho curto.')).toBeVisible();
-    await expect(editor).toContainText('Texto ainda não enviado');
   });
 });
