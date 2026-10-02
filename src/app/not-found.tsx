@@ -1,11 +1,19 @@
+import { connection } from 'next/server';
+
 import { ButtonLink } from '@/components/ui/Button';
 import { Container } from '@/components/ui/Container';
 import { Logo } from '@/components/ui/Logo';
 
 import styles from './forbidden.module.css';
 
-/** 404 geral (endereço que não existe em lugar nenhum do site), em português. */
-export default function NotFound() {
+/**
+ * 404 geral (endereço que não existe em lugar nenhum do site), em português.
+ *
+ * `connection()` obriga a renderizar por requisição: sem isso o Next guarda esta página pronta (estática) e
+ * ela sairia SEM o nonce da CSP, com os scripts bloqueados.
+ */
+export default async function NotFound() {
+  await connection();
   return (
     <main className={styles.page}>
       <Container>
