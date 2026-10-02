@@ -19,6 +19,8 @@ export type CurrentUser = {
   displayName: string;
   avatarUrl: string | null;
   role: Role;
+  /** A pessoa já escolheu o nome público (`/boas-vindas`)? Sem isso o banco recusa o comentário. */
+  nameConfirmed: boolean;
 };
 
 /**
@@ -47,7 +49,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const supabase = await createClient();
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('display_name, avatar_url, role')
+    .select('display_name, avatar_url, role, display_name_confirmed_at')
     .eq('id', id)
     .maybeSingle();
 
@@ -59,6 +61,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     displayName: profile.display_name,
     avatarUrl: profile.avatar_url,
     role: parseRole(profile.role),
+    nameConfirmed: profile.display_name_confirmed_at !== null,
   };
 });
 

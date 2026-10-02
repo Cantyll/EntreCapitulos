@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { requireRole } from '@/lib/auth/session';
-import { invalidateBooks, invalidateSession } from '@/lib/public/tags';
+import { invalidateBooks, invalidateComments, invalidateSession } from '@/lib/public/tags';
 import {
   addNote,
   addQuestion,
@@ -46,6 +46,9 @@ import { createClient } from '@/lib/supabase/server';
  */
 function refreshPublic(sessionId?: string) {
   invalidateSession(sessionId);
+  // Abrir ou fechar os comentários vem por aqui (campo `commentsOpen` da sessão): a discussão dela e as
+  // contagens também são refeitas.
+  invalidateComments(sessionId);
   invalidateBooks();
   revalidatePath('/', 'layout');
 }

@@ -38,6 +38,12 @@ export type SessionSummary = {
   publishedAt: string | null;
   readMinutes: number | null;
   membersOnly: boolean;
+  /**
+   * Comentários APROVADOS. Vem do cache `comment-counts` (sessões públicas) ou do embed da leitura
+   * por pessoa (só para membros); as listas em cache de sessões não carregam isto, então o `mapper`
+   * começa em 0 e quem monta a página (`loaders.ts`) preenche.
+   */
+  commentCount: number;
 };
 
 export type SessionNoteView = {
@@ -50,6 +56,8 @@ export type SessionNoteView = {
 export type SessionQuestionView = { id: string; text: string };
 
 export type SessionDetail = SessionSummary & {
+  /** `comments_open`: com `false` a página esconde o compositor e mantém os comentários existentes. */
+  commentsOpen: boolean;
   /** `null` quando o texto salvo não passa no esquema (a página avisa em vez de quebrar). */
   body: BodyDoc | null;
   notes: SessionNoteView[];

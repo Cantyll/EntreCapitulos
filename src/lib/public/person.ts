@@ -19,6 +19,7 @@ import {
   toSessionDetail,
   toSessionSummary,
 } from './mappers';
+import { embeddedCount } from './queries';
 import type { MarginNote, SessionDetail, SessionSummary } from './types';
 
 /*
@@ -70,13 +71,16 @@ export async function getMemberSessions(bookId: string): Promise<SessionSummary[
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('reading_sessions')
-    .select(SESSION_LIST_COLUMNS)
+    // A contagem de comentários vem embutida: nenhuma consulta a mais. O filtro de estado é explícito
+    // (a equipe lê todos os estados), e o RLS já esconde a sessão de quem não é membro.
+    .select(`${SESSION_LIST_COLUMNS}, comments(count)`)
     .eq('book_id', bookId)
     .eq('status', 'published')
     .eq('visibility', 'members')
+    .eq('comments.status', 'approved')
     .order('number', { ascending: false });
   if (error) throw error;
-  return (data ?? []).map(toSessionSummary);
+  return (data ?? []).map((row) => toSessionSummary(row, embeddedCount(row.comments)));
 }
 
 /** O corpo de uma sessão "só para membros", lido com a sessão de quem pede (sem cache). */

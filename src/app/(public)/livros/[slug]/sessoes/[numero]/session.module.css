@@ -64,6 +64,11 @@
   color: var(--ink-3);
 }
 
+.meta a {
+  color: var(--rose-2);
+  text-decoration: underline;
+}
+
 .spoilerBar {
   display: flex;
   flex-wrap: wrap;

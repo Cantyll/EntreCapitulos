@@ -13,7 +13,13 @@ import {
   getProgressFor,
   getViewer,
 } from './person';
-import { getBooks, getPublicMarginNotes, getPublicSessionDetail, getPublicSessions } from './queries';
+import {
+  getBooks,
+  getPublicCommentCounts,
+  getPublicMarginNotes,
+  getPublicSessionDetail,
+  getPublicSessions,
+} from './queries';
 import type { MarginNote, PublicBook, SessionDetail, SessionSummary } from './types';
 
 /*
@@ -50,20 +56,34 @@ export async function getBookBySlug(slug: string): Promise<PublicBook | null> {
  */
 export async function getVisibleSessions(bookId: string): Promise<SessionSummary[]> {
   await connection();
-  const [publicSessions, memberSessions] = await Promise.all([
+  const [publicSessions, counts, memberSessions] = await Promise.all([
     getPublicSessions(),
+    getPublicCommentCounts(),
     getMemberSessions(bookId),
   ]);
-  return [...publicSessions.filter((s) => s.bookId === bookId), ...memberSessions].sort(newestFirst);
+  const withCounts = publicSessions
+    .filter((s) => s.bookId === bookId)
+    .map((s) => ({ ...s, commentCount: counts[s.id] ?? 0 }));
+  return [...withCounts, ...memberSessions].sort(newestFirst);
 }
 
-/** Quantas sessões públicas cada livro tem (a estante e as abas de /sessoes). */
-export async function getPublicSessionCounts(): Promise<Map<string, number>> {
+/**
+ * Quantas sessões públicas e quantos comentários aprovados (nelas) cada livro tem: a estante e as abas
+ * de /sessoes. Tudo do cache compartilhado, nenhuma consulta quando está quente.
+ */
+export async function getPublicBookTotals(): Promise<{
+  sessions: Map<string, number>;
+  comments: Map<string, number>;
+}> {
   await connection();
-  const sessions = await getPublicSessions();
-  const counts = new Map<string, number>();
-  for (const s of sessions) counts.set(s.bookId, (counts.get(s.bookId) ?? 0) + 1);
-  return counts;
+  const [sessions, commentCounts] = await Promise.all([getPublicSessions(), getPublicCommentCounts()]);
+  const sessionTotals = new Map<string, number>();
+  const commentTotals = new Map<string, number>();
+  for (const s of sessions) {
+    sessionTotals.set(s.bookId, (sessionTotals.get(s.bookId) ?? 0) + 1);
+    commentTotals.set(s.bookId, (commentTotals.get(s.bookId) ?? 0) + (commentCounts[s.id] ?? 0));
+  }
+  return { sessions: sessionTotals, comments: commentTotals };
 }
 
 // --- Home ---------------------------------------------------------------------------------------
@@ -169,17 +189,20 @@ export type ShelfData = {
   finished: PublicBook[];
   queued: PublicBook[];
   counts: Map<string, number>;
+  /** Comentários aprovados por livro (só sessões públicas). */
+  commentCounts: Map<string, number>;
 };
 
 async function loadShelfUncached(): Promise<ShelfData> {
   await connection();
-  const [books, counts] = await Promise.all([getBooks(), getPublicSessionCounts()]);
+  const [books, totals] = await Promise.all([getBooks(), getPublicBookTotals()]);
   return {
     finished: books
       .filter((b) => b.status === 'finished')
       .sort((a, b) => (b.finishedAt ?? '').localeCompare(a.finishedAt ?? '')),
     queued: books.filter((b) => b.status === 'queued'),
-    counts,
+    counts: totals.sessions,
+    commentCounts: totals.comments,
   };
 }
 

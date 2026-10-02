@@ -9,7 +9,6 @@ export const COMMENT_MAX_LENGTH = 2000;
 // Controle (menos \n), DEL, e os invisíveis que servem para esconder link ou imitar outra pessoa:
 // zero-width (U+200B a U+200D, U+2060, U+FEFF), marcas de direção e sobreposição (U+200E, U+200F,
 // U+202A a U+202E, U+2066 a U+2069) e o hífen suave (U+00AD).
-// eslint-disable-next-line no-control-regex
 const INVISIBLE = /[\u0000-\u0009\u000B-\u001F\u007F-\u009F­​-‏‪-‮⁠⁦-⁩﻿]/g;
 
 /**
@@ -31,9 +30,7 @@ export function normalizeCommentBody(raw: unknown): string {
 
 /** Tamanho como o banco conta: por code point. */
 export function commentLength(text: string): number {
-  let count = 0;
-  for (const _ of text) count += 1;
-  return count;
+  return Array.from(text).length;
 }
 
 export type BodyCheck =
