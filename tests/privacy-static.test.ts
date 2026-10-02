@@ -137,3 +137,26 @@ describe('páginas de erro', () => {
     expect(text).toMatch(/<body>/);
   });
 });
+
+describe('CSP e o zod', () => {
+  it('todo módulo que importa o zod importa antes o zod-setup (sem eval no navegador)', () => {
+    const users = sources.filter(
+      ({ path, text }) => /from 'zod'/.test(text) && path !== 'src/lib/zod-setup.ts',
+    );
+    expect(users.length).toBeGreaterThan(0);
+    for (const { path, text } of users) {
+      const setup = text.indexOf("import '@/lib/zod-setup'");
+      expect(
+        setup,
+        `${path} precisa importar '@/lib/zod-setup' antes do zod`,
+      ).toBeGreaterThanOrEqual(0);
+      expect(setup).toBeLessThan(text.indexOf("from 'zod'"));
+    }
+  });
+
+  it('o zod-setup liga o modo jitless só no navegador', () => {
+    const setup = read('src/lib/zod-setup.ts');
+    expect(setup).toMatch(/typeof window !== 'undefined'/);
+    expect(setup).toMatch(/jitless:\s*true/);
+  });
+});

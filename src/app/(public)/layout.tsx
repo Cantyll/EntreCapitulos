@@ -1,3 +1,4 @@
+import { unstable_rethrow } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
 
 import { SiteFooter } from '@/components/site/SiteFooter';
@@ -18,6 +19,8 @@ async function HeaderWithCurrentBook() {
   try {
     slug = (await getCurrentBook())?.slug ?? null;
   } catch (error) {
+    // Os erros internos do Next (página que precisa de requisição, por exemplo) seguem em frente.
+    unstable_rethrow(error);
     // O menu nunca derruba a página: sem o livro atual, "Lendo agora" aponta para /livro.
     logFailure('layout público: livro atual', error);
   }

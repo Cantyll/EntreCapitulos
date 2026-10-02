@@ -1,3 +1,4 @@
+import '@/lib/zod-setup';
 import { z } from 'zod';
 
 import { CHAPTER_MAX } from '@/lib/session-body';

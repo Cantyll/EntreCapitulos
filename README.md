@@ -255,7 +255,7 @@ Para conferir, use a consulta de conferência de "Promover a primeira administra
 
 ## Privacidade e dados pessoais
 
-> **Os textos legais são RASCUNHO.** Nenhum texto sobre privacidade ou termos foi escrito por um profissional. Eles precisam de revisão jurídica antes de valerem. Os dados que dependem de decisão ou de análise (bases legais, transferência internacional, prazos de retenção e a região de serviços globais) estão marcados **A DEFINIR** em **um único arquivo**, `src/content/legal-config.ts`. Enquanto houver campo **A DEFINIR**, **ou** enquanto `legalReviewed` for `false`, as páginas `/privacidade` e `/termos` (etapa 7b) mostram o aviso "Rascunho em revisão" e ficam com `noindex`. **Preencher os campos não remove o aviso:** só mudar `legalReviewed` para `true`, depois da revisão de um profissional. O teste `src/content/legal-config.test.ts` lista os campos pendentes no resultado do CI, sem falhar.
+> **Os textos legais são RASCUNHO.** Nenhum texto sobre privacidade ou termos foi escrito por um profissional. Eles precisam de revisão jurídica antes de valerem. Os dados que dependem de decisão ou de análise (bases legais, transferência internacional, prazos de retenção e a região de serviços globais) estão marcados **A DEFINIR** em **um único arquivo**, `src/content/legal-config.ts`. Enquanto houver campo **A DEFINIR**, **ou** enquanto `legalReviewed` for `false`, as páginas `/privacidade` e `/termos` mostram o aviso "Rascunho em revisão" e ficam com `noindex`. **Preencher os campos não remove o aviso:** só mudar `legalReviewed` para `true`, depois da revisão de um profissional. O teste `src/content/legal-config.test.ts` lista os campos pendentes no resultado do CI, sem falhar.
 
 **O que cada pessoa pode fazer sozinha** (menu da conta → **Minha conta**, `/conta`):
 
@@ -320,10 +320,77 @@ Use o e-mail de contato de `src/content/legal-config.ts` (campo `privacyContactE
 
 7. **Responda por e-mail** dizendo o que foi feito. Se a exclusão for feita pelo SQL, as cópias de segurança do Supabase podem reter os dados por um período: **o que dizer sobre isso depende do plano contratado e de análise jurídica (A DEFINIR)**; não afirme prazos que você não conferiu.
 
+## Cabeçalhos de segurança e CSP
+
+Todas as respostas do site levam estes cabeçalhos. Os fixos ficam em `next.config.ts`; a **Content-Security-Policy** (que tem um _nonce_ novo a cada requisição) é montada no `src/proxy.ts` por uma função pura e testada, `src/lib/security/csp.ts`.
+
+| Cabeçalho | Valor | Por quê |
+| --- | --- | --- |
+| `X-Content-Type-Options` | `nosniff` | o navegador não "adivinha" o tipo de um arquivo |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | links para fora recebem só o domínio, não o caminho |
+| `X-Frame-Options` | `DENY` | ninguém embute o site em outra página (a CSP também diz `frame-ancestors 'none'`) |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | desliga só o que o site nunca usa |
+| `Strict-Transport-Security` | `max-age=63072000` (2 anos) | só HTTPS. **Sem** `includeSubDomains` e **sem** `preload`: o domínio pode ter subdomínios sem HTTPS, e `preload` é quase impossível de desfazer |
+| `Content-Security-Policy` | veja abaixo | só carrega o que o site mesmo usa |
+
+**Cuidado com o HSTS:** quando o navegador de uma pessoa vê esse cabeçalho, ele passa a exigir HTTPS neste domínio por até 2 anos. Para voltar atrás, o cabeçalho precisa mandar `max-age=0` (e a pessoa visitar o site de novo). Não existe botão para desfazer de uma vez.
+
+**A política (produção):** `default-src 'self'`; scripts só com o **nonce** da requisição e `'strict-dynamic'` (**sem** `'unsafe-inline'` em `script-src`); estilos `'self' 'unsafe-inline'`; imagens `'self' data: blob:` e o endereço do Supabase (a prévia da capa no upload usa `blob:`); fontes `'self'`; conexões `'self'` e o endereço do Supabase (o upload da capa vai direto do navegador ao Storage); `frame-ancestors 'none'`; `base-uri 'self'`; `object-src 'none'`; `manifest-src 'self'`; `upgrade-insecure-requests` só em produção. O endereço do Supabase vem de `NEXT_PUBLIC_SUPABASE_URL`.
+
+**Justificativa de `style-src 'unsafe-inline'` (por escrito, como combinado):** o React escreve `style="…"` em vários elementos, o tema pela capa vai no atributo `style` do `<html>` (é assim que a paleta chega sem cálculo no navegador) e o Next injeta alguns `<style>` próprios. Estilo inline não executa código; o risco que sobra (alguém injetar CSS) é bem menor que o de script. Se um dia o `style` inline sumir do site, trocar por nonce.
+
+**Por que não há `form-action`:** o Chrome bloqueia o redirecionamento do login do Google depois do envio do formulário se `form-action` não listar o destino final, e os destinos do OAuth mudam. Sem a diretiva, o login funciona em todos os navegadores.
+
+**Efeito do nonce:** o Next só põe o nonce em páginas renderizadas **a cada requisição**. As páginas do site já eram assim (o cabeçalho lê quem está logado), e os dados públicos continuam em `unstable_cache` (a medição está no PR). Duas rotas precisaram de ajuste: a página 404 geral (`src/app/not-found.tsx`) chama `connection()`, porque senão o Next a guardava pronta, sem nonce, com os scripts bloqueados; e o `zod`, no navegador, roda sem o modo JIT (`src/lib/zod-setup.ts`), porque o modo JIT testa `new Function`, que a CSP bloqueia e relata como violação.
+
+**Em ambientes diferentes:** em **desenvolvimento** (`npm run dev`) entram `'unsafe-eval'` (o React usa para reconstruir pilhas de erro) e o WebSocket do hot reload. Nos **previews da Vercel** (`VERCEL_ENV=preview`, e só neles) entra a lista da barra de comentários da Vercel (`vercel.live`, `wss://ws-us3.pusher.com`, `assets.vercel.com`…); como a barra é injetada sem nonce, o preview não usa `'strict-dynamic'`. Em **produção** nada disso entra. Com o Turnstile ligado (veja "Proteção contra abuso"), entra `https://challenges.cloudflare.com` em `script-src`, `frame-src` e `connect-src`, e só nesse caso.
+
+### A válvula de escape: `CSP_REPORT_ONLY`
+
+Se depois de um deploy algo parar de funcionar por causa da CSP (um botão que não responde, uma imagem que não aparece, o login que não avança), dá para **desligar o bloqueio sem mexer no código**:
+
+1. Na Vercel, abra o projeto → **Settings → Environment Variables** e crie `CSP_REPORT_ONLY` com o valor `true` (marque **Production**).
+2. Faça um **Redeploy** (**Deployments →** os três pontinhos do último deploy **→ Redeploy**).
+
+Com `true`, o site manda `Content-Security-Policy-Report-Only` em vez de `Content-Security-Policy`: **a mesma política, mas só relata, sem bloquear nada.** As violações aparecem no **console** do navegador (F12 → Console) como "[Report Only] Refused to …", o que ajuda a descobrir o que a política precisa liberar. Para voltar a bloquear, apague a variável (ou troque o valor) e faça novo Redeploy. Qualquer valor diferente de `true` mantém o bloqueio. `CSP_REPORT_ONLY` é variável de **servidor** (não começa com `NEXT_PUBLIC_`) e nunca entra no código do navegador. Os nomes dos menus da Vercel **não foram conferidos na tela**.
+
+## Páginas legais
+
+`/privacidade` (Política de Privacidade) e `/termos` (Termos de Uso) têm links no rodapé, em `/entrar` e em `/boas-vindas`. Os textos ficam em `src/content/legal/` (`privacy.ts` e `terms.ts`) e **leem os dados de um único arquivo, `src/content/legal-config.ts`**.
+
+> **Os textos são RASCUNHO para revisão de um profissional.** Não são aconselhamento jurídico. Só afirmam o que o código do site realmente faz.
+
+**Como preencher** (pelo GitHub, no navegador): abra `src/content/legal-config.ts`, clique no lápis ("Edit this file"), troque o valor e faça o commit numa branch (peça um PR para a revisão). Os campos:
+
+- `controllerName`, `privacyContactEmail`, `minimumAge` e `lastUpdated`: quem controla os dados, o e-mail de contato, a idade mínima e a data da última atualização (mude a data a cada alteração dos textos).
+- `regions`: a região de cada serviço (Supabase, Vercel, Resend, Cloudflare Turnstile e Google). Hoje o Turnstile e o Google estão **A DEFINIR**.
+- `legalBases`, `internationalTransfer`, `retention` e `requestDeadline`: bases legais, transferência internacional, prazos de retenção e prazo para responder pedidos. Dependem de análise jurídica e estão **A DEFINIR**.
+
+**O papel de `legalReviewed`:** enquanto houver **qualquer** campo "A DEFINIR" **ou** `legalReviewed` for `false` (o padrão), as duas páginas mostram o aviso **"Rascunho em revisão"** e ficam com `noindex`. **Preencher os campos não remove o aviso:** só mudar `legalReviewed` para `true`, e só depois de um profissional ter revisado os textos. Quando isso acontecer, o aviso some e as páginas passam a poder ser indexadas. O teste `src/content/legal-config.test.ts` lista no CI os campos que ainda faltam, sem falhar.
+
+**O que os textos mostram sozinhos:** o texto de privacidade inclui o Google e o Cloudflare Turnstile **só se estiverem ligados** (`NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED` e `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, que são lidas no build). Os combinados da comunidade nos termos são os mesmos da página "Sobre o clube" (`src/content/sobre.ts`). A lista de cookies está em `src/content/legal/cookies.ts` e um teste a compara com a tabela "Cookies do site" do CLAUDE.md.
+
+Nunca escreva nos textos que os dados "não saem do Brasil" nem que "não há transferência internacional": os serviços são de empresas internacionais, e a rede de entrega, os registros e o suporte podem envolver outros países. Os textos descrevem a região onde o banco e as funções rodam e deixam a análise para o profissional.
+
 ## Proteção contra abuso
 
-- **Comentários:** o limite de 3 por minuto e 20 por hora (equipe isenta) é aplicado pelo banco, e comentários com link esperam aprovação (ver "Moderar comentários"). Se alguém reclamar do aviso "Você está comentando rápido demais", é só esperar um minuto.
-- **CAPTCHA no envio do código por e-mail e limites de envio do Supabase** (Authentication → Rate Limits): chegam na etapa 7b e serão descritos aqui, com a ordem segura de ativação.
+O endpoint que envia o código de entrada por e-mail é público, e cada envio gasta cota do Resend e o limite de e-mails do Supabase: um abuso poderia derrubar o login de todo mundo. Há três camadas.
+
+**1. Limite de comentários** (no banco): quem não é da equipe publica no máximo 3 comentários por minuto e 20 por hora (a equipe é isenta), e comentários com link esperam aprovação (ver "Moderar comentários"). Se alguém reclamar do aviso "Você está comentando rápido demais", é só esperar um minuto.
+
+**2. Limites de envio do Supabase** (**Authentication → Rate Limits**): segundo a documentação do Supabase, por padrão há um limite de e-mails enviados por hora (2 por hora com o provedor de e-mail embutido; o limite pode ser ajustado quando se usa SMTP próprio, como o deste projeto), uma espera de 60 segundos entre pedidos de código para a mesma pessoa e um limite por endereço IP (30 pedidos de entrada a cada 5 minutos). Estes valores vêm da documentação, **não foram conferidos na tela**: abra **Authentication → Rate Limits** e confirme o que está ativo no projeto.
+
+**3. CAPTCHA no envio do código (Cloudflare Turnstile).** O formulário de `/entrar` mostra a verificação **só quando existe** `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. **Sem a variável, o login funciona exatamente como antes** (nada da Cloudflare é carregado e a CSP não a libera). Com a variável, o botão "Receber código por e-mail" (e "Reenviar código") só habilita depois da verificação, e o token vai para o Supabase (`signInWithOtp` com `captchaToken`). Cada envio gasta o token, então a verificação recomeça a cada tentativa. O código de 6 dígitos (`verifyOtp`) e o login pelo Google **não** levam token.
+
+**Ordem segura para ligar** (a ordem importa: se o CAPTCHA for ligado no Supabase antes de o site mandar o token, **o login para de funcionar**):
+
+1. **Criar o site no Turnstile.** Na conta da Cloudflare, abra **Turnstile** e adicione um _widget_ para o domínio de produção. Anote a **Site Key** (pública) e a **Secret Key** (secreta).
+2. **Colocar a Site Key na Vercel, só em Production.** **Settings → Environment Variables**: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` com a Site Key, marcando só **Production**, e faça **Redeploy** (a variável é lida **no build**: sem novo deploy, nada muda).
+3. **Testar o login** em produção: a verificação deve aparecer em `/entrar` e o código deve chegar por e-mail. Ainda **sem** CAPTCHA ligado no Supabase, o envio funciona normalmente (o Supabase ignora o token).
+4. **Só então ativar o CAPTCHA no Supabase**, com a **Secret Key**: no painel do projeto, **Project Settings → Authentication → Bot and Abuse Protection → Enable CAPTCHA protection**, escolha **Turnstile**, cole a **Secret Key** e salve. A **Secret Key vai só no Supabase**: nunca no repositório, nunca na Vercel, nunca numa conversa.
+5. **Testar de novo.** Se o login quebrar, **desligar o CAPTCHA no Supabase restaura tudo** na hora (o site continua mandando o token, e o Supabase o ignora).
+
+**Avisos:** (a) os nomes dos menus do Supabase, da Vercel e da Cloudflare acima vêm das documentações e **não foram conferidos na tela**; (b) o CAPTCHA do Supabase vale para o projeto inteiro: **previews sem a Site Key não conseguem pedir código** depois que ele é ligado. Se você usa o login nos previews, ponha a Site Key também em **Preview** e inclua o endereço do preview no widget da Cloudflare; (c) se a verificação não carregar (bloqueador de anúncios, rede da empresa), a pessoa vê "Não conseguimos carregar a verificação de segurança" e não consegue pedir o código; (d) o Turnstile carrega scripts da Cloudflare, e a documentação consultada não detalha cookies ou armazenamento para o modo usado aqui: confira no navegador antes de ativar e atualize a política de privacidade. Para testar sem uma conta, a Cloudflare publica chaves de teste (Site Key `1x00000000000000000000AA` sempre passa, e a Secret Key de teste correspondente é `1x0000000000000000000000000000000AA`), que **só devem ser usadas em testes**.
 
 ## Solução de problemas
 
