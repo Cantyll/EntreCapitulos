@@ -57,8 +57,15 @@ vi.mock('@/lib/comments/queries', () => ({
 const logFailure = vi.fn();
 vi.mock('@/lib/auth/log', () => ({ logFailure: (...a: unknown[]) => logFailure(...a) }));
 
+const rpcCalls: [string, unknown][] = [];
+const rpcState = { result: { data: SESSION, error: null } as { data: unknown; error: unknown } };
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
+    rpc: async (name: string, args: unknown) => {
+      rpcCalls.push([name, args]);
+      return rpcState.result;
+    },
     from: (table: string) => {
       if (table === 'reading_sessions') {
         return {
@@ -80,7 +87,8 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-const { createComment, loadMoreComments } = await import('@/app/(public)/comment-actions');
+const { createComment, loadMoreComments, retractComment } =
+  await import('@/app/(public)/comment-actions');
 const IDLE = { status: 'idle', message: '' } as const;
 
 const form = (fields: Record<string, string>) => {
@@ -108,6 +116,8 @@ beforeEach(() => {
   state.viewer = { id: 'user-1' };
   logFailure.mockClear();
   loadDiscussionPage.mockReset();
+  rpcCalls.length = 0;
+  rpcState.result = { data: SESSION, error: null };
 });
 
 describe('createComment: quem pode', () => {
@@ -237,6 +247,7 @@ describe('createComment: resultado', () => {
     ['session_not_published: only', 'session_not_published'],
     ['comments_closed: not accepting', 'comments_closed'],
     ['invalid_parent: replies go', 'invalid_parent'],
+    ['rate_limited: too many comments in a short time', 'rate_limited'],
   ])(
     'erro do banco "%s" vira mensagem em pt-BR, sem log e sem invalidar',
     async (message, code) => {
@@ -248,6 +259,17 @@ describe('createComment: resultado', () => {
       expect(calls.some((c) => c.startsWith('invalidate'))).toBe(false);
     },
   );
+
+  it('limite de frequência: a mensagem pedida, sem log', async () => {
+    state.insertResult = {
+      data: null,
+      error: { code: 'P0001', message: 'rate_limited: too many comments in a short time' },
+    };
+    const out = await send({});
+    expect(out.message).toBe(
+      'Você está comentando rápido demais. Espere um pouco e tente de novo.',
+    );
+  });
 
   it('erro inesperado: mensagem genérica e log SEM o texto do comentário', async () => {
     const secret = 'segredo-que-nao-pode-vazar';
@@ -321,5 +343,42 @@ describe('loadMoreComments', () => {
     const out = await loadMoreComments(SESSION, 'recentes', cursor);
     expect(out.ok).toBe(false);
     expect(logFailure).toHaveBeenCalledWith('comments.more', expect.anything());
+  });
+});
+
+describe('retractComment (excluir o próprio comentário)', () => {
+  const ID = '5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b';
+
+  it('sem sessão o requireUser redireciona e nada chega ao banco', async () => {
+    state.user = null as never;
+    await expect(retractComment(ID)).rejects.toBe(redirectSentinel);
+    expect(rpcCalls).toEqual([]);
+  });
+
+  it('só manda o id do comentário à função do banco e expira o cache da sessão devolvida', async () => {
+    expect(await retractComment(ID)).toEqual({ ok: true });
+    expect(rpcCalls).toEqual([['retract_comment', { p_comment_id: ID }]]);
+    expect(calls).toContain(`invalidate:${SESSION}`);
+    expect(calls).toContain('revalidate:/,layout');
+  });
+
+  it.each(['x', `${ID}'; drop`, ''])('id malformado %j: recusa sem consultar', async (id) => {
+    const out = await retractComment(id);
+    expect(out.ok).toBe(false);
+    expect(rpcCalls).toEqual([]);
+  });
+
+  it.each([
+    [{ code: 'P0002', message: 'comment_not_found: x' }, 'Não encontramos este comentário', false],
+    [{ code: '42501', message: 'not_signed_in: x' }, 'Entre de novo', false],
+    [{ code: 'PGRST202', message: 'no function' }, 'ainda não está disponível', false],
+    [{ code: '08006', message: 'connection' }, 'Não foi possível excluir agora', true],
+  ])('erro %j vira mensagem em pt-BR', async (error, text, logged) => {
+    rpcState.result = { data: null, error };
+    const out = await retractComment(ID);
+    expect(out).toMatchObject({ ok: false });
+    expect(out.ok === false && out.message).toContain(text);
+    expect(logFailure).toHaveBeenCalledTimes(logged ? 1 : 0);
+    expect(calls.some((c) => c.startsWith('invalidate'))).toBe(false);
   });
 });

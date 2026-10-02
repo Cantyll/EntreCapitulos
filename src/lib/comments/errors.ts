@@ -14,6 +14,7 @@ export const COMMENT_MESSAGES = {
   empty: 'Escreva alguma coisa antes de publicar.',
   too_long: 'O comentário passa de 2000 caracteres.',
   invalid_spoiler: 'Escolha um capítulo válido para o aviso de spoiler.',
+  rate_limited: 'Você está comentando rápido demais. Espere um pouco e tente de novo.',
   generic: 'Não foi possível publicar agora. Seu texto continua aqui; tente de novo em instantes.',
 } as const;
 
@@ -24,6 +25,7 @@ const PREFIXES = [
   'session_not_published',
   'comments_closed',
   'invalid_parent',
+  'rate_limited',
 ] as const satisfies readonly CommentMessageKey[];
 
 export function classifyCommentError(error: DbErrorLike | null | undefined): CommentMessageKey {
@@ -61,5 +63,27 @@ export function classifyModerationError(
 ): ModerationMessageKey {
   if (!error) return 'generic';
   if (error.code === '42501') return 'forbidden';
+  return 'generic';
+}
+
+// --- Excluir o próprio comentário --------------------------------------------------------------------
+
+export const RETRACT_MESSAGES = {
+  not_found: 'Não encontramos este comentário. Ele pode já ter sido excluído. Atualize a página.',
+  not_signed_in: 'Entre de novo para excluir o comentário.',
+  /** A função do banco ainda não existe (migration não aplicada). */
+  unavailable: 'Este recurso ainda não está disponível. Tente de novo mais tarde.',
+  generic: 'Não foi possível excluir agora. Tente de novo em instantes.',
+} as const;
+
+export type RetractMessageKey = keyof typeof RETRACT_MESSAGES;
+
+export function classifyRetractError(error: DbErrorLike | null | undefined): RetractMessageKey {
+  if (!error) return 'generic';
+  const message = error.message ?? '';
+  if (message.startsWith('comment_not_found:') || error.code === 'P0002') return 'not_found';
+  if (message.startsWith('not_signed_in:') || error.code === '42501') return 'not_signed_in';
+  // PGRST202: o PostgREST não conhece a função. 42883: função inexistente no Postgres.
+  if (error.code === 'PGRST202' || error.code === '42883') return 'unavailable';
   return 'generic';
 }

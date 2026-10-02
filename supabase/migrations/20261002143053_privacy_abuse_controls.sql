@@ -5,6 +5,8 @@
 --   3. delete_my_account(): the person deletes their own account; everything cascades.
 --   4. profiles.avatar_url is no longer writable by the client (the interface only shows initials or
 --      the Google photo that handle_new_user copied at sign-up).
+--   5. The author can read ALL of their own comments (any status), so "Baixar meus dados" is complete
+--      (LGPD access right). Before, the author only saw their own pending ones.
 --
 -- Before this migration is applied nothing breaks: the site simply has no rate limit, and deleting a
 -- comment or an account shows a "database update pending" message.
@@ -149,3 +151,22 @@ grant execute on function public.delete_my_account() to authenticated;
 -- 4. profiles.avatar_url is read-only for clients
 -- ---------------------------------------------------------------------------------------------
 revoke update (avatar_url) on public.profiles from authenticated;
+
+-- ---------------------------------------------------------------------------------------------
+-- 5. The author reads their own comments in every status
+-- ---------------------------------------------------------------------------------------------
+-- Only the third branch changes (was: status = 'pending' and author_id = auth.uid()). A comment the
+-- author deleted shows the fixed text; one removed by the moderation shows the original text, which is
+-- the person's own data. The application filters `status` explicitly on every read (see
+-- tests/comments-static.test.ts), so nothing in the interface changes. Visitors and other members
+-- see exactly what they saw before.
+drop policy comments_select on public.comments;
+
+create policy comments_select on public.comments
+  for select to anon, authenticated
+  using (
+    (status = 'approved'
+      and exists (select 1 from public.reading_sessions s where s.id = comments.session_id))
+    or author_id = (select auth.uid())
+    or (select public.is_staff())
+  );

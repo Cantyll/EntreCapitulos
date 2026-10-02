@@ -361,7 +361,8 @@
 
 .actions {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 4px 16px;
   color: var(--ink-3);
   font-size: 13px;
 }
@@ -437,7 +438,72 @@
   }
 }
 
+/* Confirmação de "Excluir meu comentário", na própria linha do comentário. */
+.retract {
+  flex: 1 1 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--soft);
+  font-size: 13.5px;
+}
+
+.retract p {
+  margin: 0 0 8px;
+}
+
+.retract .retractError {
+  color: var(--danger);
+}
+
+.retractButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.retractDanger,
+.retractCancel {
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  touch-action: manipulation;
+}
+
+.retractDanger {
+  border: 1px solid var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+
+.retractCancel {
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.retractDanger:disabled,
+.retractCancel:disabled {
+  opacity: 0.6;
+}
+
+.deleted {
+  margin: 0;
+  padding: 10px 0;
+  color: var(--ink-3);
+  font-size: 13.5px;
+}
+
 @media (pointer: coarse) {
+  .retractDanger,
+  .retractCancel {
+    min-height: var(--tap);
+  }
+
   .actionButton {
     min-height: var(--tap);
     padding-right: 6px;

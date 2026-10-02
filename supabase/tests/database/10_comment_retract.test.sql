@@ -56,8 +56,9 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000b1", "role": "authenticated"}', true);
 select is(public.retract_comment('30000000-0000-4000-8000-000000000001'), '20000000-0000-4000-8000-000000000001'::uuid,
   'returns the session id');
-select is((select count(*)::int from public.comments where id = '30000000-0000-4000-8000-000000000001'), 0,
-  'the author no longer sees the removed comment');
+select is((select body from public.comments where id = '30000000-0000-4000-8000-000000000001'), '[comentário removido pelo autor]',
+  'the author still sees their row, now with the fixed text');
+select is((select count(*)::int from public.comments where body like '%segredo-aprovado%'), 0, 'the author cannot read the original text any more');
 select throws_ok($$select public.retract_comment('30000000-0000-4000-8000-000000000001')$$, 'P0002', null,
   'an already removed comment cannot be retracted again');
 -- ...and the pending one.
@@ -74,6 +75,21 @@ select is((select count(*)::int from public.comments where id = '30000000-0000-4
   'the reply from another person stays in the database (the page hides it)');
 select is((select count(*)::int from public.comments where id = '30000000-0000-4000-8000-000000000004' and status = 'approved'), 1,
   'someone else''s comment is untouched');
+
+-- Reading rules after the policy change (migration section 5): own comments in any status for the author only.
+update public.comments set status = 'removed' where id = '30000000-0000-4000-8000-000000000004';
+select set_config('request.jwt.claims', '', true);
+set local role anon;
+select is((select count(*)::int from public.comments where status = 'removed'), 0, 'visitors see no removed comment');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000b1", "role": "authenticated"}', true);
+select is((select count(*)::int from public.comments where id = '30000000-0000-4000-8000-000000000004'), 0,
+  'another member does not see someone else''s removed comment');
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000b2", "role": "authenticated"}', true);
+select is((select body from public.comments where id = '30000000-0000-4000-8000-000000000004'), 'comentario da m2',
+  'the author reads their own comment removed by the moderation (data export)');
+reset role;
 
 -- The function does not become a way to edit: members still cannot update a body.
 set local role authenticated;

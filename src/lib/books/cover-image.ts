@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { logFailure } from '@/lib/auth/log';
 import { extractPalette, deriveTheme, type StoredPalette, type ThemeTokens } from '@/lib/theme';
 
 /*
@@ -31,10 +32,8 @@ async function loadSharp() {
   try {
     return (await import('sharp')).default;
   } catch (error) {
-    // Só o nome: a mensagem de falha do binário nativo traz caminhos do servidor.
-    console.error('sharp: falha ao carregar', {
-      name: error instanceof Error ? error.name : typeof error,
-    });
+    // O helper registra só o nome e o código: a mensagem do binário nativo traz caminhos do servidor.
+    logFailure('sharp.load', error);
     throw new CoverError('engine');
   }
 }

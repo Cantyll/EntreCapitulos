@@ -9,6 +9,7 @@ import { isCommentCovered } from '@/lib/comments';
 import type { DisplayComment } from '@/lib/comments/display';
 
 import { CommentForm } from './CommentForm';
+import { RetractButton } from './RetractButton';
 import styles from './comments.module.css';
 
 export type ReplyContext = {
@@ -29,6 +30,8 @@ type Props = {
   reply: ReplyContext;
   isReply?: boolean;
   onToggleReply?: () => void;
+  /** Respostas de outras pessoas que somem junto com este comentário (só o de nível superior). */
+  replyCount?: number;
 };
 
 const ROLE_BADGE = { admin: 'Autora', moderator: 'Moderadora' } as const;
@@ -106,8 +109,22 @@ export function CommentArticle({
   reply,
   isReply,
   onToggleReply,
+  replyCount = 0,
 }: Props) {
+  const [deleted, setDeleted] = useState(false);
   const badge = comment.authorRole === 'member' ? null : ROLE_BADGE[comment.authorRole];
+
+  if (deleted) {
+    return (
+      <article id={`comentario-${comment.id}`} className={isReply ? styles.reply : styles.comment}>
+        <p role="status" className={styles.deleted}>
+          Comentário excluído.
+        </p>
+      </article>
+    );
+  }
+
+  const canReply = reply.canReply && !comment.pending && onToggleReply;
 
   return (
     <article id={`comentario-${comment.id}`} className={isReply ? styles.reply : styles.comment}>
@@ -131,17 +148,26 @@ export function CommentArticle({
 
         <CommentBody comment={comment} progress={progress} progressKnown={progressKnown} />
 
-        {reply.canReply && !comment.pending && onToggleReply && (
+        {(canReply || comment.isOwn) && (
           <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.actionButton}
-              onClick={onToggleReply}
-              aria-label={`Responder a ${threadAuthor}`}
-            >
-              <Icon name="reply" size="sm" />
-              Responder
-            </button>
+            {canReply && (
+              <button
+                type="button"
+                className={styles.actionButton}
+                onClick={onToggleReply}
+                aria-label={`Responder a ${threadAuthor}`}
+              >
+                <Icon name="reply" size="sm" />
+                Responder
+              </button>
+            )}
+            {comment.isOwn && (
+              <RetractButton
+                commentId={comment.id}
+                replyCount={replyCount}
+                onDeleted={() => setDeleted(true)}
+              />
+            )}
           </div>
         )}
       </div>
@@ -178,6 +204,7 @@ export function CommentThread({
         progressKnown={progressKnown}
         reply={reply}
         onToggleReply={toggle}
+        replyCount={comment.replies.length}
       />
       {(comment.replies.length > 0 || replying || notice) && (
         <div className={styles.repliesBlock}>
