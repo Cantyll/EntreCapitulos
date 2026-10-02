@@ -201,7 +201,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           ? [
               {
                 type: 'p' as const,
-                text: 'Quando a verificação de segurança está ativa, o site carrega scripts da Cloudflare. Os detalhes de cookies ou de armazenamento que esse serviço usa são definidos pela Cloudflare: A DEFINIR (conferir antes de ativar).',
+                text: 'Quando a verificação de segurança está ativa, o site carrega scripts da Cloudflare. Num teste com a chave de testes da Cloudflare, o widget não criou cookies no site e guardou um item no armazenamento local do próprio domínio da Cloudflare; o que o serviço usa de verdade com a chave real é definido pela Cloudflare: A DEFINIR (conferir antes de ativar).',
               },
             ]
           : []),
