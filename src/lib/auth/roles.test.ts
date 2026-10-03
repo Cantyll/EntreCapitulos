@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { adminNav, getAdminNavFor, getAdminTabbar } from '../navigation';
+import { comingSoonPages } from '../coming-soon';
+import { adminNav, getAdminNavFor, getAdminTabbar, getAdminTitle } from '../navigation';
 import { hasRole, isStaff, panelHomeFor, parseRole } from './roles';
 
 describe('hasRole', () => {
@@ -38,6 +39,27 @@ describe('painel por papel', () => {
 
   it('a administradora vê todos os itens', () => {
     expect(getAdminNavFor('admin')).toHaveLength(adminNav.length);
+  });
+
+  it('o menu só tem áreas que existem; as "Em breve" ficam fora, na lateral e em "Mais"', () => {
+    expect(adminNav.map((i) => i.label)).toEqual([
+      'Visão geral',
+      'Sessões',
+      'Livros',
+      'Comentários',
+    ]);
+    const soon = Object.values(comingSoonPages).map((page) => page.href as string);
+    const inMenu = adminNav.map((i) => i.href as string);
+    for (const href of soon) expect(inMenu).not.toContain(href);
+    const bar = getAdminTabbar('admin');
+    const inBar = [...bar.left, ...bar.right, ...bar.more].map((i) => i.href as string);
+    for (const href of soon) expect(inBar).not.toContain(href);
+  });
+
+  it('as áreas "Em breve" ainda têm título no topo', () => {
+    expect(getAdminTitle('/painel/membros')).toBe('Membros');
+    expect(getAdminTitle('/painel/votacoes')).toBe('Votações');
+    expect(getAdminTitle('/painel/configuracoes')).toBe('Configurações');
   });
 
   it('membro não vê nenhum item', () => {

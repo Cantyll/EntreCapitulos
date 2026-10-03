@@ -23,54 +23,9 @@
   text-overflow: ellipsis;
 }
 
-.search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--line-2);
-  border-radius: 999px;
-  padding: 8px 14px;
-  background: var(--surface);
-  width: 300px;
-  color: var(--ink-3);
-}
-
-/* O campo não tem anel próprio: o foco aparece na pílula inteira. */
-.search:focus-within {
-  border-color: var(--rose);
-  box-shadow: 0 0 0 3px var(--rose-tint);
-}
-
-.search input {
-  border: none;
-  outline: none;
-  background: none;
-  width: 100%;
-  font-size: 14px;
-  color: var(--ink);
-}
-
-@media (pointer: coarse) {
-  /* O próprio campo preenche a pílula, com 44px de altura útil (mais a borda). */
-  .search {
-    min-height: calc(var(--tap) + 2px);
-    padding-block: 0;
-  }
-
-  .search input {
-    align-self: stretch;
-    /* Abaixo de 16px o iOS dá zoom ao focar o campo. */
-    font-size: var(--field-font-size);
-  }
-}
-
 /* No celular o painel usa a barra inferior; aqui ficam só o título e o sino. */
 @media (max-width: 1020px) {
   .top {
     padding: 16px 22px;
-  }
-
-  .search {
-    display: none;
   }
 }

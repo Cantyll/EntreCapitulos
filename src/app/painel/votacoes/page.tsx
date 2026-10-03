@@ -1,20 +1,20 @@
 import type { Metadata } from 'next';
 
 import { AdminPage } from '@/components/admin/AdminPage';
-import { StubNotice } from '@/components/ui/StubNotice';
+import { ComingSoon } from '@/components/admin/ComingSoon';
 import { requireRole } from '@/lib/auth/session';
+import { comingSoonPages } from '@/lib/coming-soon';
 
-export const metadata: Metadata = { title: 'Votações' };
+const page = comingSoonPages.votacoes;
+
+export const metadata: Metadata = { title: page.title };
 
 export default async function PollsAdminPage() {
   await requireRole('admin');
 
   return (
     <AdminPage>
-      <StubNotice flush>
-        No protótipo, esta página mostra o resultado da votação do próximo livro e o formulário de
-        uma nova votação.
-      </StubNotice>
+      <ComingSoon title={page.title}>{page.description}</ComingSoon>
     </AdminPage>
   );
 }
