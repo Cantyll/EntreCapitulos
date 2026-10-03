@@ -4,7 +4,7 @@
   "private": true,
   "description": "Blog e clube de leitura em sessões, com discussão por capítulo e controle de spoiler.",
   "engines": {
-    "node": ">=20.9.0"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
@@ -50,5 +50,9 @@
     "supabase": "^2.118.0",
     "typescript": "~6.0.3",
     "vitest": "^3.2.7"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "unrs-resolver@1.12.2": true
   }
 }
