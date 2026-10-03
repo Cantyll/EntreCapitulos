@@ -32,6 +32,8 @@ export type LegalData = {
     resend: string;
     cloudflareTurnstile: string;
     google: string;
+    /** Cloudflare R2: cópias de segurança criptografadas do banco (etapa 8d). */
+    cloudflareR2: string;
   };
   /** Uma frase única ou uma lista (um item por finalidade). */
   legalBases: LegalText;
@@ -40,6 +42,11 @@ export type LegalData = {
   retention: LegalText;
   /** Prazo para responder pedidos dos titulares (art. 18). */
   requestDeadline: string;
+  /** Cópias de segurança criptografadas do banco, guardadas no Cloudflare R2 (etapa 8d). */
+  backups: {
+    internationalTransfer: string;
+    retention: string;
+  };
 };
 
 /** Texto de um campo: uma frase ou uma lista de itens. */
@@ -55,7 +62,7 @@ export const legalConfig = {
   privacyContactEmail: 'Felipe.golinus@gmail.com',
   minimumAge: 16,
   /** Data da última atualização dos textos. */
-  lastUpdated: '2 de outubro de 2026',
+  lastUpdated: '3 de outubro de 2026',
 
   /** Região onde cada provedor roda a parte usada pelo site. */
   regions: {
@@ -68,6 +75,9 @@ export const legalConfig = {
     // PROPOSTA: validar com advogado
     google:
       'Infraestrutura global do Google, sem região fixa. O processamento pode ocorrer fora do Brasil.',
+    // PROPOSTA: validar com advogado
+    cloudflareR2:
+      'Região escolhida na criação do bucket, fora do Brasil (a Cloudflare não oferece região no Brasil para o R2, a confirmar). O armazenamento e o processamento ocorrem fora do Brasil.',
   },
 
   // PROPOSTA: validar com advogado
@@ -89,12 +99,22 @@ export const legalConfig = {
     'Progresso de leitura: enquanto a conta existir. Para quem não tem conta, por até 1 ano no próprio navegador (cookie).',
     'Registros técnicos e de segurança: mantidos pelos provedores por períodos definidos por eles, em regra curtos, e pelo prazo que a lei exigir.',
     'Pedidos de privacidade enviados por e-mail: pelo tempo necessário para atender e comprovar o atendimento.',
-    'Cópias de segurança: as mantidas pelo provedor do banco de dados podem conter os dados por um período limitado depois da exclusão.',
+    'Cópias de segurança: as mantidas pelo provedor do banco de dados e as cópias criptografadas que guardamos no Cloudflare R2 podem conter os dados por um período limitado depois da exclusão, até a cópia expirar.',
   ],
 
   // PROPOSTA: validar com advogado
   requestDeadline:
     'Respondemos aos pedidos em até 15 dias, contados do recebimento. Acessar seus dados, corrigir seu nome e excluir sua conta você faz na hora, em "Minha conta"; as contas da equipe do clube têm uma etapa a mais para a exclusão (veja "Seus direitos").',
+
+  /**
+   * Cópias de segurança criptografadas do banco (etapa 8d): o dump é criptografado antes de sair do servidor de
+   * automação e guardado num bucket privado do Cloudflare R2. Os dois campos abaixo dependem do advogado e
+   * ficam A DEFINIR até lá; enquanto isso, as páginas legais seguem como rascunho.
+   */
+  backups: {
+    internationalTransfer: A_DEFINIR,
+    retention: A_DEFINIR,
+  },
 } as const satisfies LegalData;
 
 export type LegalConfig = {
@@ -109,6 +129,7 @@ export type LegalConfig = {
 export const PROPOSAL_FIELDS = [
   'regions.cloudflareTurnstile',
   'regions.google',
+  'regions.cloudflareR2',
   'legalBases',
   'internationalTransfer',
   'retention',

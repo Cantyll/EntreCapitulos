@@ -158,6 +158,16 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           config.internationalTransfer,
           'Este ponto depende de análise jurídica.',
         ),
+        {
+          type: 'p',
+          text: `As cópias de segurança criptografadas do banco de dados ficam num serviço de armazenamento da Cloudflare (R2). Região: ${regions.cloudflareR2}`,
+        },
+        ...describeField(
+          config,
+          'Transferência internacional das cópias de segurança',
+          config.backups.internationalTransfer,
+          'Este ponto depende de análise jurídica.',
+        ),
       ],
     },
     {
@@ -169,6 +179,16 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           'Por quanto tempo guardamos cada tipo de dado',
           config.retention,
           'Inclui as cópias de segurança dos provedores. Este ponto depende de análise jurídica.',
+        ),
+        {
+          type: 'p',
+          text: 'Guardamos cópias de segurança criptografadas do banco de dados, para recuperar o site se houver uma perda de dados. Elas podem conter dados que você já excluiu, como comentários e contas apagados, até que cada cópia expire e seja descartada. Por isso, excluir um comentário ou a conta apaga o dado do banco de dados do site, mas não das cópias de segurança já feitas.',
+        },
+        ...describeField(
+          config,
+          'Por quanto tempo guardamos as cópias de segurança',
+          config.backups.retention,
+          'Este ponto depende de análise jurídica.',
         ),
         {
           type: 'p',

@@ -39,6 +39,7 @@ describe('legalConfig', () => {
     for (const field of [
       'cloudflareTurnstile',
       'google',
+      'cloudflareR2',
       'legalBases',
       'internationalTransfer',
       'retention',
@@ -55,7 +56,7 @@ describe('legalConfig', () => {
     expect(source.match(/^\s*\/\/ PROPOSTA: validar com advogado$/gm)).toHaveLength(
       PROPOSAL_FIELDS.length,
     );
-    expect(PROPOSAL_FIELDS.length).toBe(6);
+    expect(PROPOSAL_FIELDS.length).toBe(7);
   });
 
   it('as propostas não afirmam que os dados ficam só no Brasil', () => {
@@ -72,9 +73,16 @@ describe('legalConfig', () => {
     expect(Array.isArray(pending)).toBe(true);
   });
 
-  it('hoje a única pendência é a revisão profissional (legalReviewed)', () => {
-    expect(pendingFields(legalConfig)).toEqual([]);
-    expect(pendingItems(legalConfig)).toEqual(['legalReviewed']);
+  it('hoje as pendências são as cópias de segurança (transferência e retenção) e a revisão profissional', () => {
+    expect(pendingFields(legalConfig).sort()).toEqual([
+      'backups.internationalTransfer',
+      'backups.retention',
+    ]);
+    expect(pendingItems(legalConfig).sort()).toEqual([
+      'backups.internationalTransfer',
+      'backups.retention',
+      'legalReviewed',
+    ]);
   });
 
   it('legalReviewed continua false: preencher os campos não tira o rascunho', () => {

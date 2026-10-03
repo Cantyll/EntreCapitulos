@@ -114,8 +114,15 @@ describe('política de privacidade', () => {
       buildPrivacy(legalConfig, features)
         .sections.find((s) => s.id === 'compartilhamento')!
         .blocks.flatMap((b) => (b.type === 'table' ? b.rows.map((r) => r[0]) : []));
-    expect(rows(OFF)).toEqual(['Supabase', 'Vercel', 'Resend']);
-    expect(rows(ON)).toEqual(['Supabase', 'Vercel', 'Resend', 'Google', 'Cloudflare Turnstile']);
+    expect(rows(OFF)).toEqual(['Supabase', 'Vercel', 'Resend', 'Cloudflare R2']);
+    expect(rows(ON)).toEqual([
+      'Supabase',
+      'Vercel',
+      'Resend',
+      'Google',
+      'Cloudflare Turnstile',
+      'Cloudflare R2',
+    ]);
     const on = allText(buildPrivacy(legalConfig, ON));
     expect(on).toContain(
       'Se você escolher entrar com o Google, ele nos informa seu nome, e-mail e foto de perfil.',
@@ -160,9 +167,19 @@ describe('política de privacidade', () => {
     for (const name of ['ec_progress', 'sb-…-auth-token']) expect(text).toContain(name);
   });
 
-  it('com a configuração entregue, não sobra "A DEFINIR" no texto (menos a conferência do Turnstile)', () => {
-    expect(allText(buildPrivacy(legalConfig, { google: true, turnstile: false }))).not.toContain(
-      A_DEFINIR,
+  it('com a configuração entregue, o único "A DEFINIR" do texto são as duas pendências das cópias de segurança (menos a conferência do Turnstile)', () => {
+    const delivered = allText(buildPrivacy(legalConfig, { google: true, turnstile: false }));
+    expect(delivered.match(/A DEFINIR/g)).toHaveLength(2);
+    expect(delivered).toContain('Transferência internacional das cópias de segurança: A DEFINIR');
+    expect(delivered).toContain('Por quanto tempo guardamos as cópias de segurança: A DEFINIR');
+  });
+
+  it('as cópias de segurança podem conter dados já excluídos, e o texto diz isso sem afirmar que ficam no Brasil', () => {
+    const delivered = allText(buildPrivacy(legalConfig, OFF));
+    expect(delivered).toContain('podem conter dados que você já excluiu');
+    expect(delivered).toContain('Cloudflare');
+    expect(delivered.toLowerCase()).not.toMatch(
+      /não saem do brasil|não há transferência internacional/,
     );
   });
 
@@ -233,14 +250,23 @@ describe('lista de cookies', () => {
 });
 
 describe('detecção dos pendentes na configuração entregue', () => {
-  it('nenhum campo ficou A DEFINIR; a única pendência é a revisão profissional', () => {
-    expect(pendingFields(legalConfig)).toEqual([]);
-    expect(pendingItems(legalConfig)).toEqual(['legalReviewed']);
+  it('só as cópias de segurança (transferência e retenção) ficaram A DEFINIR, além da revisão profissional', () => {
+    expect(pendingFields(legalConfig).sort()).toEqual([
+      'backups.internationalTransfer',
+      'backups.retention',
+    ]);
+    expect(pendingItems(legalConfig).sort()).toEqual([
+      'backups.internationalTransfer',
+      'backups.retention',
+      'legalReviewed',
+    ]);
   });
 
   it('a configuração de antes (tudo pendente) é detectada campo a campo', () => {
     expect(pendingFields(pending).sort()).toEqual(
       [
+        'backups.internationalTransfer',
+        'backups.retention',
         'internationalTransfer',
         'legalBases',
         'regions.cloudflareTurnstile',
@@ -293,14 +319,22 @@ describe('Google e Turnstile: texto condicional', () => {
       buildPrivacy(legalConfig, features)
         .sections.find((section) => section.id === 'compartilhamento')!
         .blocks.flatMap((b) => (b.type === 'table' ? b.rows.map((r) => r[0]) : []));
-    expect(rows(OFF)).toEqual(['Supabase', 'Vercel', 'Resend']);
+    expect(rows(OFF)).toEqual(['Supabase', 'Vercel', 'Resend', 'Cloudflare R2']);
     expect(rows({ google: true, turnstile: false })).toEqual([
       'Supabase',
       'Vercel',
       'Resend',
       'Google',
+      'Cloudflare R2',
     ]);
-    expect(rows(ON)).toEqual(['Supabase', 'Vercel', 'Resend', 'Google', 'Cloudflare Turnstile']);
+    expect(rows(ON)).toEqual([
+      'Supabase',
+      'Vercel',
+      'Resend',
+      'Google',
+      'Cloudflare Turnstile',
+      'Cloudflare R2',
+    ]);
   });
 });
 
