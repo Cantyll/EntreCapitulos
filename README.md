@@ -5,6 +5,10 @@ Blog e clube de leitura em sessões, com discussão por capítulo e controle de 
 - Protótipo navegável: `docs/prototype/entre-capitulos.html`
 - Briefing técnico e de design: `CLAUDE.md`
 - Referência do tema automático pela capa: `docs/theme-engine.reference.js`
+- Operação do dia a dia (deploy, reverter, chaves, LGPD, plano gratuito do Supabase): [`docs/operacao.md`](docs/operacao.md)
+- Checklist de lançamento: [`docs/lancamento.md`](docs/lancamento.md)
+- Propostas de monitoramento e backup (só proposta): [`docs/propostas-etapa8.md`](docs/propostas-etapa8.md)
+- Inventário de segurança do banco (gerado): [`docs/seguranca.md`](docs/seguranca.md)
 
 ## Stack
 
@@ -411,9 +415,13 @@ O endpoint que envia o código de entrada por e-mail é público, e cada envio g
 Dois workflows do GitHub (aba **Actions**) percorrem o site como uma pessoa faria. Nenhum precisa de secret e nenhum é obrigatório para o merge.
 
 - **E2E** (`e2e.yml`): roda em todo pull request para a `main` (e sob demanda, em **Run workflow**). Sobe um banco Supabase descartável e o site **buildado como em produção**, e abre o site num navegador Chromium e num WebKit (o motor do Safari), inclusive com a tela de um iPhone. Cobre visitante, login por código, comentários e moderação, painel, editor, Minha conta, cabeçalhos de segurança, acessibilidade (axe) e instalação (PWA). Se falhar, abra a execução e baixe o artefato **playwright-falha** (relatório, vídeos de falha e *traces*; guardado por 7 dias); o final do log do site também é impresso no passo "Log do app".
-- **Smoke test da produção** (`smoke-prod.yml`): roda todo dia de manhã e sob demanda. **Só lê** o site de verdade (`www.entrecapitulos.blog.br`), sem login: páginas públicas, o livro atual (que faz o site ler do banco), cabeçalhos, manifest e ícones, `robots.txt`, o redirecionamento do `/painel` e o 404. Se falhar, o GitHub avisa por e-mail e pelas notificações (para quem editou o agendamento por último; confira em **Settings → Notifications → Actions** que isso está ligado). Como ele faz o site ler do banco todo dia, **pode ajudar, sem garantir**, a evitar a pausa por inatividade do plano gratuito do Supabase (os passos para esse caso ficam em `docs/operacao.md`, na etapa 8b). O GitHub desliga workflows agendados depois de 60 dias sem nenhuma atividade no repositório: se isso acontecer, ligue-o de novo em **Actions**.
+- **Smoke test da produção** (`smoke-prod.yml`): roda todo dia de manhã e sob demanda. **Só lê** o site de verdade (`www.entrecapitulos.blog.br`), sem login: páginas públicas, o livro atual (que faz o site ler do banco), cabeçalhos, manifest e ícones, `robots.txt`, o redirecionamento do `/painel` e o 404. Se falhar, o GitHub avisa por e-mail e pelas notificações (para quem editou o agendamento por último; confira em **Settings → Notifications → Actions** que isso está ligado). Como ele faz o site ler do banco todo dia, **pode ajudar, sem garantir**, a evitar a pausa por inatividade do plano gratuito do Supabase (os passos para esse caso ficam em [`docs/operacao.md`](docs/operacao.md)). O GitHub desliga workflows agendados depois de 60 dias sem nenhuma atividade no repositório: se isso acontecer, ligue-o de novo em **Actions**.
 
 **O que estes testes NÃO provam:** o WebKit do Playwright **não é o Safari de verdade** e não reproduz o app instalado na Tela de Início (cookies separados, barra de status, selo no ícone, teclado). O teste no iPhone com o app instalado continua sendo manual (a lista está na descrição do pull request da etapa 8 e em `docs/lancamento.md`). Também ficam de fora: o login com o Google, o CAPTCHA (Turnstile) com chave real, o envio real de e-mail pelo Resend, a barra de ferramentas da pré-visualização da Vercel e o carregamento das capas pelo otimizador de imagens do Next (ele recusa endereços locais, então nos testes a capa aparece sem a imagem).
+
+## Atualizações automáticas de dependências
+
+O Dependabot (`.github/dependabot.yml`) abre, uma vez por semana, no máximo 5 pull requests agrupados: um para as dependências do npm e outro para as ações dos workflows (que ficam fixadas por SHA de commit, com a versão no comentário). Eles passam pelo CI e pelo E2E como qualquer outro; ninguém precisa rodar nada: leia o PR, confira que o CI está verde e mescle.
 
 ## Solução de problemas
 
