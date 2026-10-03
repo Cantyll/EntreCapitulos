@@ -1,0 +1,33 @@
+.box {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  width: 100%;
+  max-width: 62ch;
+  padding: 22px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+.box h2 {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.box p {
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: var(--rose-tint);
+  color: var(--rose-deep);
+  font-size: 12.5px;
+  font-weight: 600;
+}

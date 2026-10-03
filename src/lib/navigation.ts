@@ -3,6 +3,7 @@ import type { Route } from 'next';
 import type { IconName } from '@/components/ui/Icon';
 
 import { hasRole, type Role, type RoleRequirement } from './auth/roles';
+import { comingSoonPages } from './coming-soon';
 import { bookHref } from './routes';
 
 function inSegment(pathname: string, segment: string) {
@@ -67,7 +68,10 @@ export type AdminNavItem = {
   pendingBadge?: boolean;
 };
 
-/** Menu do painel, igual ao do protótipo. A ordem aqui é a ordem da barra lateral. */
+/**
+ * Menu do painel: só áreas que existem. Membros, Votações e Configurações ficam fora até serem
+ * construídas (ver `comingSoonPages`). A ordem aqui é a ordem da barra lateral.
+ */
 export const adminNav: readonly AdminNavItem[] = [
   {
     label: 'Visão geral',
@@ -101,30 +105,6 @@ export const adminNav: readonly AdminNavItem[] = [
     match: 'prefix',
     placement: 'tab',
     pendingBadge: true,
-  },
-  {
-    label: 'Membros',
-    href: '/painel/membros',
-    icon: 'users',
-    access: 'admin',
-    match: 'prefix',
-    placement: 'more',
-  },
-  {
-    label: 'Votações',
-    href: '/painel/votacoes',
-    icon: 'vote',
-    access: 'admin',
-    match: 'prefix',
-    placement: 'more',
-  },
-  {
-    label: 'Configurações',
-    href: '/painel/configuracoes',
-    icon: 'settings',
-    access: 'admin',
-    match: 'prefix',
-    placement: 'more',
   },
 ];
 
@@ -160,5 +140,7 @@ export function getAdminTitle(pathname: string) {
   const match = adminNav
     .filter((item) => isAdminNavActive(item, pathname))
     .sort((a, b) => b.href.length - a.href.length)[0];
-  return match?.label ?? 'Painel';
+  if (match) return match.label;
+  const soon = Object.values(comingSoonPages).find((page) => inSegment(pathname, page.href));
+  return soon?.title ?? 'Painel';
 }
