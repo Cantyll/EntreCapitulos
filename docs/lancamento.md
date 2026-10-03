@@ -65,7 +65,7 @@ Antes de convidar as primeiras leitoras. Cada item é:
 ## 7. iPhone e PWA
 
 - [ ] **[manual]** **Teste de instalação no iPhone** (Safari → Compartilhar → Adicionar à Tela de Início): ícone e nome certos, abre sem barra do navegador, nada sob o notch nem sob a barra inferior, nenhum campo dá zoom ao focar, **login por código funciona dentro do app instalado**, o rascunho sobrevive a fechar e reabrir o app (checklist completo no PR da etapa 8a). O WebKit dos testes **não** substitui isso.
-- [ ] **[manual]** **Decisão:** o service worker com a página `/offline` e o cartão de convite para instalar (itens 5 e 6 do bloco PWA do `CLAUDE.md`) **não foram implementados**; decidir se entram antes ou depois do lançamento.
+- [ ] **[manual]** **Decidir se a Etapa 8e (cartão de convite para instalar no iOS, item 6 do bloco PWA) entra antes de convidar leitoras.** O service worker com a página `/offline` (item 5) fica para a Fase 3, como no plano original.
 
 ## 8. No dia
 
