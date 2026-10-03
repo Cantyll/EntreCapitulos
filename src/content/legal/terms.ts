@@ -39,6 +39,10 @@ export function buildTerms(config: LegalData): LegalDoc {
           type: 'p',
           text: 'Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe. Peça pelo e-mail de contato.',
         },
+        {
+          type: 'p',
+          text: 'Ao excluir a sua conta ou um comentário, o dado é apagado do banco de dados do site, mas pode continuar por algum tempo em cópias de segurança criptografadas, até elas expirarem. Os detalhes estão na Política de Privacidade.',
+        },
       ],
     },
     {

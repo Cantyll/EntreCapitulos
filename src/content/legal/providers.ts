@@ -16,7 +16,8 @@ export const FACT_SOURCE_LABEL: Record<FactSource, string> = {
   'nao-verificado': 'não verificado',
 };
 
-export type ProviderId = 'supabase' | 'vercel' | 'resend' | 'google' | 'cloudflareTurnstile';
+export type ProviderId =
+  'supabase' | 'vercel' | 'resend' | 'google' | 'cloudflareTurnstile' | 'cloudflareR2';
 
 export type ProviderInfo = {
   id: ProviderId;
@@ -70,6 +71,15 @@ export const PROVIDERS: readonly ProviderInfo[] = [
     role: 'A confirmar pelo advogado (operador, na verificação anti-robô).',
     feature: 'turnstile',
     usedBy: 'codigo',
+  },
+  {
+    id: 'cloudflareR2',
+    name: 'Cloudflare R2',
+    purpose:
+      'Guarda das cópias de segurança criptografadas do banco de dados. A criptografia é feita antes do envio e a Cloudflare não tem a chave.',
+    role: 'Operador (guarda arquivos criptografados em nome dos controladores). A confirmar pelo advogado.',
+    // Configurado pelos donos do site no painel da Cloudflare e nos workflows de backup; não é do app.
+    usedBy: 'informado',
   },
 ];
 

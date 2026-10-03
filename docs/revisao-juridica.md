@@ -2,7 +2,7 @@
 
 > **Documento TEMPORÁRIO**, para entregar ao advogado. Pode ser apagado depois da revisão (ver o README). É **gerado** a partir de `src/content/` (`legal-config.ts`, `legal/privacy.ts`, `legal/terms.ts`, `legal/providers.ts` e `legal/cookies.ts`) por `UPDATE_LEGAL_REVIEW=1 npx vitest run src/content/legal/review.test.ts`; um teste falha se ele ficar diferente das fontes. Não edite à mão.
 
-Última atualização dos textos: 2 de outubro de 2026. Os textos são **RASCUNHO** (`legalReviewed` = `false`).
+Última atualização dos textos: 3 de outubro de 2026. Os textos são **RASCUNHO** (`legalReviewed` = `false`).
 
 Cada fato abaixo vem marcado com a origem: **do código**, **informado pelo dono do site**, **não verificado**.
 
@@ -33,7 +33,8 @@ A base legal e a retenção de cada linha apontam para os itens de `legalBases` 
 | Registros técnicos de acesso (IP, data e hora, navegador, páginas) | Registros dos provedores (Vercel, Supabase e outros) | Operar e proteger o serviço | item 3 da lista de bases: (art. 7º, IX) | Registros técnicos e de segurança: mantidos pelos provedores por períodos definidos por eles, em regra curtos, e pelo prazo que a lei exigir. | Os provedores e quem administra as contas deles. | sempre | não verificado |
 | Verificação anti-robô (dados do navegador enviados à Cloudflare) | Cloudflare Turnstile (o site não guarda estes dados) | Confirmar que o pedido de código vem de uma pessoa | item 3 da lista de bases: (art. 7º, IX) | sem item específico (a definir pelo advogado) | A Cloudflare. | só com o Turnstile ativo | não verificado |
 | Pedidos de privacidade enviados por e-mail | Caixa de e-mail dos controladores | Atender os pedidos e comprovar o atendimento | item 4 da lista de bases: (art. 7º, II) e (art. 7º, VI) | Pedidos de privacidade enviados por e-mail: pelo tempo necessário para atender e comprovar o atendimento. | Os controladores. | sempre | informado pelo dono do site |
-| Cópias de segurança do banco de dados | Provedor do banco de dados (Supabase) | Continuidade do serviço | a definir pelo advogado | Cópias de segurança: as mantidas pelo provedor do banco de dados podem conter os dados por um período limitado depois da exclusão. | O provedor. | sempre | não verificado |
+| Cópias de segurança do banco de dados | Provedor do banco de dados (Supabase) | Continuidade do serviço | a definir pelo advogado | Cópias de segurança: as mantidas pelo provedor do banco de dados e as cópias criptografadas que guardamos no Cloudflare R2 podem conter os dados por um período limitado depois da exclusão, até a cópia expirar. | O provedor. | sempre | não verificado |
+| Cópias de segurança criptografadas do banco (incluem dados pessoais) | Cloudflare R2 (bucket privado, fora do Brasil) | Recuperar o site depois de uma perda de dados | a definir pelo advogado | Cópias de segurança: as mantidas pelo provedor do banco de dados e as cópias criptografadas que guardamos no Cloudflare R2 podem conter os dados por um período limitado depois da exclusão, até a cópia expirar. | Quem tiver o acesso ao bucket e a frase-senha da criptografia (os controladores). | sempre | informado pelo dono do site |
 | Cópia local do rascunho (editor de sessões) | IndexedDB do navegador da equipe | Não perder o texto se o aplicativo for fechado | a definir pelo advogado | sem item específico (a definir pelo advogado) | Só quem usa o editor (a equipe). | sempre | do código |
 
 ## (c) Provedores e o papel de cada um
@@ -47,6 +48,7 @@ A região é a informada pelos donos do site e **não foi verificada no código*
 | Resend | Operador contratado pelos controladores e acionado pelo Supabase (SMTP). | Envio do e-mail com o código de entrada, como operador contratado por nós e acionado pelo Supabase (o envio de e-mails do Supabase está configurado para usá-lo). | São Paulo (sa-east-1) | sempre | uso: informado pelo dono do site; região: informado pelo dono do site |
 | Google | A confirmar pelo advogado (o Google trata os dados da conta Google por conta própria; o site só recebe o que ele informa). | Login com a conta Google, quando você escolhe essa opção. | Infraestrutura global do Google, sem região fixa. O processamento pode ocorrer fora do Brasil. | só com o login do Google ativo | uso: do código; região: informado pelo dono do site |
 | Cloudflare Turnstile | A confirmar pelo advogado (operador, na verificação anti-robô). | Verificação anti-robô ao pedir o código por e-mail. | Rede global da Cloudflare, sem região fixa. O processamento pode ocorrer fora do Brasil. | só com o Turnstile ativo | uso: do código; região: informado pelo dono do site |
+| Cloudflare R2 | Operador (guarda arquivos criptografados em nome dos controladores). A confirmar pelo advogado. | Guarda das cópias de segurança criptografadas do banco de dados. A criptografia é feita antes do envio e a Cloudflare não tem a chave. | Região escolhida na criação do bucket, fora do Brasil (a Cloudflare não oferece região no Brasil para o R2, a confirmar). O armazenamento e o processamento ocorrem fora do Brasil. | sempre | uso: informado pelo dono do site; região: informado pelo dono do site |
 
 ## (d) Cookies e armazenamento local
 
@@ -124,6 +126,7 @@ Usamos os serviços abaixo para o site funcionar. Eles tratam dados em nosso nom
 | Resend | Envio do e-mail com o código de entrada, como operador contratado por nós e acionado pelo Supabase (o envio de e-mails do Supabase está configurado para usá-lo). | São Paulo (sa-east-1) |
 | Google | Login com a conta Google, quando você escolhe essa opção. | Infraestrutura global do Google, sem região fixa. O processamento pode ocorrer fora do Brasil. |
 | Cloudflare Turnstile | Verificação anti-robô ao pedir o código por e-mail. | Rede global da Cloudflare, sem região fixa. O processamento pode ocorrer fora do Brasil. |
+| Cloudflare R2 | Guarda das cópias de segurança criptografadas do banco de dados. A criptografia é feita antes do envio e a Cloudflare não tem a chave. | Região escolhida na criação do bucket, fora do Brasil (a Cloudflare não oferece região no Brasil para o R2, a confirmar). O armazenamento e o processamento ocorrem fora do Brasil. |
 
 O banco de dados e a autenticação (Supabase) ficam na região de São Paulo (Brasil). As funções do site (Vercel) rodam na região de São Paulo (gru1, Brasil), conforme a configuração do projeto no provedor.
 
@@ -132,6 +135,10 @@ Transferência internacional de dados:
 O banco de dados e as funções do site rodam em servidores em São Paulo (Brasil). Mesmo assim, os provedores que usamos (Supabase, Vercel e Resend) e, quando ativos, o Cloudflare Turnstile e o login do Google são empresas com operações em outros países, e partes do tratamento, como a entrega de e-mails, a proteção contra robôs, a rede de distribuição de conteúdo, os registros técnicos e o suporte, podem ocorrer fora do Brasil. Nesses casos, buscamos as garantias previstas na LGPD por meio dos contratos de tratamento de dados e dos termos desses provedores. Você pode pedir informações sobre isso pelo e-mail de contato.
 
 Este ponto ainda precisa ser validado por um advogado.
+
+As cópias de segurança criptografadas do banco de dados ficam num serviço de armazenamento da Cloudflare (R2). Região: Região escolhida na criação do bucket, fora do Brasil (a Cloudflare não oferece região no Brasil para o R2, a confirmar). O armazenamento e o processamento ocorrem fora do Brasil.
+
+Transferência internacional das cópias de segurança: A DEFINIR. Este ponto depende de análise jurídica.
 
 #### 7. Por quanto tempo guardamos
 
@@ -142,9 +149,13 @@ Por quanto tempo guardamos cada tipo de dado:
 - Progresso de leitura: enquanto a conta existir. Para quem não tem conta, por até 1 ano no próprio navegador (cookie).
 - Registros técnicos e de segurança: mantidos pelos provedores por períodos definidos por eles, em regra curtos, e pelo prazo que a lei exigir.
 - Pedidos de privacidade enviados por e-mail: pelo tempo necessário para atender e comprovar o atendimento.
-- Cópias de segurança: as mantidas pelo provedor do banco de dados podem conter os dados por um período limitado depois da exclusão.
+- Cópias de segurança: as mantidas pelo provedor do banco de dados e as cópias criptografadas que guardamos no Cloudflare R2 podem conter os dados por um período limitado depois da exclusão, até a cópia expirar.
 
 Este ponto ainda precisa ser validado por um advogado.
+
+Guardamos cópias de segurança criptografadas do banco de dados, para recuperar o site se houver uma perda de dados. Elas podem conter dados que você já excluiu, como comentários e contas apagados, até que cada cópia expire e seja descartada. Por isso, excluir um comentário ou a conta apaga o dado do banco de dados do site, mas não das cópias de segurança já feitas.
+
+Por quanto tempo guardamos as cópias de segurança: A DEFINIR. Este ponto depende de análise jurídica.
 
 Você pode excluir seus comentários que estejam visíveis ou em análise, quando quiser, no próprio comentário ("Excluir meu comentário", embaixo dele, na página da sessão). Comentários removidos pela moderação não aparecem mais no site, e o texto deles só deixa de existir quando a conta é excluída; se quiser que um deles seja apagado antes, peça pelo e-mail de contato. As respostas de outras pessoas a um comentário excluído deixam de aparecer no site, mas continuam guardadas até a exclusão da conta de quem as escreveu.
 
@@ -188,7 +199,7 @@ Quando a verificação de segurança está ativa, o site carrega scripts da Clou
 
 #### 10. Mudanças nesta política
 
-Podemos atualizar esta política. A data da última atualização é 2 de outubro de 2026.
+Podemos atualizar esta política. A data da última atualização é 3 de outubro de 2026.
 
 ### Termos de Uso
 
@@ -207,6 +218,8 @@ O clube é destinado a pessoas com 16 anos ou mais. O site não verifica a idade
 Você escolhe o nome que aparece nos seus comentários, que é público. Cuide do acesso ao seu e-mail: quem o controla consegue entrar na sua conta. Você pode trocar o nome, baixar os seus dados e excluir a conta em Minha conta.
 
 Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe. Peça pelo e-mail de contato.
+
+Ao excluir a sua conta ou um comentário, o dado é apagado do banco de dados do site, mas pode continuar por algum tempo em cópias de segurança criptografadas, até elas expirarem. Os detalhes estão na Política de Privacidade.
 
 #### 3. Combinados da comunidade
 
@@ -239,7 +252,7 @@ O tratamento dos seus dados pessoais está descrito na Política de Privacidade.
 
 #### 8. Mudanças nestes termos
 
-Podemos atualizar estes termos. A data da última atualização é 2 de outubro de 2026.
+Podemos atualizar estes termos. A data da última atualização é 3 de outubro de 2026.
 
 #### 9. Contato
 
@@ -249,16 +262,17 @@ Dúvidas sobre estes termos: Felipe.golinus@gmail.com.
 
 Cada campo preenchido tem o comentário `// PROPOSTA: validar com advogado` em `src/content/legal-config.ts`.
 
-**Preenchidos como proposta (6):**
+**Preenchidos como proposta (7):**
 
 - `regions.cloudflareTurnstile`
 - `regions.google`
+- `regions.cloudflareR2`
 - `legalBases`
 - `internationalTransfer`
 - `retention`
 - `requestDeadline`
 
-**Ainda "A DEFINIR":** nenhum campo.
+**Ainda "A DEFINIR":** `backups.internationalTransfer`, `backups.retention`
 
 **Revisão profissional (`legalReviewed`):** `false`. Enquanto for `false`, as páginas mostram "Rascunho em revisão" e ficam com `noindex`.
 
@@ -288,4 +302,6 @@ Nenhuma destas existe hoje (do código).
 9. Termos de Uso: responsabilidade pelo conteúdo dos comentários, limitação de responsabilidade e foro.
 10. Retenção de comentários removidos pela moderação: guardar o texto original até a exclusão da conta é adequado, e qual a melhor forma de atender o pedido de apagar antes?
 11. Declaração de idade no cadastro: é preciso pedir uma declaração (por exemplo, uma caixa de confirmação) ao criar a conta?
-12. Contas da equipe: a exclusão só depois de retirar o papel de equipe, a pedido por e-mail, está de acordo com os direitos do titular?
+12. Cópias de segurança (Cloudflare R2): qual a base legal e o mecanismo de transferência internacional para guardar um dump criptografado fora do Brasil, qual prazo de retenção das cópias é adequado (a proposta técnica é 14 dias para as diárias e 56 dias para as semanais) e como conciliar o direito de exclusão com dados que continuam nas cópias até expirarem?
+13. Registro mínimo de exclusões (proposta adiada, não implementada): guardar só o identificador da conta excluída e a data, pelo mesmo prazo das cópias, para reaplicar as exclusões depois de restaurar um backup, é aceitável e como deve constar na política?
+14. Contas da equipe: a exclusão só depois de retirar o papel de equipe, a pedido por e-mail, está de acordo com os direitos do titular?
