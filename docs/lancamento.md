@@ -18,6 +18,7 @@ Antes de convidar as primeiras leitoras. Cada item é:
 - [x] **[automático]** Fluxos principais: visitante, login por código, comentários e moderação, painel (livros, capa, tema, editor, publicar), autosave e conflito, conta (nome, baixar dados, excluir), acessibilidade (axe) e alvos de toque de 44 px no iPhone (workflow **E2E**).
 - [x] **[automático]** O site de produção responde, lê o banco e mantém os cabeçalhos (workflow **Smoke test da produção**, diário).
 - [x] **[automático]** Ações dos workflows fixadas por SHA e atualizadas pelo Dependabot.
+- [x] **[automático]** Backup: os três workflows (backup, prova e restauração) nunca usam `pull_request`, artefato, cache nem `set -x`, só leem segredos de um Environment, e nenhum arquivo de backup entra no git (`tests/backup/`); o ciclo dump, criptografia, envio, restauração e contagens roda no CI contra o banco local (`scripts/backup/roundtrip.sh`). **Não testado no CI:** o R2 real, o pooler da nuvem e o restauro de `auth` num projeto gerenciado (por isso o ensaio real).
 
 ## 2. Conteúdo
 
@@ -50,7 +51,12 @@ Antes de convidar as primeiras leitoras. Cada item é:
 - [ ] **[manual]** **Migrations aplicadas na nuvem** até a mais recente (Actions → Database deploy: dry run primeiro, depois de verdade). Conferir que o último deploy da Vercel é posterior.
 - [ ] **[manual]** **Advisors sem alertas** (Supabase → Advisors, segurança e desempenho): leia cada alerta; os que forem falso positivo, anote o motivo.
 - [ ] **[manual]** **Conta da Agatha como administradora** e **moderadora promovida** pelo SQL Editor (`operacao.md`, seção 7). Confirmar que a moderadora só vê Comentários.
-- [ ] **[manual]** **Decidir sobre backup (plano Pro ou paliativos) antes de convidar leitoras.** O plano gratuito **não tem backup automático** e **pausa o projeto após 1 semana sem atividade** (riscos confirmados). Opções comparadas em [`propostas-etapa8.md`](propostas-etapa8.md); se ficar nos paliativos, siga a rotina de exportação de `operacao.md` (seção 10) e a etapa 8d fica como proposta.
+- [ ] **[manual]** **Decidir sobre backup (plano Pro ou paliativos) antes de convidar leitoras.** O plano gratuito **não tem backup automático** e **pausa o projeto após 1 semana sem atividade** (riscos confirmados). Opções comparadas em [`propostas-etapa8.md`](propostas-etapa8.md). A etapa 8d implementou o **backup diário criptografado no Cloudflare R2**: se for essa a escolha, faça os itens abaixo; se ficar nos paliativos, siga a rotina de exportação de `operacao.md` (seção 10).
+- [ ] **[manual]** **Backup no R2 configurado e funcionando** (`operacao.md`, seção 15): conta e bucket privado, token restrito ao bucket, regras de ciclo de vida (14 e 56 dias), frase-senha **guardada em dois lugares**, Environments `backup` e `restore` restritos à `main` (o `restore` com você como aprovador) com os segredos **dentro** deles, variável `PRODUCTION_PROJECT_REF`, primeiro backup com resumo **OK**, objeto conferido no bucket e **Prova de restauração** verde.
+- [ ] **[manual]** **Ensaio real de restauração** num segundo projeto gratuito (`operacao.md`, seção 15, "Ensaio real"), apagando o projeto de ensaio e os segredos `RESTORE_TARGET_*` depois.
+- [ ] **[manual]** **Verificar todo mês** que o Backup do banco, a Prova de restauração e o Smoke test continuam rodando (o GitHub desativa agendamentos após 60 dias sem atividade) e que o objeto `daily/` do dia existe no bucket.
+- [ ] **[manual]** **Recomendado:** mover os segredos de produção do Supabase para um Environment `production` restrito à `main` (procedimento seguro em `operacao.md`, seção 12). O `db-deploy.yml` ainda não foi alterado.
+- [ ] **[manual]** **Textos legais dos backups**: o advogado define a **transferência internacional** e a **retenção das cópias** (`backups.internationalTransfer` e `backups.retention` em `legal-config.ts`, hoje "A DEFINIR"); o R2 não tem região no Brasil.
 - [ ] **[manual]** **Monitoramento**: decidir se haverá (e qual) além do Smoke test diário (`propostas-etapa8.md`). Confirmar que as notificações de Actions chegam a você (Settings → Notifications → Actions).
 - [ ] **[manual]** **Região do Supabase e da Vercel confirmadas** e iguais às que `legal-config.ts` informa (a região da Vercel é configuração do painel, não do código).
 

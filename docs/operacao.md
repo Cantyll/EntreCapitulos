@@ -175,7 +175,7 @@ O login é por **código de 6 dígitos por e-mail**. Se ninguém recebe, siga a 
 1. **Não há backup automático.** Se o banco for apagado ou corrompido, não existe cópia do provedor para restaurar.
 2. **O projeto é pausado depois de 1 semana sem atividade.** Site e painel param de funcionar até alguém restaurá-lo.
 
-Os dois riscos estão listados em `docs/lancamento.md` (decisão sobre backup antes de convidar leitoras) e comparados em `docs/propostas-etapa8.md`. O **Smoke test da produção** abre o livro atual todo dia (faz o site ler o banco); isso **pode ajudar, sem garantia**, a evitar a pausa. Não confie nele sozinho.
+**Desde a etapa 8d existe um backup diário criptografado no Cloudflare R2** (seção 15). Ele cobre o primeiro risco, mas **não** a pausa, e só protege se a seção 15 estiver configurada e o **Backup do banco** estiver rodando. Os dois riscos estão listados em `docs/lancamento.md` (decisão sobre backup antes de convidar leitoras) e comparados em `docs/propostas-etapa8.md`. O **Smoke test da produção** abre o livro atual todo dia (faz o site ler o banco); isso **pode ajudar, sem garantia**, a evitar a pausa. Não confie nele sozinho.
 
 ### Restaurar um projeto pausado
 
@@ -213,9 +213,14 @@ Os dois riscos estão listados em `docs/lancamento.md` (decisão sobre backup an
 | `ci.yml` | pull request | `contents: read` | nenhum |
 | `e2e.yml` | pull request para `main` e manual | `contents: read` | nenhum |
 | `smoke-prod.yml` | manual e todo dia às 09:17 UTC | `contents: read` | nenhum |
-| `db-deploy.yml` | só manual, só na `main` | `contents: read` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF` |
+| `db-deploy.yml` | só manual, só na `main` | `contents: read` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF` (hoje no repositório; ver "Recomendado" abaixo) |
+| `backup.yml` | todo dia às 06:23 UTC e manual, só na `main` | `contents: read` | Environment `backup`: `R2_*`, `BACKUP_PASSPHRASE` e os do Supabase |
+| `backup-drill.yml` | domingo às 07:41 UTC e manual, só na `main` | `contents: read` | Environment `backup` |
+| `db-restore.yml` | só manual, só na `main`, com aprovação | `contents: read` | Environment `restore` |
 
 Nenhum usa `pull_request_target`. Ações de terceiros ficam fixadas por SHA de commit completo, com a versão no comentário; o **Dependabot** (`.github/dependabot.yml`) abre PRs semanais (no máximo 5) para atualizá-las.
+
+**Recomendado ([manual], ainda não feito): mover os segredos de produção do Supabase para um Environment `production`** restrito à `main`, como os de backup, para que só a `main` os leia. Sem quebrar o Database deploy: (1) crie o Environment `production` (Settings → Environments), restrinja a branch a `main` e crie nele `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` e `SUPABASE_PROJECT_REF`; (2) peça, numa sessão de desenvolvimento, para acrescentar `environment: production` ao job do `db-deploy.yml` e mescle; (3) rode **Database deploy** com `dry_run` ligado e confirme que funciona; (4) **só depois** apague os três segredos do nível do repositório. Nunca apague antes do passo 3.
 
 O **Smoke test da produção** avisa por e-mail e pelas notificações quando falha (para quem editou o agendamento por último): confira em **Settings → Notifications → Actions**. O GitHub desliga workflows agendados depois de 60 dias sem atividade no repositório; se acontecer, ligue-o de novo em **Actions**.
 
@@ -232,3 +237,100 @@ O Dependabot abre PRs semanais, agrupados (no máximo 5 abertos por ecossistema)
 - **Nunca faça merge com CI vermelho.** Abra o PR e olhe a aba **Checks**: verde em `CI` e em `E2E` significa que lint, tipos, testes e o fluxo no navegador passaram com as versões novas. Se algo falhar, abra o job que ficou vermelho, leia o primeiro erro e, se não for óbvio, deixe o PR parado e peça ajuda numa sessão de desenvolvimento.
 - **PRs de `github-actions`** mudam os workflows, que o CI de PR só exercita em parte. Depois do merge, rode **Actions → Database deploy** com `dry_run` ligado (confirma que o workflow ainda funciona sem aplicar nada) e **Actions → Smoke test da produção** (Run workflow), e confira que os dois terminam verdes. Confira também que o SHA novo veio com o comentário de versão exata.
 - **Quando reavaliar as regras de ignore:** quando o `eslint-config-next` aceitar o ESLint 10 (seção 13), quando o `typescript-eslint` aceitar o TypeScript 6.1 ou superior, e ao trocar a versão do Node em `engines.node` e `.nvmrc` (aí o `@types/node` acompanha). Ao reavaliar, remova a regra correspondente e atualize este texto.
+
+## 15. Backup diário do banco no Cloudflare R2 (etapa 8d)
+
+> **ATENÇÃO: sem a frase-senha (`BACKUP_PASSPHRASE`) os backups são irrecuperáveis.** Eles são criptografados antes de sair do GitHub e nem a Cloudflare nem o GitHub conseguem abri-los sem ela. Guarde a frase em **dois lugares independentes** (gerenciador de senhas e uma cópia impressa em local seguro) e **nunca** no repositório.
+
+> Os nomes de menu de Cloudflare, GitHub e Supabase abaixo **não foram conferidos na tela** e mudam com o tempo: procure pelo nome em destaque.
+
+### Como funciona
+
+- O workflow **Backup do banco** (`backup.yml`) roda **todo dia às 06:23 UTC** (03:23 em Brasília) e sob demanda. Ele gera o dump com a CLI do Supabase (a mesma conexão do Database deploy), **criptografa dentro do runner do GitHub** (gpg, AES256, com a frase-senha) e envia para um bucket **privado** do Cloudflare R2. O arquivo nunca é commitado, nunca vira artefato nem cache, e nunca aparece em log: o resumo do job mostra só **OK ou falha, o tamanho e a data**.
+- O arquivo é `daily/AAAA-MM-DD.tar.gpg`; aos domingos (UTC) a mesma cópia também vai para `weekly/AAAA-MM-DD.tar.gpg`.
+- **O que entra:** todas as tabelas de `public` (livros, sessões, notas, perguntas, comentários, sinalizações, perfis, progresso de leitura) e, de `auth`, **só `users` e `identities`** (os perfis e os comentários dependem de `auth.users`). Também vão, só como referência, o schema (`schema.sql`) e os roles (`roles.sql`), mais um `manifest.json` (data, versão da CLI, última migration, contagem de linhas por tabela e SHA-256 dos arquivos), tudo dentro do arquivo criptografado.
+- **O que fica de fora de propósito:** sessões, tokens e auditoria do Auth (têm IP e tokens; ao restaurar, todo mundo entra de novo com o código por e-mail) e **os arquivos do Storage** (as capas dos livros: reenvie pelo painel; guarde as imagens originais à parte). As configurações do painel do Supabase (SMTP, Google, Turnstile, URLs) e as variáveis da Vercel também não fazem parte.
+- **Retenção:** regras de ciclo de vida **do próprio bucket**, que você configura no painel da Cloudflare: **14 dias** para `daily/` e **56 dias** para `weekly/`. Os valores oficiais ficam em `.github/backup.config.json` (um teste confere que este texto bate com ele). **Por que não mais:** quando uma conta ou um comentário é excluído, ele continua nos backups até expirarem; quanto maior a retenção, mais tempo um dado já "apagado" continua existindo (LGPD; ver `docs/revisao-juridica.md`). Mudou o prazo? Mude a configuração, as regras do bucket e este texto, e fale com o advogado.
+- **Verificação a cada backup:** o objeto existe no R2, o tamanho e o SHA-256 batem, e o job **falha** se o backup vier vazio ou com menos da metade do anterior (use a opção `accept_smaller` só depois de uma exclusão legítima).
+- **Prova de restauração semanal** (`backup-drill.yml`, domingos às 07:41 UTC): confere que o backup diário mais recente tem **no máximo 36 horas** e que o semanal tem **no máximo 8 dias**; depois baixa o semanal, descriptografa e restaura num **Supabase local descartável dentro do runner**, comparando as contagens com o manifesto. O texto puro nunca sai do runner.
+- **Se falhar:** o GitHub avisa por e-mail e nas notificações (quem editou o agendamento por último). Confira em **Settings → Notifications → Actions**.
+- **Pausa por inatividade:** o backup diário conecta ao banco todo dia, o que **pode ajudar, sem garantia**, a evitar a pausa do plano gratuito. Não confie só nisso. Se o projeto estiver pausado, o backup falha: restaure o projeto (seção 10) e rode o backup de novo.
+- **Limite da criptografia por frase-senha:** quem obtiver **ao mesmo tempo** o acesso ao bucket e a frase-senha abre os backups. Por isso os segredos ficam separados (Cloudflare de um lado, GitHub do outro) e só os workflows da `main` os leem. Uma evolução possível, depois da revisão do advogado, é criptografar com uma **chave pública** (`age`): o GitHub passaria a guardar só a chave pública, que não é segredo. A chave privada teria de ser gerada num terminal na nuvem e a prova de restauração automática deixaria de poder abrir o arquivo. Fica registrada como proposta, não implementada.
+
+### Configuração inicial, só pelo navegador (uma vez)
+
+1. **Conta e R2.** Crie uma conta em **cloudflare.com** (use um e-mail seu) e ative o **R2 Object Storage** (menu **R2**). **O R2 pode pedir cadastro de uma forma de pagamento** mesmo dentro da cota gratuita (**não verificado**): leia o aviso na tela antes de aceitar.
+2. **Bucket privado.** **R2 → Create bucket**, com um nome sem dado pessoal. Deixe o acesso **privado**: não ative o endereço público (`r2.dev`) nem domínio personalizado. Em localização, escolha o que a tela oferecer (**o R2 não tem região no Brasil**, a confirmar; por isso o texto legal trata isso como transferência internacional "A DEFINIR").
+3. **Token restrito ao bucket.** **R2 → Manage API Tokens** (ou **Manage R2 API Tokens**) → **Create API token**: permissão **Object Read & Write**, aplicada **somente a este bucket**. Anote o **Account ID** (aparece na página do R2), o **Access Key ID** e o **Secret Access Key** (o segredo aparece **uma vez só**; copie direto para o gerenciador de senhas).
+4. **Regras de ciclo de vida.** No bucket, **Settings → Object lifecycle rules** (**não verificado:** o nome exato): crie duas regras de **exclusão**: prefixo `daily/` apagando objetos depois de **14 dias**, e prefixo `weekly/` depois de **56 dias**.
+5. **Frase-senha.** No seu gerenciador de senhas (que roda no navegador), gere uma senha **aleatória longa (pelo menos 32 caracteres)**, sem quebra de linha. Guarde-a lá **e** numa cópia impressa em local seguro. **Nunca** a escreva no repositório, em chat nem em log.
+6. **Environments do GitHub** (os segredos **não** ficam no nível do repositório). Em **Settings → Environments → New environment**:
+   - **`backup`** (usado por `backup.yml` e `backup-drill.yml`): em **Deployment branches and tags** escolha **Selected branches and tags** e adicione só `main`. Em **Environment secrets** (**dentro do ambiente**, não em Repository secrets) crie: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `BACKUP_PASSPHRASE`, e os do Supabase necessários ao dump: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` e `SUPABASE_PROJECT_REF` (os mesmos valores do Database deploy).
+   - **`restore`** (usado por `db-restore.yml`): restrinja a branch a `main` e marque **Required reviewers** com a **sua conta**. Os segredos dele você cria **só no dia de restaurar** (veja "Restaurar").
+   - **Por que o `if` dentro do YAML não basta:** uma versão alterada do workflow, em outra branch, poderia ser disparada à mão e tentar ler segredos. O **Environment restrito à `main`** é a fronteira real: só a `main` os recebe.
+   - Em **Settings → Secrets and variables → Actions → Variables**, crie a **variável de repositório** `PRODUCTION_PROJECT_REF` com o código do projeto Supabase de **produção** (não é segredo). O `db-restore` a usa para **recusar a produção como destino**; sem ela, ele não roda. (Usei esse nome, e não `SUPABASE_PROJECT_REF`, para não ser confundido com o segredo de mesmo nome que o Database deploy usa.)
+7. **Primeiro backup.** **Actions → Backup do banco → Run workflow.** Espere terminar e leia o **resumo do job**: deve dizer **Resultado: OK**, o tamanho e a data. Se falhar, a mensagem do erro diz o que falta; rode de novo com a opção **verbose** (só no disparo manual; mostra a saída das ferramentas **filtrada**, nunca dados nem segredos).
+8. **Conferir no bucket.** No painel da Cloudflare, **R2 → o bucket → Objects**: deve existir `daily/AAAA-MM-DD.tar.gpg` com tamanho maior que zero.
+9. **Prova de restauração.** O workflow semanal só acha backup semanal depois de um domingo. Para testar já, rode **Backup do banco** de novo marcando **force_weekly** e depois **Actions → Prova de restauração do backup → Run workflow**. O resumo deve dizer **OK**.
+10. **Alertas.** Confirme em **Settings → Notifications → Actions** que as notificações de workflows com falha chegam a você.
+
+### Duplicação de propósito dos segredos, e a rotação
+
+Os segredos de R2 e a frase-senha existem em **dois** Environments (`backup` e `restore`), de propósito: o `restore` só roda com a sua aprovação e é o único a ler os segredos do projeto de destino. **Consequência:** ao trocar um deles, troque **nos dois lugares**. O token do Supabase do `restore` é uma cópia do usado no Database deploy (e no `backup`): ao rotacioná-lo (seção 6), troque em todos os ambientes.
+
+| O quê | Quando | Como |
+| --- | --- | --- |
+| **Token do R2** | A cada ~6 meses (ou se vazar) | Crie um token novo (mesmas permissões, só o bucket), atualize `R2_ACCESS_KEY_ID` e `R2_SECRET_ACCESS_KEY` em `backup` e `restore`, rode **Backup do banco** e confira o resumo, e só então **apague o token antigo** na Cloudflare |
+| **Frase-senha, sem vazamento** | Só se quiser | Gere a nova, atualize `BACKUP_PASSPHRASE` em `backup` e `restore` e rode **Backup do banco** com **force_weekly**; confira o **Prova de restauração**. **Guarde a frase antiga até o último backup criptografado com ela expirar (56 dias)**: para restaurar um backup antigo, ponha a frase antiga **temporariamente** no `restore` |
+| **Se algum segredo vazar** | Na hora | **Revogue** (R2: apague o token; frase: considere-a perdida), **gere de novo**, atualize os dois Environments e **rode um backup novo**. Se vazou a **frase-senha**, **apague os backups antigos do R2** (eles abrem com a frase vazada, para quem tiver o arquivo) e rode **Backup do banco** com **force_weekly** logo depois. Se vazou o acesso ao bucket, troque o token e confira nos logs da Cloudflare, se houver, o que foi acessado |
+
+### Rotina: backup manual antes de mexer no banco
+
+**Rode um backup manual (Actions → Backup do banco → Run workflow) antes de cada Database deploy relevante e antes de qualquer SQL que apague dados**, e espere o resumo dizer OK. Isso complementa a "regra de ouro" da seção 10 (exportar a tabela).
+
+### Workflows agendados podem ser desligados
+
+O GitHub **desativa workflows agendados depois de 60 dias sem atividade no repositório**. Isso vale para o **Backup do banco**, a **Prova de restauração** e o **Smoke test da produção**. **Verifique uma vez por mês** (Actions → o workflow → última execução) se eles continuam rodando, e confira no bucket se o objeto `daily/` do dia existe. Se algum estiver desligado, ligue-o de novo em **Actions**.
+
+### Restaurar (só em projeto novo e vazio)
+
+A restauração **nunca** vai por cima da produção. O workflow **Restaurar backup do banco** (`db-restore.yml`, só `workflow_dispatch`) recusa se: a confirmação digitada não for `RESTAURAR`; o projeto de destino for o de produção; o destino já tiver contas; ou for disparado fora da `main` ou fora do repositório oficial.
+
+1. **Crie um projeto Supabase novo** (**supabase.com/dashboard → New project**), com uma senha de banco nova (guarde-a). **Não faça nada nele**: ele precisa estar vazio.
+2. **Crie os segredos do destino no Environment `restore`** (e só agora): `RESTORE_TARGET_PROJECT_REF` (o código do projeto novo), `RESTORE_TARGET_DB_PASSWORD` (a senha dele), `SUPABASE_ACCESS_TOKEN` (cópia do token do Supabase, necessária para vincular o projeto), e confira que `R2_*` e `BACKUP_PASSPHRASE` estão lá. Se o backup for antigo e a frase mudou desde então, use a frase antiga.
+3. **Simule primeiro:** **Actions → Restaurar backup do banco → Run workflow**, `backup` = `daily/AAAA-MM-DD` (ou `weekly/...`), `confirm` = `RESTAURAR` e **`dry_run` ligado** (padrão). Aprove a execução (você é o aprovador do Environment). A simulação abre o backup, confere o manifesto e o destino vazio e simula as migrations, **sem alterar nada**.
+4. **Restaure de verdade:** rode de novo com **`dry_run` desligado**. O workflow **aplica as migrations no projeto novo** (`supabase db push`, só com os segredos do destino) e depois restaura os **dados** numa única transação, conferindo as contagens com o manifesto. O resumo diz OK e quantos livros têm capa para reenviar.
+5. **Reenvie as capas** pelo painel (os arquivos do Storage não estão no backup).
+6. **Troque as variáveis da Vercel** (`NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) para as do projeto novo e faça **Redeploy** (são lidas no build).
+7. **Reconfigure no Supabase novo** o que não vem do backup: **Site URL e Redirect URLs**, **SMTP do Resend** e modelos de e-mail, **tamanho do código (6)**, **Turnstile** (Secret Key e CAPTCHA), **Google** (se estiver ligado), **anonymous sign-ins desligado** e limites de envio (README, "Configurar o login").
+8. **Atualize os segredos do GitHub** (`SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD`, `SUPABASE_ACCESS_TOKEN`) e a variável `PRODUCTION_PROJECT_REF` para o projeto novo, nos Environments e onde existirem.
+9. **Confira o login** (peça um código em `/entrar`, entre, comente) e rode o **Smoke test da produção**. Todos terão de entrar de novo: as sessões não estão no backup.
+10. **Apague os segredos `RESTORE_TARGET_*`** do Environment `restore` quando terminar.
+
+#### Ensaio real (uma vez, antes de precisar)
+
+Para saber se tudo funciona de verdade, ensaie num **segundo projeto gratuito** (o limite de projetos gratuitos por conta é **não verificado**): crie um projeto de ensaio, siga os passos 1 a 4 e confira as contagens e um login por código. **Apague o projeto de ensaio e os segredos `RESTORE_TARGET_*` ao terminar**: ele terá dados reais das leitoras.
+
+**Limites conhecidos (não verificados na nuvem; o ensaio responde):**
+
+- No projeto gerenciado, o schema `auth` pertence a um papel do Supabase: o usuário `postgres` do projeto precisa ter permissão de escrita em `auth.users` e `auth.identities`. Se não tiver, o restauro falha com um código de erro (os detalhes não são impressos, porque podem citar dados).
+- Se o projeto novo tiver uma **versão do Auth com colunas diferentes** das do backup, o restauro dessas tabelas pode falhar. A prova semanal usa a versão **local** da CLI, então ela **não** garante a compatibilidade com a versão atual da nuvem: por isso o ensaio real.
+- A conexão do `psql` com o projeto novo usa o endereço do pooler que a CLI grava ao vincular o projeto (`supabase/.temp/pooler-url`); o runner do GitHub não tem IPv6 e a conexão direta do plano gratuito é IPv6 (**não verificado**). A simulação (`dry_run`) é o teste dessa conexão.
+
+### Custo e duração (estimativas, não medidas)
+
+- **Backup diário:** cerca de 2 a 4 minutos por dia, algo como 60 a 120 minutos de Actions por mês.
+- **Prova semanal:** cerca de 5 a 8 minutos por semana (sobe um Supabase local), algo como 20 a 35 minutos por mês.
+- O repositório é público, então os minutos de runners padrão são gratuitos (**não verificado**). O R2 tem uma cota gratuita de armazenamento (**não verificado**): com um banco pequeno e os backups das retenções acima, o volume deve ficar muito abaixo dela. Confira a duração real no primeiro run e o uso no painel da Cloudflare.
+
+### Mensagens de erro comuns
+
+| Mensagem (resumo do job) | O que fazer |
+| --- | --- |
+| "Falta o segredo ou a variável …" | Crie o segredo **dentro do Environment** certo (`backup` ou `restore`), não no repositório |
+| "O dump não trouxe a tabela auth.users" | O schema `auth` não entrou no dump: confira `.github/backup.config.json` (não rode o backup assim) |
+| "O dump trouxe tabelas que não estão na lista permitida" | Uma tabela nova apareceu. Se for inofensiva, entra em `allowedTables`; se guardar sessões ou tokens, em `excludeTables` |
+| "menos da metade do anterior" | Pode haver dados faltando. Investigue; se foi uma exclusão legítima, rode de novo com `accept_smaller` |
+| "O backup diário parou de rodar" / "falta o backup de domingo" | O agendamento foi desligado ou o backup falhou: veja a última execução do **Backup do banco** |
+| "Não foi possível descriptografar" | A frase-senha do ambiente não é a que criptografou aquele arquivo (veja a rotação) ou o arquivo está corrompido |
+| "Falhou: …" com a opção verbose desligada | Rode de novo com **verbose** (só disparo manual) para ver a saída filtrada |

@@ -1,6 +1,8 @@
 # Propostas da etapa 8: monitoramento e backup
 
-> **Este documento é SÓ proposta.** Nada aqui foi implementado, contratado ou ligado. Cada item depende da sua decisão (e, quando mexe em dados pessoais, de revisão jurídica). Preços, limites e nomes de menus vêm da memória ou da documentação dos provedores e **não foram conferidos**: confirme na página do provedor antes de decidir.
+> **Atualização (etapa 8d):** a **opção 3 da seção B** (dump criptografado no Cloudflare R2) **foi implementada** como backup diário, prova de restauração semanal e restauração manual, com as decisões abaixo; a configuração fica a cargo da dona do projeto (`docs/operacao.md`, seção 15). O resto deste documento continua sendo só proposta, inclusive o **registro mínimo de exclusões** (adiado até a revisão do advogado) e a criptografia por **chave pública** (`age`), que seria uma evolução.
+>
+> **Este documento é SÓ proposta** (exceto o que a atualização acima diz que foi implementado). Nada aqui foi contratado ou ligado. Cada item depende da sua decisão (e, quando mexe em dados pessoais, de revisão jurídica). Preços, limites e nomes de menus vêm da memória ou da documentação dos provedores e **não foram conferidos**: confirme na página do provedor antes de decidir.
 >
 > Contexto confirmado: o Supabase está no **plano gratuito**: **sem backup automático** e **pausa do projeto após 1 semana de inatividade**. O repositório é **público** e não há computador local para guardar arquivos.
 

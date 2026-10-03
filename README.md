@@ -419,6 +419,18 @@ Dois workflows do GitHub (aba **Actions**) percorrem o site como uma pessoa fari
 
 **O que estes testes NÃO provam:** o WebKit do Playwright **não é o Safari de verdade** e não reproduz o app instalado na Tela de Início (cookies separados, barra de status, selo no ícone, teclado). O teste no iPhone com o app instalado continua sendo manual (a lista está na descrição do pull request da etapa 8 e em `docs/lancamento.md`). Também ficam de fora: o login com o Google, o CAPTCHA (Turnstile) com chave real, o envio real de e-mail pelo Resend, a barra de ferramentas da pré-visualização da Vercel e o carregamento das capas pelo otimizador de imagens do Next (ele recusa endereços locais, então nos testes a capa aparece sem a imagem).
 
+## Backup do banco (Cloudflare R2)
+
+> **ATENÇÃO: sem a frase-senha (`BACKUP_PASSPHRASE`) os backups são irrecuperáveis.** Eles são criptografados antes de sair do GitHub, e ninguém (nem a Cloudflare, nem o GitHub, nem nós) consegue abri-los sem ela. Guarde a frase em **dois lugares independentes** (gerenciador de senhas e uma cópia impressa em local seguro).
+
+O plano gratuito do Supabase não tem backup automático. Por isso, um workflow (**Backup do banco**) gera todo dia um backup do banco (`public` e as contas), **criptografa** e envia para um bucket **privado** do Cloudflare R2. Uma vez por semana, outro workflow (**Prova de restauração do backup**) abre o backup mais recente e o restaura num banco local descartável para provar que ele funciona. Uma restauração de verdade é sempre manual, só num projeto Supabase **novo e vazio**.
+
+- Os segredos (R2, frase-senha e os do Supabase usados no dump) ficam em **Environments** do GitHub restritos à `main`, não no nível do repositório. **Os segredos de R2 e a frase-senha ficam duplicados de propósito** nos Environments `backup` e `restore`: ao trocar um deles, troque nos dois.
+- A retenção (diários 14 dias e semanais 56 dias) é configurada por você no painel da Cloudflare; os valores oficiais estão em `.github/backup.config.json`.
+- Passo a passo (criar a conta, o bucket e o token, as regras de ciclo de vida, os Environments, o primeiro backup, a rotação das chaves, o que fazer se algo vazar e como restaurar): [`docs/operacao.md`](docs/operacao.md), seção 15. Os nomes de menu **não foram conferidos na tela**.
+- **Rode um backup manual antes de cada Database deploy relevante e antes de qualquer SQL que apague dados.**
+- O GitHub desativa workflows agendados depois de 60 dias sem atividade no repositório: confira todo mês que o backup, a prova e o smoke test continuam rodando.
+
 ## Atualizações automáticas de dependências
 
 O Dependabot (`.github/dependabot.yml`) abre, uma vez por semana, no máximo 5 pull requests agrupados: um para as dependências do npm e outro para as ações dos workflows (que ficam fixadas por SHA de commit, com a versão no comentário). Eles passam pelo CI e pelo E2E como qualquer outro; ninguém precisa rodar nada: leia o PR, confira que o CI está verde e mescle.
