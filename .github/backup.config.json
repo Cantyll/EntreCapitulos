@@ -1,0 +1,50 @@
+{
+  "_comment": "Fonte única da configuração do backup (etapa 8d). Os workflows, os scripts, os testes e a documentação leem os valores daqui. Mudou a retenção? Ajuste também as regras de ciclo de vida do bucket no painel da Cloudflare (docs/operacao.md, seção 15).",
+  "formatVersion": 1,
+  "prefixes": { "daily": "daily/", "weekly": "weekly/" },
+  "retentionDays": { "daily": 14, "weekly": 56 },
+  "maxAgeHours": { "daily": 36, "weekly": 192 },
+  "size": { "minBytes": 1024, "minRatioOfPrevious": 0.5 },
+  "dump": {
+    "schemas": ["public", "auth"],
+    "excludeTables": [
+      "auth.audit_log_entries",
+      "auth.custom_oauth_providers",
+      "auth.flow_state",
+      "auth.instances",
+      "auth.mfa_amr_claims",
+      "auth.mfa_challenges",
+      "auth.mfa_factors",
+      "auth.mfa_recovery_code_sets",
+      "auth.mfa_recovery_codes",
+      "auth.oauth_authorizations",
+      "auth.oauth_client_states",
+      "auth.oauth_clients",
+      "auth.oauth_consents",
+      "auth.one_time_tokens",
+      "auth.refresh_tokens",
+      "auth.saml_providers",
+      "auth.saml_relay_states",
+      "auth.scim_tokens",
+      "auth.scim_users",
+      "auth.sessions",
+      "auth.sso_domains",
+      "auth.sso_providers",
+      "auth.webauthn_challenges",
+      "auth.webauthn_credentials"
+    ],
+    "requiredTables": ["auth.users", "auth.identities"],
+    "allowedTables": [
+      "auth.users",
+      "auth.identities",
+      "public.books",
+      "public.profiles",
+      "public.reading_sessions",
+      "public.session_notes",
+      "public.session_questions",
+      "public.comments",
+      "public.comment_flags",
+      "public.reading_progress"
+    ]
+  }
+}

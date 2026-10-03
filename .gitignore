@@ -15,3 +15,9 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /blob-report/
+
+# Backups (etapa 8d): nunca vão para o git (o repositório é público). As migrations .sql continuam versionadas.
+*.dump
+*.gpg
+*.age
+/backups/
