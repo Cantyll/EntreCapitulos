@@ -90,6 +90,7 @@ test.describe('navegação do painel', () => {
     }
     await bar.getByRole('button', { name: 'Mais' }).click();
     const sheet = page.getByRole('dialog', { name: 'Mais' });
-    await expect(sheet.getByRole('link')).toHaveText(['Livros']);
+    // Livros e o atalho "Ver o site" (que não é uma área do painel).
+    await expect(sheet.getByRole('link')).toHaveText(['Livros', 'Ver o site']);
   });
 });
