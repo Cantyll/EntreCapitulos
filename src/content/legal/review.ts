@@ -197,6 +197,15 @@ export const DATA_MAP: readonly DataRow[] = [
     source: 'nao-verificado',
   },
   {
+    data: 'Cópias de segurança criptografadas do banco (incluem dados pessoais)',
+    where: 'Cloudflare R2 (bucket privado, fora do Brasil)',
+    purpose: 'Recuperar o site depois de uma perda de dados',
+    basis: null,
+    retention: 6,
+    sees: 'Quem tiver o acesso ao bucket e a frase-senha da criptografia (os controladores).',
+    source: 'informado',
+  },
+  {
     data: 'Cópia local do rascunho (editor de sessões)',
     where: 'IndexedDB do navegador da equipe',
     purpose: 'Não perder o texto se o aplicativo for fechado',
@@ -250,6 +259,8 @@ export const LAWYER_QUESTIONS: readonly string[] = [
   'Termos de Uso: responsabilidade pelo conteúdo dos comentários, limitação de responsabilidade e foro.',
   'Retenção de comentários removidos pela moderação: guardar o texto original até a exclusão da conta é adequado, e qual a melhor forma de atender o pedido de apagar antes?',
   'Declaração de idade no cadastro: é preciso pedir uma declaração (por exemplo, uma caixa de confirmação) ao criar a conta?',
+  'Cópias de segurança (Cloudflare R2): qual a base legal e o mecanismo de transferência internacional para guardar um dump criptografado fora do Brasil, qual prazo de retenção das cópias é adequado (a proposta técnica é 14 dias para as diárias e 56 dias para as semanais) e como conciliar o direito de exclusão com dados que continuam nas cópias até expirarem?',
+  'Registro mínimo de exclusões (proposta adiada, não implementada): guardar só o identificador da conta excluída e a data, pelo mesmo prazo das cópias, para reaplicar as exclusões depois de restaurar um backup, é aceitável e como deve constar na política?',
   'Contas da equipe: a exclusão só depois de retirar o papel de equipe, a pedido por e-mail, está de acordo com os direitos do titular?',
 ];
 

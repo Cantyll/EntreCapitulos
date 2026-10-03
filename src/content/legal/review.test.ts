@@ -67,7 +67,9 @@ describe('docs/revisao-juridica.md (documento temporário para o advogado)', () 
     for (const [id, region] of Object.entries(legalConfig.regions)) {
       expect(generated, id).toContain(region);
     }
-    expect(generated).toContain('Ainda "A DEFINIR":** nenhum campo');
+    expect(generated).toContain(
+      'Ainda "A DEFINIR":** `backups.internationalTransfer`, `backups.retention`',
+    );
     expect(generated).toContain('(`legalReviewed`):** `false`');
   });
 
