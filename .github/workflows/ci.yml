@@ -54,6 +54,13 @@ jobs:
       - name: Run pgTAP tests
         run: supabase test db
 
+      # docs/seguranca.md é gerado do banco: falha se uma migration mudou permissões e o documento não.
+      # Regenerar: UPDATE_SECURITY_DOC=1 (ver o cabeçalho do próprio documento).
+      - name: Security inventory matches docs/seguranca.md
+        run: npx vitest run tests/security-doc.test.ts
+        env:
+          SECURITY_DOC_DB_CONTAINER: supabase_db_entre-capitulos
+
       - name: Generate types
         run: npm run db:types
 
