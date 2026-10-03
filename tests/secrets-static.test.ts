@@ -47,8 +47,12 @@ const ALLOWLIST: Record<string, { allowed: PatternName[]; why: string }> = {
     why: 'garante que a action de excluir conta não usa service_role (só o nome)',
   },
   'CLAUDE.md': {
-    allowed: ['serviceRole'],
+    allowed: ['sbSecret', 'serviceRole'],
     why: 'documentação das regras de segurança (só o nome)',
+  },
+  'docs/operacao.md': {
+    allowed: ['serviceRole'],
+    why: 'guia de rotação de chaves: cita o NOME da chave que o app não usa (sem valor)',
   },
   'README.md': {
     allowed: ['sbSecret', 'serviceRole'],
