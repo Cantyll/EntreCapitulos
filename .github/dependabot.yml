@@ -10,6 +10,16 @@ updates:
     groups:
       npm-dependencies:
         patterns: ['*']
+    ignore:
+      # eslint-config-next@16.3.7 e os plugins dele só aceitam o ESLint 9 (docs/operacao.md, seção 13).
+      - dependency-name: eslint
+        update-types: ['version-update:semver-major']
+      # typescript-eslint só aceita TypeScript abaixo de 6.1.
+      - dependency-name: typescript
+        versions: ['>=6.1.0']
+      # Mantém @types/node alinhado ao Node de engines.node (22.x).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
