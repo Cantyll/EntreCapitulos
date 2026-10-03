@@ -1,0 +1,84 @@
+name: Backup do banco
+
+# Backup diário do banco (dados de public e auth), CRIPTOGRAFADO dentro do runner e enviado a um bucket
+# PRIVADO do Cloudflare R2. O arquivo nunca é commitado, nunca vira artefato nem cache e nunca aparece
+# em log: o resumo do job mostra só OK ou falha, o tamanho e a data.
+#
+# Segurança (docs/operacao.md, seção 15):
+# - Só schedule e workflow_dispatch. NUNCA pull_request nem pull_request_target.
+# - Os segredos vivem no Environment "backup" (restrito à branch main), não no repositório. A condição
+#   do job abaixo é um cinto a mais; a fronteira real é o Environment.
+# - Sem upload-artifact, sem cache, sem "set -x". Os temporários ficam em $RUNNER_TEMP e são apagados.
+on:
+  schedule:
+    # 06:23 UTC (03:23 em Brasília), fora do horário cheio. O smoke test roda às 09:17.
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+    inputs:
+      accept_smaller:
+        description: 'Aceitar um backup bem menor que o anterior (use só depois de uma exclusão legítima)'
+        type: boolean
+        default: false
+      force_weekly:
+        description: 'Gravar também a cópia semanal agora (use depois de trocar a frase-senha, fora de domingo)'
+        type: boolean
+        default: false
+      verbose:
+        description: 'Mostrar a saída das ferramentas, filtrada (nunca mostra dados). Só vale no disparo manual'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Um backup por vez, sem cancelar um que já esteja enviando.
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Backup criptografado no R2
+    if: github.repository == 'Cantyll/EntreCapitulos' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: backup
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.118.0
+
+      - name: Preparar pasta temporária
+        run: |
+          mkdir -p "$RUNNER_TEMP/backup"
+          echo "BACKUP_WORKDIR=$RUNNER_TEMP/backup" >> "$GITHUB_ENV"
+
+      - name: Gerar e criptografar o backup
+        run: bash scripts/backup/make-backup.sh
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          BACKUP_VERBOSE: ${{ github.event_name == 'workflow_dispatch' && inputs.verbose && 'true' || 'false' }}
+
+      - name: Enviar ao R2 e conferir
+        run: bash scripts/backup/upload.sh
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          ACCEPT_SMALLER: ${{ github.event_name == 'workflow_dispatch' && inputs.accept_smaller && 'true' || 'false' }}
+          BACKUP_FORCE_WEEKLY: ${{ github.event_name == 'workflow_dispatch' && inputs.force_weekly && 'true' || 'false' }}
+          BACKUP_VERBOSE: ${{ github.event_name == 'workflow_dispatch' && inputs.verbose && 'true' || 'false' }}
+
+      - name: Apagar os temporários
+        if: always()
+        run: |
+          source scripts/backup/common.sh
+          wipe_dir "$BACKUP_WORKDIR"
