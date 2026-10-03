@@ -224,3 +224,11 @@ O **Smoke test da produção** avisa por e-mail e pelas notificações quando fa
 - **Node:** `engines.node` é `22.x` (igual ao `.nvmrc`), para a Vercel usar sempre a mesma versão.
 - **Scripts de instalação:** só `esbuild` e `unrs-resolver` têm permissão (`allowScripts` no `package.json`). `fsevents` também tem script, mas é opcional e só instala em macOS. Não aprove outro pacote sem entender o que o script faz.
 - **ESLint 9:** o ESLint 10 já existe, mas os plugins que o `eslint-config-next` traz (`eslint-plugin-react`, `eslint-plugin-jsx-a11y`, `eslint-plugin-import`) só declaram suporte até o ESLint 9. Subir à força quebraria o lint. Reavalie quando esses plugins publicarem suporte (o Dependabot mostra as novas versões).
+
+## 14. PRs do Dependabot
+
+O Dependabot abre PRs semanais, agrupados (no máximo 5 abertos por ecossistema). Três dependências têm regras de ignore em `.github/dependabot.yml`, cada uma com o motivo comentado no arquivo: ESLint (versão maior), TypeScript (a partir da 6.1.0) e `@types/node` (versão maior, para ficar alinhado ao Node 22.x).
+
+- **Nunca faça merge com CI vermelho.** Abra o PR e olhe a aba **Checks**: verde em `CI` e em `E2E` significa que lint, tipos, testes e o fluxo no navegador passaram com as versões novas. Se algo falhar, abra o job que ficou vermelho, leia o primeiro erro e, se não for óbvio, deixe o PR parado e peça ajuda numa sessão de desenvolvimento.
+- **PRs de `github-actions`** mudam os workflows, que o CI de PR só exercita em parte. Depois do merge, rode **Actions → Database deploy** com `dry_run` ligado (confirma que o workflow ainda funciona sem aplicar nada) e **Actions → Smoke test da produção** (Run workflow), e confira que os dois terminam verdes. Confira também que o SHA novo veio com o comentário de versão exata.
+- **Quando reavaliar as regras de ignore:** quando o `eslint-config-next` aceitar o ESLint 10 (seção 13), quando o `typescript-eslint` aceitar o TypeScript 6.1 ou superior, e ao trocar a versão do Node em `engines.node` e `.nvmrc` (aí o `@types/node` acompanha). Ao reavaliar, remova a regra correspondente e atualize este texto.
