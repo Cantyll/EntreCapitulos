@@ -25,8 +25,9 @@ function getServerSnapshot() {
  * Diz se o site está aberto como app instalado (Tela de Início no iOS, "Adicionar ao Dock" no Mac,
  * instalação no Chrome). Nesse modo não há barra de endereço nem botão voltar do navegador.
  *
- * Ainda sem consumidor na Fase 0. Entra com o cartão "Instale o Entre Capítulos", que só aparece
- * no Safari fora do modo instalado (Fase 1).
+ * Sem consumidor por enquanto, e segue disponível. O cartão "Instale o Entre Capítulos" (etapa 8e) NÃO usa este
+ * hook: ele decide no navegador, depois da montagem, com as funções puras de `src/lib/pwa/platform.ts`
+ * (`readPlatform`, `installEligibility`), que também separam o Safari do iPhone dos outros navegadores.
  */
 export function useIsStandalone(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);

@@ -62,7 +62,7 @@ export const legalConfig = {
   privacyContactEmail: 'Felipe.golinus@gmail.com',
   minimumAge: 16,
   /** Data da última atualização dos textos. */
-  lastUpdated: '3 de outubro de 2026',
+  lastUpdated: '4 de outubro de 2026',
 
   /** Região onde cada provedor roda a parte usada pelo site. */
   regions: {

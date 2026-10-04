@@ -2,7 +2,7 @@
 
 > **Documento TEMPORÁRIO**, para entregar ao advogado. Pode ser apagado depois da revisão (ver o README). É **gerado** a partir de `src/content/` (`legal-config.ts`, `legal/privacy.ts`, `legal/terms.ts`, `legal/providers.ts` e `legal/cookies.ts`) por `UPDATE_LEGAL_REVIEW=1 npx vitest run src/content/legal/review.test.ts`; um teste falha se ele ficar diferente das fontes. Não edite à mão.
 
-Última atualização dos textos: 3 de outubro de 2026. Os textos são **RASCUNHO** (`legalReviewed` = `false`).
+Última atualização dos textos: 4 de outubro de 2026. Os textos são **RASCUNHO** (`legalReviewed` = `false`).
 
 Cada fato abaixo vem marcado com a origem: **do código**, **informado pelo dono do site**, **não verificado**.
 
@@ -36,6 +36,7 @@ A base legal e a retenção de cada linha apontam para os itens de `legalBases` 
 | Cópias de segurança do banco de dados | Provedor do banco de dados (Supabase) | Continuidade do serviço | a definir pelo advogado | Cópias de segurança: as mantidas pelo provedor do banco de dados e as cópias criptografadas que guardamos no Cloudflare R2 podem conter os dados por um período limitado depois da exclusão, até a cópia expirar. | O provedor. | sempre | não verificado |
 | Cópias de segurança criptografadas do banco (incluem dados pessoais) | Cloudflare R2 (bucket privado, fora do Brasil) | Recuperar o site depois de uma perda de dados | a definir pelo advogado | Cópias de segurança: as mantidas pelo provedor do banco de dados e as cópias criptografadas que guardamos no Cloudflare R2 podem conter os dados por um período limitado depois da exclusão, até a cópia expirar. | Quem tiver o acesso ao bucket e a frase-senha da criptografia (os controladores). | sempre | informado pelo dono do site |
 | Cópia local do rascunho (editor de sessões) | IndexedDB do navegador da equipe | Não perder o texto se o aplicativo for fechado | a definir pelo advogado | sem item específico (a definir pelo advogado) | Só quem usa o editor (a equipe). | sempre | do código |
+| Preferência do cartão de instalação (neste aparelho) | localStorage do navegador (`ec:install:v1`), só em iPhone e iPad (Safari ou navegador embutido de outro aplicativo); nunca é enviada ao servidor | Decidir quando mostrar o cartão que ensina a colocar o site na Tela de Início: dias distintos de visita, último dia, "Agora não" (e quando) e "Já instalei" | a definir pelo advogado | sem item específico (a definir pelo advogado) | Só a própria pessoa (fica no aparelho). | sempre | do código |
 
 ## (c) Provedores e o papel de cada um
 
@@ -58,6 +59,7 @@ A região é a informada pelos donos do site e **não foi verificada no código*
 | ec_next | Lembra para onde voltar depois de entrar com o Google. | 10 minutos | só com o login do Google ativo | do código |
 | sb-…-auth-token | Sessão do Supabase Auth: mantém você conectado depois de entrar. Pode vir em mais de um pedaço (.0, .1…). | a duração da sessão, definida pelo Supabase | sempre | do código |
 | IndexedDB do editor de sessões (`session:<id>` e `new:<bookId>`) | Cópia local do rascunho, para não perder o texto se o aplicativo for fechado. (só a equipe (quem usa o editor)) | até o rascunho ser enviado ao servidor ou o navegador limpar os dados do site | sempre | do código |
+| `ec:install:v1` (armazenamento local do site) | Preferência do cartão "Instale o Entre Capítulos": guarda em quantos dias diferentes você abriu o site neste aparelho, o último desses dias, se você tocou em "Agora não" (e quando; o cartão pode voltar depois de 60 dias) e se você tocou em "Já instalei". Não guarda nome, e-mail nem identificador de conta, e nunca é enviada ao servidor. (só iPhone e iPad (Safari ou navegador embutido de outro aplicativo); nos demais aparelhos e no aplicativo instalado, nada é gravado) | até o navegador limpar os dados do site ("Já instalei" vale por todo esse tempo) | sempre | do código |
 | `cf.turnstile.u` (armazenamento local do iframe da Cloudflare) | Item criado pelo widget de verificação anti-robô, no domínio da Cloudflare. (quem pede o código quando a verificação está ativa) | definida pela Cloudflare | só com o Turnstile ativo | não verificado (medido só com a chave de testes da Cloudflare) |
 
 Todos os cookies são essenciais; não há banner de consentimento (do código).
@@ -195,11 +197,13 @@ O site usa apenas cookies essenciais, necessários para o que você pediu (entra
 
 O editor de sessões, usado só pela equipe, guarda uma cópia do rascunho no armazenamento local do navegador (IndexedDB) para não perder o texto se o aplicativo for fechado.
 
+Em iPhones e iPads (no Safari ou no navegador embutido de outro aplicativo), o site guarda uma preferência no armazenamento local do navegador (ec:install:v1) para decidir quando mostrar o cartão que ensina a colocar o Entre Capítulos na Tela de Início. Ela guarda em quantos dias diferentes você abriu o site neste aparelho, o último desses dias, se você tocou em "Agora não" (e quando; o cartão pode voltar depois de 60 dias) e se você tocou em "Já instalei". Não guarda nome, e-mail nem identificador de conta, nunca é enviada ao servidor e fica neste aparelho até o navegador limpar os dados do site. Nos outros aparelhos e no aplicativo instalado, o site não grava essa preferência.
+
 Quando a verificação de segurança está ativa, o site carrega scripts da Cloudflare. Num teste com a chave de testes da Cloudflare, o widget não criou cookies no site e guardou um item no armazenamento local do próprio domínio da Cloudflare; o que o serviço usa de verdade com a chave real é definido pela Cloudflare: A DEFINIR (conferir antes de ativar).
 
 #### 10. Mudanças nesta política
 
-Podemos atualizar esta política. A data da última atualização é 3 de outubro de 2026.
+Podemos atualizar esta política. A data da última atualização é 4 de outubro de 2026.
 
 ### Termos de Uso
 
@@ -252,7 +256,7 @@ O tratamento dos seus dados pessoais está descrito na Política de Privacidade.
 
 #### 8. Mudanças nestes termos
 
-Podemos atualizar estes termos. A data da última atualização é 3 de outubro de 2026.
+Podemos atualizar estes termos. A data da última atualização é 4 de outubro de 2026.
 
 #### 9. Contato
 

@@ -1,3 +1,4 @@
+import { INSTALL_RULES } from '../install';
 import { A_DEFINIR, type LegalData, type LegalText } from '../legal-config';
 import { SITE_COOKIES } from './cookies';
 import { activeProviders, regionOf } from './providers';
@@ -248,6 +249,10 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
         {
           type: 'p',
           text: 'O editor de sessões, usado só pela equipe, guarda uma cópia do rascunho no armazenamento local do navegador (IndexedDB) para não perder o texto se o aplicativo for fechado.',
+        },
+        {
+          type: 'p',
+          text: `Em iPhones e iPads (no Safari ou no navegador embutido de outro aplicativo), o site guarda uma preferência no armazenamento local do navegador (${INSTALL_RULES.storageKey}) para decidir quando mostrar o cartão que ensina a colocar o Entre Capítulos na Tela de Início. Ela guarda em quantos dias diferentes você abriu o site neste aparelho, o último desses dias, se você tocou em "Agora não" (e quando; o cartão pode voltar depois de ${INSTALL_RULES.dismissDays} dias) e se você tocou em "Já instalei". Não guarda nome, e-mail nem identificador de conta, nunca é enviada ao servidor e fica neste aparelho até o navegador limpar os dados do site. Nos outros aparelhos e no aplicativo instalado, o site não grava essa preferência.`,
         },
         ...(features.turnstile
           ? [

@@ -410,6 +410,27 @@ O endpoint que envia o código de entrada por e-mail é público, e cada envio g
 
 **Avisos:** (a) os nomes dos menus do Supabase, da Vercel e da Cloudflare acima vêm das documentações e **não foram conferidos na tela**; (b) o CAPTCHA do Supabase vale para o projeto inteiro: **previews sem a Site Key não conseguem pedir código** depois que ele é ligado. Se você usa o login nos previews, ponha a Site Key também em **Preview** e inclua o endereço do preview no widget da Cloudflare; (c) se a verificação não carregar (bloqueador de anúncios, rede da empresa), a pessoa vê "Não conseguimos carregar a verificação de segurança" e não consegue pedir o código; (d) o Turnstile carrega scripts da Cloudflare, num teste com as chaves de teste o widget não criou cookies e guardou um item no armazenamento local do domínio da Cloudflare, mas com a chave real isso pode diferir: confira no navegador antes de ativar e atualize a política de privacidade. Para testar sem uma conta, a Cloudflare publica chaves de teste (Site Key `1x00000000000000000000AA` sempre passa, e a Secret Key de teste correspondente é `1x0000000000000000000000000000000AA`), que **só devem ser usadas em testes**.
 
+## Cartão de instalação
+
+No iPhone e no iPad, o site pode ser colocado na Tela de Início e aberto como um aplicativo (sem barra do navegador). O iOS não tem um botão de instalar que o site possa acionar, então o site só mostra os passos: um cartão discreto "Instale o Entre Capítulos" (Compartilhar, Adicionar à Tela de Início, Adicionar).
+
+**Quando e onde aparece**
+
+- **Só no Safari do iPhone e do iPad, fora do app já instalado.** Em outros navegadores do iPhone (Chrome, Firefox, Edge), no Android e no computador não aparece nada. No navegador embutido de aplicativos (Instagram, Facebook…) aparece só a dica "Para instalar como aplicativo, abra este site no Safari."
+- **Site público:** a partir da **2ª visita** (uma visita é um dia diferente; recarregar a página não conta), no fim da página, antes do rodapé. **Painel:** desde o primeiro acesso, na Visão geral (administradora) e no topo de Comentários (moderadora).
+- **"Agora não"** esconde o cartão por 60 dias; **"Já instalei"** esconde para sempre (neste aparelho). Ele nunca aparece em `/entrar`, `/boas-vindas`, `/conta/excluida` nem nas páginas de erro e de "página não encontrada".
+- **Para consultar depois:** a página "Sobre o clube" (seção "Leia como aplicativo", para todo mundo) e "Minha conta" (seção "Instalar no iPhone", só no Safari do iPhone) têm os passos e as observações que dependem da versão do iOS (por exemplo, deixar ligada a opção "Abrir como app da Web", se o iOS a mostrar).
+
+**Para ver o cartão sem esperar dois dias:** abra o site no Safari do iPhone com `?instalacao=ver` no fim do endereço (por exemplo, `https://seu-endereço/?instalacao=ver`). Isso mostra o cartão ignorando a contagem de visitas e a dispensa, e **não grava nada**. Só funciona no Safari do iPhone/iPad fora do app instalado, e as páginas em que o cartão nunca aparece continuam valendo.
+
+**O que fica guardado:** só uma preferência no próprio aparelho (`localStorage`, chave `ec:install:v1`): quantos dias diferentes a pessoa abriu o site, o último dia, se tocou em "Agora não" (e quando) e se tocou em "Já instalei". **Nada disso é enviado ao servidor** nem ligado à conta, e a preferência não guarda nome, e-mail nem identificador de conta. Isso consta da política de privacidade e do documento para o advogado.
+
+**Como mudar textos e regras** (pelo GitHub, no navegador, como nos outros arquivos de conteúdo): abra `src/content/install.ts`, clique no lápis ("Edit this file"), troque o valor e faça o commit numa branch (peça um PR). Lá estão os passos do cartão, as frases, as observações de `/sobre` e `/conta` e os números (a partir de qual visita mostrar e por quantos dias "Agora não" esconde). **Mantenha o cartão com só os passos essenciais**, sem citar versão do iOS: o que depende da versão vai nas observações de `/sobre` e `/conta`. A política de privacidade lê o prazo e a chave desse mesmo arquivo; se mudar um deles, a regeneração do documento para o advogado (`docs/revisao-juridica.md`) é feita pelo desenvolvimento, e um teste do CI avisa se ela ficar atrasada.
+
+**O que ainda não foi conferido num iPhone de verdade:** os rótulos exatos do iOS em português ("Compartilhar", "Adicionar à Tela de Início", "Adicionar", "Abrir como app da Web", "Editar Ações"), onde fica o botão Compartilhar no iPad e o iPad em modo "site para computador". O teste no aparelho real está em [`docs/lancamento.md`](docs/lancamento.md).
+
+**Possíveis evoluções futuras** (não fazem parte desta etapa): o mesmo convite no Android e no computador (nesses aparelhos o navegador oferece um botão de instalar que o site pode acionar) e o service worker com a página "sem conexão", da Fase 3.
+
 ## Testes de ponta a ponta e verificação da produção
 
 Dois workflows do GitHub (aba **Actions**) percorrem o site como uma pessoa faria. Nenhum precisa de secret e nenhum é obrigatório para o merge.
