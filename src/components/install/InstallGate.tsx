@@ -81,22 +81,22 @@ export function InstallGate({ surface }: Props) {
   // Grava a visita contada (uma por dia) e registra uma falha de leitura. Só escreve fora; não muda estado.
   useEffect(() => {
     if (!evaluation) return;
-    if (evaluation.loadFailed) {
+    if (evaluation.loadFailed && !reported.read) {
+      reported.read = true;
       const { loadError: error } = evaluation;
-      if (!reported.read) {
-        reported.read = true;
-        logFailure('cartão de instalação: leitura', error);
-      }
-      return;
+      logFailure('cartão de instalação: leitura', error);
     }
-    if (evaluation.decision.persist && !evaluation.preview) saveOnce(evaluation.decision.state);
+    // Armazenamento recusado: nada é gravado. Texto quebrado: o estado volta ao zero e esta gravação o conserta.
+    if (evaluation.canSave && evaluation.decision.persist && !evaluation.preview) {
+      saveOnce(evaluation.decision.state);
+    }
   }, [evaluation]);
 
   const dismiss = useCallback(
     (next: (state: InstallState) => InstallState) => {
       if (!evaluation) return;
       // Na pré-visualização nada é gravado; com o armazenamento quebrado, a dispensa vale só nesta página.
-      if (!evaluation.preview && !evaluation.loadFailed) {
+      if (!evaluation.preview && evaluation.canSave) {
         saveOnce(next(evaluation.decision.state));
       }
       setHiddenAt(`${surface}:${pathname}`);

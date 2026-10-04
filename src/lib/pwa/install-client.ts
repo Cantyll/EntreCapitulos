@@ -27,6 +27,11 @@ export type InstallEvaluation = {
   /** O armazenamento recusou a leitura (ou o texto guardado estava quebrado). Registrar UMA vez, só o nome do erro. */
   loadFailed: boolean;
   loadError: unknown;
+  /**
+   * Dá para gravar a visita e a dispensa? Falso só quando o navegador recusou o armazenamento. Texto guardado
+   * quebrado não impede: o estado volta ao zero e a gravação o conserta.
+   */
+  canSave: boolean;
 };
 
 export function evaluateInstall(
@@ -49,6 +54,7 @@ export function evaluateInstall(
       preview,
       loadFailed: false,
       loadError: undefined,
+      canSave: false,
     };
   }
   const loaded = loadInstallState(() => win.localStorage);
@@ -57,5 +63,6 @@ export function evaluateInstall(
     preview,
     loadFailed: loaded.failed,
     loadError: loaded.error,
+    canSave: loaded.writable,
   };
 }

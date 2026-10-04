@@ -7,6 +7,7 @@ import {
   EMPTY_INSTALL_STATE,
   dismissForever,
   dismissLater,
+  parseInstallState,
   saveInstallState,
   serializeInstallState,
   type InstallState,
@@ -70,7 +71,10 @@ function fakeWindow(options: FakeOptions = {}) {
 
 type Fake = ReturnType<typeof fakeWindow>;
 
-/** O que o `InstallGate` faz com o resultado: grava a visita contada, menos na pré-visualização e na falha de leitura. */
+/**
+ * O que o `InstallGate` faz com o resultado: grava a visita contada, menos na pré-visualização e quando o navegador
+ * recusou o armazenamento (um texto guardado quebrado não impede: a gravação o conserta).
+ */
 function visit(
   fake: Fake,
   now: Date,
@@ -82,7 +86,7 @@ function visit(
     options.pathname ?? '/',
     now,
   );
-  if (!evaluation.loadFailed && evaluation.decision.persist && !evaluation.preview) {
+  if (evaluation.canSave && evaluation.decision.persist && !evaluation.preview) {
     saveInstallState(() => fake.win.localStorage, evaluation.decision.state);
   }
   return evaluation;
@@ -105,6 +109,7 @@ describe('evaluateInstall: o fluxo completo no Safari do iPhone', () => {
     expect(result.preview).toBe(false);
     expect(result.loadFailed).toBe(false);
     expect(result.loadError).toBeUndefined();
+    expect(result.canSave).toBe(true);
   });
 
   it('só lê: evaluateInstall nunca grava', () => {
@@ -433,6 +438,7 @@ describe('evaluateInstall: armazenamento que falha', () => {
     });
     const result = evaluateInstall(win, 'public', '/', day(10));
     expect(result.loadFailed).toBe(true);
+    expect(result.canSave).toBe(false);
     expect(result.loadError).toBe(error);
     expect((result.loadError as DOMException).name).toBe('SecurityError');
     // Sem contagem, no site público não aparece nada.
@@ -447,14 +453,16 @@ describe('evaluateInstall: armazenamento que falha', () => {
     };
     const result = evaluateInstall(win, 'public', '/', day(10));
     expect(result.loadFailed).toBe(true);
+    expect(result.canSave).toBe(false);
     expect(result.loadError).toBe(error);
     expect(result.decision.view).toBeNull();
   });
 
-  it('texto guardado quebrado: loadFailed com SyntaxError, estado volta ao zero', () => {
+  it('texto guardado quebrado: loadFailed com SyntaxError, estado volta ao zero, mas dá para gravar', () => {
     const fake = fakeWindow({ stored: '{"v":1,"visits":' });
     const result = evaluateInstall(fake.win, 'public', '/', day(10));
     expect(result.loadFailed).toBe(true);
+    expect(result.canSave).toBe(true);
     expect(result.loadError).toBeInstanceOf(SyntaxError);
     expect(result.decision.view).toBeNull();
     expect(result.decision.state.visits).toBe(1);
@@ -467,11 +475,28 @@ describe('evaluateInstall: armazenamento que falha', () => {
     expect(result.decision.state.visits).toBe(1);
   });
 
-  it('sem poder ler, o fluxo do Gate não grava nada depois', () => {
-    const fake = fakeWindow({ stored: '{quebrado' });
+  it('armazenamento recusado: o fluxo do Gate não grava nada', () => {
+    const fake = fakeWindow();
+    fake.win.localStorage.getItem = () => {
+      throw new DOMException('Access denied', 'SecurityError');
+    };
     const result = visit(fake, day(10));
     expect(result.loadFailed).toBe(true);
     expect(fake.setItem).not.toHaveBeenCalled();
+  });
+
+  it('texto quebrado: o fluxo do Gate regrava, e na carga seguinte não há falha e a visita conta', () => {
+    const fake = fakeWindow({ stored: '{quebrado' });
+    const first = visit(fake, day(10));
+    expect(first.loadFailed).toBe(true);
+    expect(fake.setItem).toHaveBeenCalledTimes(1);
+    expect(parseInstallState(fake.data.get(KEY)!).visits).toBe(1);
+
+    // Dia seguinte: sem falha, a 2ª visita é contada e o cartão aparece.
+    const second = visit(fake, day(11));
+    expect(second.loadFailed).toBe(false);
+    expect(second.decision.state.visits).toBe(2);
+    expect(second.decision.view).toBe('card');
   });
 
   it('no painel, sem armazenamento a dispensa só vale na página: o cartão volta a cada acesso', () => {

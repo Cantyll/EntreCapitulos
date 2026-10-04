@@ -7,7 +7,7 @@ import styles from './Button.module.css';
 
 type ButtonStyleProps = {
   variant?: 'primary' | 'soft' | 'ghost';
-  size?: 'md' | 'sm';
+  size?: 'md' | 'sm' | 'lg';
   /** Ocupa a largura toda do contêiner. */
   block?: boolean;
   /** Texto em vermelho; só combina com variant="ghost". */
@@ -25,6 +25,7 @@ function buttonClass({
     styles.btn,
     styles[variant],
     size === 'sm' && styles.sm,
+    size === 'lg' && styles.lg,
     block && styles.block,
     danger && styles.danger,
     className,
