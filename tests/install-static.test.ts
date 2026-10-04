@@ -281,11 +281,47 @@ function logFailureCalls() {
   return calls;
 }
 
+describe('o cartão não derruba a página', () => {
+  const gate = code(`${INSTALL_DIR}/InstallGate.tsx`);
+
+  it('o cartão carregado sob demanda sempre fica dentro do isolador de erro', () => {
+    expect(gate).toMatch(/import \{ InstallCardBoundary \} from '\.\/InstallCardBoundary'/);
+    // Toda renderização do <InstallCard abre dentro de um <InstallCardBoundary (e nenhuma fora).
+    const opens = [...gate.matchAll(/<InstallCard\b(?!Boundary)/g)].length;
+    const inside = [...gate.matchAll(/<InstallCardBoundary[^>]*>\s*<InstallCard\b(?!Boundary)/g)]
+      .length;
+    expect(opens).toBeGreaterThan(0);
+    expect(inside).toBe(opens);
+  });
+
+  it('o isolador é um Client Component que não mostra nada ao falhar e entrega o erro a quem registra', () => {
+    const boundary = code(`${INSTALL_DIR}/InstallCardBoundary.tsx`);
+    expect(boundary).toMatch(/^'use client';/);
+    expect(boundary).toMatch(/getDerivedStateFromError/);
+    expect(boundary).toMatch(
+      /componentDidCatch\(error: unknown\)\s*\{\s*this\.props\.onError\(error\);/,
+    );
+    expect(boundary).toMatch(
+      /render\(\)\s*\{\s*return this\.state\.failed \? null : this\.props\.children;/,
+    );
+    // Nunca imprime nada por conta própria (o registro é do helper de log, no InstallGate).
+    expect(boundary).not.toMatch(/\bconsole\s*\./);
+    expect(boundary).not.toMatch(/\blogFailure\b/);
+  });
+
+  it('a busca da decisão vem do roteador (useSearchParams), nunca de window.location na renderização', () => {
+    expect(gate).toMatch(/useSearchParams\(\)\.toString\(\)/);
+    expect(gate).not.toMatch(/window\.location/);
+    expect(gate).toMatch(/\[isClient, surface, pathname, search\]/);
+  });
+});
+
 describe('registro de falhas do armazenamento', () => {
   const calls = logFailureCalls();
 
-  it('são exatamente duas chamadas, com os textos combinados', () => {
+  it('são exatamente três chamadas, com os textos combinados', () => {
     expect(calls.map(({ operation }) => operation).sort()).toEqual([
+      'cartão de instalação: carregamento',
       'cartão de instalação: gravação',
       'cartão de instalação: leitura',
     ]);
@@ -294,7 +330,7 @@ describe('registro de falhas do armazenamento', () => {
       .map(({ text }) => stripComments(text).replace(/^import .*$/gm, ''))
       .join('\n')
       .match(/\blogFailure\(/g);
-    expect(raw).toHaveLength(2);
+    expect(raw).toHaveLength(3);
   });
 
   it('o segundo argumento é só a variável do erro (nunca a mensagem, a chave, o valor ou o estado)', () => {
@@ -310,13 +346,19 @@ describe('registro de falhas do armazenamento', () => {
 
   it('cada uma registra uma vez por carga de página (guarda no módulo, ligada antes da chamada)', () => {
     const gate = code(`${INSTALL_DIR}/InstallGate.tsx`);
-    expect(gate.indexOf('const reported = { read: false, write: false }')).toBeGreaterThan(-1);
+    expect(
+      gate.indexOf('const reported = { read: false, write: false, load: false }'),
+    ).toBeGreaterThan(-1);
     // A guarda vive fora do componente, para durar a página inteira.
     expect(gate.indexOf('const reported')).toBeLessThan(
       gate.indexOf('export function InstallGate'),
     );
     for (const { operation, index, text } of calls) {
-      const kind = operation.endsWith('leitura') ? 'read' : 'write';
+      const kind = operation.endsWith('leitura')
+        ? 'read'
+        : operation.endsWith('carregamento')
+          ? 'load'
+          : 'write';
       const before = text.slice(Math.max(0, index - 300), index);
       expect(before, operation).toContain(`!reported.${kind}`);
       expect(before, operation).toContain(`reported.${kind} = true`);

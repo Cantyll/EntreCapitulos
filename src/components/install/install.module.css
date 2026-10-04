@@ -106,8 +106,9 @@
   color: var(--ink);
 }
 
-/* No painel o cartão é um bloco da coluna da página (o espaçamento vem do contêiner). */
+/* No painel o cartão é um bloco da coluna da página (o espaçamento vem do contêiner), com a largura da Visão geral. */
 .panel {
-  max-width: none;
+  width: 100%;
+  max-width: 920px;
   margin: 0;
 }
