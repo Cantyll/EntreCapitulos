@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { AdminPage } from '@/components/admin/AdminPage';
+import { InstallGate } from '@/components/install/InstallGate';
 import { ModerationBoard, type BoardItem } from '@/components/moderacao/ModerationBoard';
 import styles from '@/components/moderacao/moderation.module.css';
 import { requireRole } from '@/lib/auth/session';
@@ -38,7 +39,7 @@ export default async function CommentsAdminPage({
   searchParams,
 }: PageProps<'/painel/comentarios'>) {
   // A moderadora (`moderator`) também entra: é a única página do painel que ela abre.
-  await requireRole('staff');
+  const user = await requireRole('staff');
 
   const query = await searchParams;
   const tab = parseModerationTab(query.aba);
@@ -57,6 +58,8 @@ export default async function CommentsAdminPage({
 
   return (
     <AdminPage>
+      {/* A moderadora nunca vê a Visão geral (o `/painel` a manda para cá): o cartão de instalação fica na página dela. */}
+      {user.role === 'moderator' && <InstallGate surface="panel" />}
       <div className={styles.toolbar}>
         <nav className={styles.tabs} aria-label="Estado dos comentários">
           {MODERATION_TABS.map((item) => (

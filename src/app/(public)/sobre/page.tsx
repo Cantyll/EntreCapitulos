@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 
+import { InstallGuide } from '@/components/install/InstallGuide';
 import { ButtonLink } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Container } from '@/components/ui/Container';
@@ -94,6 +95,11 @@ export default async function AboutPage() {
           ))}
         </ul>
       </section>
+
+      {/* Para todos, como informação: os passos de instalação no iPhone e no iPad. */}
+      <div className={styles.block} id="app">
+        <InstallGuide variant="about" />
+      </div>
 
       {!viewer && (
         <div className={styles.cta}>

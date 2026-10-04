@@ -1,3 +1,4 @@
+import { NoInstallCard } from '@/components/install/NoInstallCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { Container } from '@/components/ui/Container';
 
@@ -7,6 +8,7 @@ import styles from '@/app/forbidden.module.css';
 export default function PublicNotFound() {
   return (
     <Container>
+      <NoInstallCard />
       <div className={styles.box} style={{ padding: '64px 0' }}>
         <h1>Não encontramos esta página</h1>
         <p>O livro ou a sessão que você procura não existe ou mudou de endereço.</p>
