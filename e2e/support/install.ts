@@ -87,24 +87,87 @@ export function rawState(page: Page): Promise<string | null> {
   return page.evaluate((key) => window.localStorage.getItem(key), INSTALL_KEY);
 }
 
+const network = new WeakMap<Page, { last: number }>();
+
+/** Passa a anotar o instante do último pedido ou resposta da página (chame antes de navegar). */
+export function watchNetwork(page: Page): void {
+  if (network.has(page)) return;
+  const state = { last: Date.now() };
+  network.set(page, state);
+  const touch = () => {
+    state.last = Date.now();
+  };
+  page.on('request', touch);
+  page.on('requestfinished', touch);
+  page.on('requestfailed', touch);
+}
+
+/**
+ * Espera a rede ficar quieta: nenhum pedido novo nem resposta por `quietMs`. O Next pré-carrega os links da tela
+ * (os da carga uns segundos depois dela, os do rodapé quando rolam para a tela), em rajadas; sair da página ou
+ * fechá-la com esses pedidos em andamento faz o WebKit registrar um erro não tratado ("due to access control
+ * checks"). `waitForLoadState('networkidle')` não serve aqui: ele já está "atingido" para a página inteira e volta
+ * na hora. Não conta os pedidos em andamento: o Chromium deixa alguns sem aviso de término.
+ */
+export async function idle(page: Page, quietMs = 1000): Promise<void> {
+  watchNetwork(page);
+  const state = network.get(page)!;
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline && !page.isClosed()) {
+    if (Date.now() - state.last >= quietMs) return;
+    await page.waitForTimeout(100).catch(() => undefined);
+  }
+}
+
+/**
+ * Atrasa SÓ o código do cartão (um pedaço de JavaScript carregado sob demanda, o único com `data-install-card`):
+ * `wait` é um tempo em milissegundos ou uma promessa que o teste resolve quando quiser. Simula a rede lenta (o cartão
+ * chega depois da primeira pintura) e permite medir a página antes e depois de o cartão montar, na mesma carga.
+ * Devolve um objeto cujo `hit` vira `true` quando o pedido do código do cartão foi segurado.
+ */
+export async function delayCardCode(
+  page: Page,
+  wait: number | Promise<void>,
+): Promise<{ hit: boolean }> {
+  const state = { hit: false };
+  await page.route('**/_next/static/chunks/*.js', async (route) => {
+    const response = await route.fetch();
+    const body = await response.text();
+    if (body.includes('data-install-card')) {
+      state.hit = true;
+      await (typeof wait === 'number' ? new Promise((resolve) => setTimeout(resolve, wait)) : wait);
+    }
+    // O corpo já veio descompactado: sem `content-encoding` nem `content-length` do original.
+    const headers = { ...response.headers() };
+    delete headers['content-encoding'];
+    delete headers['content-length'];
+    await route.fulfill({ status: response.status(), headers, body });
+  });
+  return state;
+}
+
 /** Espera o React assumir a página e dá um tempo para o cartão (carregado sob demanda) aparecer, se fosse aparecer. */
 export async function settle(page: Page): Promise<void> {
   await untilHydrated(page.locator('main').first());
-  await page.waitForTimeout(500);
+  await idle(page);
+  await page.waitForTimeout(300);
 }
 
 /**
  * Abre `path` no dia `n` (relógio fixo) e espera a decisão do cartão rodar. Num dia novo o aparelho elegível
  * grava a visita: o texto guardado muda, e isso é o sinal. `counts: false` (mesmo dia, recarregar) não muda nada,
- * então só espera a página assentar.
+ * então só espera a página assentar. `quiet: false` não espera a rede ficar quieta (para quem segura um pedido de propósito).
  */
 export async function visit(
   page: Page,
   n: number,
   path: string,
-  options: { counts?: boolean } = {},
+  options: { counts?: boolean; quiet?: boolean } = {},
 ): Promise<void> {
-  const { counts = true } = options;
+  const { counts = true, quiet = true } = options;
+  watchNetwork(page);
+  // A página anterior (se houver) ainda pode estar pré-carregando links: deixa terminar antes de sair dela.
+  if (page.url() !== 'about:blank') await idle(page);
   await page.clock.setFixedTime(dayAt(n));
   await page.goto(path);
   await untilHydrated(page.locator('main').first());
@@ -122,7 +185,8 @@ export async function visit(
       )
       .toBe(true);
   }
-  await page.waitForTimeout(options.counts === false ? 500 : 300);
+  if (quiet) await idle(page);
+  await page.waitForTimeout(300);
 }
 
 /** Texto visível do cartão, sem os ícones (SVG decorativos). */
