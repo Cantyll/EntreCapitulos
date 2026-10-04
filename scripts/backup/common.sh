@@ -1,8 +1,10 @@
 # Funções comuns dos scripts de backup (etapa 8d). Use com `. scripts/backup/common.sh`.
 #
-# REGRAS (testadas em tests/backup/): sem `set -x`, nunca `echo` de segredo, nenhuma saída de
-# ferramenta que possa carregar linha de dado vai para o log. A saída das ferramentas vai para um
-# arquivo em $BACKUP_WORKDIR e só aparece, filtrada, com BACKUP_VERBOSE=true em workflow_dispatch.
+# REGRAS (testadas em tests/backup/): sem `set -x`, nunca `echo` de segredo e NENHUMA saída de
+# ferramenta (stdout ou stderr de aws, supabase, gpg ou psql) vai para o log: ela vai para um arquivo em
+# $BACKUP_WORKDIR e é apagada. Numa falha, só saem o texto fixo do script, o código de saída e o
+# IDENTIFICADOR do erro (código do aws ou da CLI do Supabase, ou status HTTP), e só se passar pela lista
+# estrita de lib.mjs (`ident`). Nunca a mensagem nem o resto da linha.
 set -euo pipefail
 umask 077
 
@@ -11,9 +13,28 @@ BACKUP_CLI="node scripts/backup/cli.mjs"
 
 cfg() { jq -r "$1" "$BACKUP_CONFIG"; }
 
+# Guarda o código de saída e o identificador do erro de uma ferramenta para o próximo `fail` anexar.
+# Vai para um arquivo (e não para uma variável) porque `fail` pode rodar fora do subshell que chamou a
+# ferramenta. $1 = arquivo com a saída da ferramenta; $2 = código de saída. Nada além disso é guardado.
+note_error() {
+  local file="$1" code="$2" ident detail
+  [[ "$code" =~ ^[0-9]{1,3}$ ]] || code=1
+  ident="$($BACKUP_CLI ident "$file" 2>/dev/null | head -n1 || true)"
+  detail=" Código de saída ${code}."
+  if [[ "$ident" =~ ^[A-Za-z][A-Za-z0-9_.]{0,63}$ || "$ident" =~ ^[0-9]{3}$ ]]; then
+    detail+=" Identificador do erro: ${ident}."
+  fi
+  printf '%s' "$detail" >"${BACKUP_WORKDIR:?}/.last-error"
+}
+
 # Mensagem de erro (anotação do GitHub) e linha no resumo do job. Nunca recebe segredo nem dado.
 fail() {
-  echo "::error::$1" >&2
+  local message="$1" detail=""
+  if [ -n "${BACKUP_WORKDIR:-}" ] && [ -f "$BACKUP_WORKDIR/.last-error" ]; then
+    detail="$(cat "$BACKUP_WORKDIR/.last-error")"
+    rm -f "$BACKUP_WORKDIR/.last-error"
+  fi
+  echo "::error::${message}${detail}" >&2
   if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
     {
       echo "### ${BACKUP_TITLE:-Backup do banco}"
@@ -33,26 +54,17 @@ need() {
   done
 }
 
-verbose_enabled() {
-  [ "${BACKUP_VERBOSE:-false}" = "true" ] && [ "${GITHUB_EVENT_NAME:-}" = "workflow_dispatch" ]
-}
-
-# Mostra o log de uma ferramenta SÓ no modo detalhado e sempre filtrado (sem linhas de dado nem segredos).
-show_log() {
-  verbose_enabled || return 0
-  $BACKUP_CLI scrub BACKUP_PASSPHRASE R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET \
-    SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_REF PGPASSWORD <"$1" >&2 || true
-}
-
-# Roda um comando guardando a saída (stdout e stderr) num arquivo; em falha, só uma mensagem fixa.
+# Roda um comando guardando a saída (stdout e stderr) num arquivo; em falha, só uma mensagem fixa com o
+# código de saída e o identificador do erro (ver `note_error`).
 quiet() {
-  local label="$1"
+  local label="$1" code=0
   shift
   local log="${BACKUP_WORKDIR:?}/tool.log"
-  if ! "$@" >"$log" 2>&1; then
-    show_log "$log"
+  "$@" >"$log" 2>&1 || code=$?
+  if [ "$code" -ne 0 ]; then
+    note_error "$log" "$code"
     rm -f "$log"
-    fail "Falhou: $label. Rode de novo com a opção verbose (workflow_dispatch) para ver a saída filtrada."
+    fail "Falhou: $label."
   fi
   rm -f "$log"
 }
@@ -72,11 +84,13 @@ r2_setup() {
   export AWS_PAGER=""
 }
 
-# aws s3api contra o endpoint do R2 (ou do MinIO nos testes). stdout é o resultado; stderr fica em arquivo.
+# aws s3api contra o endpoint do R2 (ou do S3 local nos testes). stdout é o resultado; stderr fica em
+# arquivo, nunca no log (só o identificador do erro, via `note_error`).
 r2api() {
-  local log="${BACKUP_WORKDIR:?}/aws.log"
-  if ! aws --endpoint-url "$R2_ENDPOINT" s3api "$@" 2>"$log"; then
-    show_log "$log"
+  local log="${BACKUP_WORKDIR:?}/aws.log" code=0
+  aws --endpoint-url "$R2_ENDPOINT" s3api "$@" 2>"$log" || code=$?
+  if [ "$code" -ne 0 ]; then
+    note_error "$log" "$code"
     rm -f "$log"
     return 1
   fi

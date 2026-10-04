@@ -37,6 +37,12 @@ while [ $# -gt 0 ]; do
   case "$1" in -f) file="$2"; shift ;; --role-only) kind=roles ;; --data-only) kind=data ;; esac
   shift
 done
+if [ "\${FAKE_FAIL:-}" = "$kind" ]; then
+  # Falha no formato da CLI 2.118, com ruído: a frase-senha e um dado pessoal misturados ao erro.
+  printf '{"_tag":"Error","error":{"code":"DockerRunError","message":"falhou %s"}}\\n' "${MARKER}"
+  printf 'linha com ${MARKER} e %s\\n' "$BACKUP_PASSPHRASE"
+  exit 3
+fi
 case "$kind" in
   roles) echo "CREATE ROLE exemplo;" >"$file" ;;
   schema) echo "CREATE TABLE exemplo (id int);" >"$file" ;;
@@ -276,58 +282,93 @@ exit 0
   });
 });
 
-describe('modo detalhado (verbose)', () => {
-  const probe = (event: string, verbose: string) =>
-    spawnSync(
-      'bash',
-      [
-        '-c',
-        'source scripts/backup/common.sh; if verbose_enabled; then echo ON; else echo OFF; fi',
-      ],
-      {
-        cwd: ROOT,
-        env: procEnv({
-          PATH: process.env.PATH ?? '',
-          GITHUB_EVENT_NAME: event,
-          BACKUP_VERBOSE: verbose,
-        }),
-        encoding: 'utf8',
-      },
-    ).stdout.trim();
-
-  it('só vale em workflow_dispatch: nunca em schedule, nem com a variável ligada', () => {
-    expect(probe('workflow_dispatch', 'true')).toBe('ON');
-    expect(probe('schedule', 'true')).toBe('OFF');
-    expect(probe('', 'true')).toBe('OFF');
-    expect(probe('workflow_dispatch', 'false')).toBe('OFF');
+describe('falhas sem verbose: só texto fixo, código de saída e o identificador permitido', () => {
+  it('make-backup.sh: o dump que falha mostra o identificador e nenhuma linha da ferramenta', () => {
+    for (const kind of ['roles', 'schema', 'data']) {
+      const dir = workdir(`falha-${kind}`);
+      const { status, output } = run('make-backup.sh', { ...base(dir), FAKE_FAIL: kind });
+      expect(status).toBe(1);
+      expect(output).toMatch(
+        /Falhou: dump d[oa]s? \w+\. Código de saída 3\. Identificador do erro: DockerRunError\./,
+      );
+      expect(output).not.toContain(MARKER);
+      expect(output).not.toContain(PASSPHRASE);
+      expect(output).not.toMatch(/verbose/i);
+      expect(existsSync(join(dir, '.last-error'))).toBe(false);
+      expect(existsSync(join(dir, 'tool.log'))).toBe(false);
+      expect(existsSync(join(dir, 'backup.tar.gpg'))).toBe(false);
+    }
   });
 
-  it('mesmo ligado, mostra a saída da ferramenta sem linhas de dado nem segredos', () => {
-    const dir = workdir('verbose');
+  it('upload.sh e os demais: a falha do aws mostra só o identificador (nada do stderr)', () => {
+    const dir = workdir('falha-aws');
+    writeFileSync(
+      join(fakeBin, 'aws'),
+      `#!/usr/bin/env bash
+printf '\\nAn error occurred (AccessDenied) when calling the ListObjectsV2 operation: Access Denied %s %s\\n' "$AWS_SECRET_ACCESS_KEY" "${MARKER}" >&2
+exit 254
+`,
+    );
+    chmodSync(join(fakeBin, 'aws'), 0o755);
     const result = spawnSync(
       'bash',
       [
         '-c',
-        `source scripts/backup/common.sh
-         export BACKUP_WORKDIR="${dir}"
-         printf 'aviso útil\\nCOPY "auth"."users" FROM stdin;\\nid\\t${MARKER}\\n%s\\n' "$BACKUP_PASSPHRASE" > "${dir}/x.log"
-         show_log "${dir}/x.log"`,
+        `source scripts/backup/common.sh; export R2_ENDPOINT=http://127.0.0.1:1; r2_list daily/`,
       ],
       {
         cwd: ROOT,
         env: procEnv({
-          PATH: process.env.PATH ?? '',
-          GITHUB_EVENT_NAME: 'workflow_dispatch',
-          BACKUP_VERBOSE: 'true',
-          BACKUP_PASSPHRASE: PASSPHRASE,
+          PATH: `${fakeBin}:${process.env.PATH}`,
+          HOME: tmp,
+          BACKUP_WORKDIR: dir,
+          R2_BUCKET: 'bucket-de-teste',
+          AWS_SECRET_ACCESS_KEY: 'segredo-do-aws-de-teste-123456',
         }),
         encoding: 'utf8',
       },
     );
     const output = `${result.stdout}${result.stderr}`;
-    expect(output).toContain('aviso útil');
+    expect(result.status).toBe(1);
+    expect(output).toContain(
+      'Não foi possível listar o bucket do R2. Código de saída 254. Identificador do erro: AccessDenied.',
+    );
+    expect(output).not.toContain('segredo-do-aws-de-teste-123456');
     expect(output).not.toContain(MARKER);
-    expect(output).not.toContain(PASSPHRASE);
-    expect(output).not.toMatch(/COPY/);
+    expect(output).not.toContain('Access Denied');
+    expect(readdirSync(dir)).toEqual([]);
+  });
+
+  it('um identificador fora da lista estrita não sai (só o código de saída)', () => {
+    const dir = workdir('falha-ident-ruim');
+    writeFileSync(
+      join(fakeBin, 'aws'),
+      `#!/usr/bin/env bash
+printf 'An error occurred (com espaço e ${MARKER}) when calling the X operation: y\\n' >&2
+exit 255
+`,
+    );
+    chmodSync(join(fakeBin, 'aws'), 0o755);
+    const result = spawnSync(
+      'bash',
+      [
+        '-c',
+        `source scripts/backup/common.sh; export R2_ENDPOINT=http://127.0.0.1:1; r2_list daily/`,
+      ],
+      {
+        cwd: ROOT,
+        env: procEnv({
+          PATH: `${fakeBin}:${process.env.PATH}`,
+          HOME: tmp,
+          BACKUP_WORKDIR: dir,
+          R2_BUCKET: 'bucket-de-teste',
+        }),
+        encoding: 'utf8',
+      },
+    );
+    const output = `${result.stdout}${result.stderr}`;
+    expect(output).toContain('Não foi possível listar o bucket do R2. Código de saída 255.');
+    expect(output).not.toContain('Identificador do erro');
+    expect(output).not.toContain(MARKER);
   });
 });

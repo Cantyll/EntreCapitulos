@@ -1,6 +1,13 @@
 // Ponto de entrada dos scripts .sh: chama a lógica pura de lib.mjs. Nunca imprime linha de dado.
 // Todo erro sai como mensagem fixa em pt-BR (BackupError) ou só com o nome do erro.
-import { createReadStream, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import {
+  appendFileSync,
+  createReadStream,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+} from 'node:fs';
 import { createInterface } from 'node:readline';
 
 import {
@@ -9,12 +16,25 @@ import {
   checkAge,
   checkSize,
   checkTables,
+  SCOPES,
+  SECRET_NAMES,
+  classify,
   compareCounts,
   countCopyRows,
+  evaluatePreflight,
+  extractIdentifier,
+  formatRecord,
+  internalFailure,
+  isScope,
   latestEntry,
   parseBackupChoice,
+  parseRecords,
+  preflightAnnotations,
+  preflightLogLines,
   previousEntry,
-  scrubLog,
+  renderPreflightMissing,
+  renderPreflightSummary,
+  sanitizeRecord,
   sha256,
   validateManifest,
 } from './lib.mjs';
@@ -31,6 +51,44 @@ async function readStdin() {
   const chunks = [];
   for await (const chunk of process.stdin) chunks.push(chunk);
   return Buffer.concat(chunks).toString('utf8');
+}
+
+// --- Pré-verificação das credenciais -----------------------------------------------------------
+
+function resultsPath() {
+  const dir = process.env.PREFLIGHT_DIR;
+  if (!dir) throw new BackupError('PREFLIGHT_DIR não está definida.');
+  return `${dir}/results.jsonl`;
+}
+
+function appendRecord(record) {
+  const safe = sanitizeRecord(record);
+  if (!safe) throw new BackupError('Registro de pré-verificação inválido.');
+  appendFileSync(resultsPath(), `${JSON.stringify(safe)}\n`);
+}
+
+/** Valores dos segredos (crus e sem espaços nas pontas): usados só para recusar um identificador parecido. */
+function secretValues() {
+  const values = [];
+  for (const name of SECRET_NAMES) {
+    const value = process.env[name];
+    if (typeof value === 'string' && value !== '') values.push(value, value.trim());
+  }
+  return values;
+}
+
+function textOptions() {
+  return { passphraseMinLength: config.preflight?.passphraseMinLength };
+}
+
+function requireScope(name) {
+  if (!isScope(name)) throw new BackupError('Escopo da pré-verificação desconhecido.');
+  return name;
+}
+
+function evaluateFromFile(scope) {
+  const { records, invalid } = parseRecords(readFileSync(resultsPath(), 'utf8'));
+  return evaluatePreflight(records, scope, { invalid });
 }
 
 async function run() {
@@ -125,9 +183,68 @@ async function run() {
       process.stdout.write(`${parseBackupChoice(args[0], config)}\n`);
       return;
     }
-    case 'scrub': {
-      const secrets = args.map((name) => process.env[name] ?? '');
-      process.stdout.write(scrubLog(await readStdin(), secrets));
+    case 'ident': {
+      // Identificador do erro de um arquivo de saída de ferramenta (ou nada). Nunca o texto em si.
+      const ident = extractIdentifier(readFileSync(args[0], 'utf8'), secretValues());
+      if (ident) process.stdout.write(`${ident}\n`);
+      return;
+    }
+    case 'pf-items': {
+      process.stdout.write(`${SCOPES[requireScope(args[0])].items.join('\n')}\n`);
+      return;
+    }
+    case 'pf-secret-names': {
+      process.stdout.write(`${SECRET_NAMES.join('\n')}\n`);
+      return;
+    }
+    case 'pf-format': {
+      // Verifica o formato do segredo NOME lendo o valor do ambiente (nunca por argumento).
+      appendRecord(formatRecord(args[0], process.env[args[0]], config));
+      return;
+    }
+    case 'pf-record': {
+      // pf-record <item> <resultado> <razão>: PULADO e OK escolhidos pelo script, sempre texto fixo.
+      appendRecord({ item: args[0], result: args[1], reason: args[2] });
+      return;
+    }
+    case 'pf-classify': {
+      const [step, exitCode, file] = args;
+      appendRecord(
+        classify({
+          step,
+          exitCode: Number(exitCode),
+          text: existsSync(file) ? readFileSync(file, 'utf8') : '',
+          secrets: secretValues(),
+        }),
+      );
+      return;
+    }
+    case 'pf-internal': {
+      appendRecord(internalFailure(args[0], Number(args[1])));
+      return;
+    }
+    case 'pf-finish': {
+      // Anotações e linhas de log (texto fixo). Sai com 1 se houver QUALQUER item FALHOU.
+      const evaluation = evaluateFromFile(requireScope(args[0]));
+      const out = [
+        ...preflightLogLines(evaluation, textOptions()),
+        ...preflightAnnotations(evaluation, textOptions()),
+      ];
+      process.stdout.write(`${out.join('\n')}\n`);
+      if (evaluation.failed) {
+        throw new BackupError(
+          `Pré-verificação das credenciais: ${evaluation.counts.failed} de ${evaluation.counts.total} verificações falharam. O backup não continua.`,
+        );
+      }
+      return;
+    }
+    case 'pf-summary': {
+      const scope = requireScope(args[0]);
+      process.stdout.write(
+        existsSync(resultsPath())
+          ? renderPreflightSummary(evaluateFromFile(scope), textOptions())
+          : renderPreflightMissing(scope),
+      );
       return;
     }
     default:

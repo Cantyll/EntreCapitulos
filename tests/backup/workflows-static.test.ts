@@ -3,6 +3,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
+import { parseSteps } from './workflow-steps';
+
 /*
  * Regras de segurança dos três workflows de backup (etapa 8d). O repositório é PÚBLICO: um workflow
  * que vaze o dump, a frase-senha ou os segredos expõe os dados de todo mundo. Estes testes são texto
@@ -12,6 +14,8 @@ const WORKFLOWS = {
   'backup.yml': 'backup',
   'backup-drill.yml': 'backup',
   'db-restore.yml': 'restore',
+  // O Environment é uma escolha fechada (backup ou restore); ver o describe do credentials-check.yml.
+  'credentials-check.yml': '${{ inputs.environment }}',
 } as const;
 const names = Object.keys(WORKFLOWS) as (keyof typeof WORKFLOWS)[];
 const text = (name: string) => readFileSync(`.github/workflows/${name}`, 'utf8');
@@ -60,7 +64,8 @@ describe.each(names)('workflow %s', (name) => {
   });
 
   it('declara o Environment certo no job que usa segredos', () => {
-    expect(body).toMatch(new RegExp(`^ {4}environment: ${WORKFLOWS[name]}$`, 'm'));
+    const environment = WORKFLOWS[name].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    expect(body).toMatch(new RegExp(`^ {4}environment: ${environment}$`, 'm'));
   });
 
   it('não gera artefato nem cache e não liga o modo de depuração do shell', () => {
@@ -198,5 +203,167 @@ describe('arquivos de backup nunca no git', () => {
         'supabase/migrations/20260930184031_initial_schema.sql',
       ]),
     ).toThrow();
+  });
+});
+
+describe('sem o modo verbose: nenhuma saída de ferramenta vai para o log', () => {
+  const files = [
+    ...names.map((name) => `.github/workflows/${name}`),
+    ...scripts.map((script) => `scripts/backup/${script}`),
+    'scripts/backup/cli.mjs',
+    'scripts/backup/lib.mjs',
+  ];
+
+  it.each(files)('%s não tem verbose, show_log nem scrub', (file) => {
+    const body = code(readFileSync(file, 'utf8'));
+    expect(body).not.toMatch(/verbose|show_log|scrubLog|'scrub'/i);
+  });
+
+  it('os workflows não declaram nenhuma entrada de saída detalhada', () => {
+    for (const name of names) expect(text(name)).not.toMatch(/^ {6}verbose:/m);
+  });
+});
+
+describe('segredos e entradas nunca dentro de um run:', () => {
+  const jobs: [string, string][] = [
+    ['backup.yml', 'backup'],
+    ['backup-drill.yml', 'drill'],
+    ['db-restore.yml', 'validate'],
+    ['db-restore.yml', 'restore'],
+    ['credentials-check.yml', 'check'],
+  ];
+  it.each(jobs)('%s (job %s): nenhum "${{ … }}" em run:', (file, job) => {
+    for (const step of parseSteps(file, job)) {
+      expect(step.run ?? '', `${file}/${step.name}`).not.toContain('${{');
+    }
+  });
+});
+
+describe('credentials-check.yml', () => {
+  const source = text('credentials-check.yml');
+  const body = code(source);
+
+  it('só workflow_dispatch', () => {
+    const on = /^on:\n((?:[ ]{2,}.*\n|\n)+)/m.exec(`${body}\n`)?.[1] ?? '';
+    expect([...on.matchAll(/^ {2}([a-z_]+):/gm)].map((m) => m[1])).toEqual(['workflow_dispatch']);
+  });
+
+  it('a entrada "environment" é uma escolha fechada: choice, só backup e restore, padrão backup', () => {
+    const inputs = /^ {4}inputs:\n((?: {6,}.*\n)+)/m.exec(body)?.[1] ?? '';
+    const environment = /^ {6}environment:\n((?: {8,}.*\n)+)/m.exec(inputs)?.[1] ?? '';
+    expect(environment).toMatch(/^ {8}type: choice$/m);
+    expect(environment).toMatch(/^ {8}options:\n {10}- backup\n {10}- restore\n/m);
+    expect(environment).toMatch(/^ {8}default: backup$/m);
+    // Nada de texto livre: nenhuma entrada do tipo string, e só duas opções.
+    expect(inputs).not.toMatch(/type: string/);
+    expect(environment.match(/^ {10}- /gm)).toHaveLength(2);
+  });
+
+  it('o job confere o valor antes de iniciar (o GitHub cria um Environment com qualquer nome)', () => {
+    expect(body).toMatch(
+      /^ {4}if: .*\(inputs\.environment == 'backup' \|\| inputs\.environment == 'restore'\)$/m,
+    );
+    expect(body).toMatch(/^ {4}environment: \$\{\{ inputs\.environment \}\}$/m);
+  });
+
+  it('não gera nem envia backup e não restaura: só valida', () => {
+    for (const forbidden of [
+      'make-backup',
+      'upload.sh',
+      'drill.sh',
+      'restore-remote',
+      'restore-data',
+    ]) {
+      expect(body).not.toContain(forbidden);
+    }
+    expect(body).toContain('scripts/backup/preflight.sh');
+  });
+
+  it('o escopo e a opção de frase trocada chegam por env', () => {
+    expect(body).toMatch(/PREFLIGHT_SCOPE: check-\$\{\{ inputs\.environment \}\}/);
+    expect(body).toMatch(
+      /PREFLIGHT_PASSPHRASE_ROTATED: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.passphrase_rotated && 'true' \|\| 'false' \}\}/,
+    );
+  });
+});
+
+describe('passphrase_rotated só vale em disparo manual', () => {
+  for (const name of ['backup.yml', 'credentials-check.yml']) {
+    it(`${name}: a opção é um boolean e só chega ao script em workflow_dispatch`, () => {
+      const body = code(text(name));
+      expect(body).toMatch(
+        /^ {6}passphrase_rotated:\n(?: {8}.*\n)*? {8}type: boolean\n(?: {8}.*\n)*? {8}default: false$/m,
+      );
+      expect(body).toContain(
+        "PREFLIGHT_PASSPHRASE_ROTATED: ${{ github.event_name == 'workflow_dispatch' && inputs.passphrase_rotated && 'true' || 'false' }}",
+      );
+    });
+  }
+  it('o drill e o db-restore não têm a opção (a prova usa sempre o semanal mais recente)', () => {
+    for (const name of ['backup-drill.yml', 'db-restore.yml']) {
+      expect(text(name)).not.toContain('passphrase_rotated');
+    }
+  });
+});
+
+describe('preflight.sh e preflight-summary.sh: regras estáticas', () => {
+  const preflight = code(readFileSync('scripts/backup/preflight.sh', 'utf8'));
+
+  it('só grava, apaga e copia no R2 com a chave de _preflight/, e só dentro do item r2_write', () => {
+    const writes = preflight
+      .split('\n')
+      .filter((line) => /put-object|delete-object|copy-object/.test(line));
+    expect(writes.length).toBeGreaterThan(0);
+    for (const line of writes) {
+      expect(line).toMatch(/(put|delete)-object .*--key "\$key"/);
+      expect(line).not.toMatch(/copy-object/);
+    }
+    const guard = preflight.indexOf('has_item r2_write');
+    expect(guard).toBeGreaterThan(-1);
+    expect(Math.min(...writes.map((line) => preflight.indexOf(line)))).toBeGreaterThan(guard);
+    expect(preflight).toMatch(/PF_PREFIX="\$\(cfg '\.preflight\.prefix'\)"/);
+    expect(preflight).toMatch(/key="\$\{PF_PREFIX\}/);
+  });
+
+  it('nunca imprime o valor de um segredo: só o ::add-mask:: de um valor aparado e o texto fixo', () => {
+    const printing = preflight.split('\n').filter((line) => /\b(echo|printf)\b/.test(line));
+    for (const line of printing) {
+      if (/::add-mask::/.test(line)) continue;
+      if (/printf -v /.test(line)) continue; // atribui a uma variável, não imprime
+      if (/printf %s "\$V_BACKUP_PASSPHRASE" \| gpg/.test(line)) continue; // entrada padrão do gpg
+      expect(line, line).not.toMatch(/\$\{?(V_|raw|trimmed|name\b)/);
+      expect(line, line).not.toMatch(
+        /\$\{?(R2_|SUPABASE_|BACKUP_PASSPHRASE|RESTORE_TARGET|PGPASSWORD|AWS_)/,
+      );
+    }
+  });
+
+  it('a frase-senha só chega ao gpg pela entrada padrão e a saída do gpg do backup anterior é descartada', () => {
+    expect(preflight).not.toMatch(/--passphrase[ =]/);
+    for (const match of preflight.matchAll(
+      /printf %s "\$V_BACKUP_PASSPHRASE" \| gpg[^\n]*\\?\n?[^\n]*/g,
+    )) {
+      expect(match[0]).toContain('--passphrase-fd 0');
+    }
+    expect(preflight).toMatch(/--decrypt "\$PF_DIR\/prev\.gpg" >\/dev\/null 2>/);
+  });
+
+  it('todas as saídas de ferramentas vão para arquivo em PF_DIR (que fica em $RUNNER_TEMP)', () => {
+    expect(preflight).toMatch(/PF_DIR="\$\{PREFLIGHT_DIR:-\$\{RUNNER_TEMP:\?/);
+    expect(preflight).toMatch(/"\$@" >"\$PF_OUT" 2>&1/);
+    expect(preflight).not.toMatch(/\/tmp\//);
+  });
+
+  it('o valor aparado é mascarado antes de qualquer uso', () => {
+    const maskAt = preflight.indexOf('mask_value "$trimmed"');
+    const firstUse = preflight.indexOf('printf -v "V_$name"');
+    expect(maskAt).toBeGreaterThan(-1);
+    expect(maskAt).toBeLessThan(firstUse);
+  });
+
+  it('o resumo roda sem tocar em segredos e não falha o job', () => {
+    const summary = code(readFileSync('scripts/backup/preflight-summary.sh', 'utf8'));
+    expect(summary).toContain('pf-summary');
+    expect(summary).not.toMatch(/\bexit\b/);
   });
 });

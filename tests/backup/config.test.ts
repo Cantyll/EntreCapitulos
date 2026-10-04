@@ -57,4 +57,14 @@ describe('configuração do backup (.github/backup.config.json)', () => {
       ]),
     );
   });
+
+  it('preflight: prefixo próprio, nunca o de daily/ nem o de weekly/, e frase-senha com tamanho mínimo', () => {
+    const { prefix, passphraseMinLength } = config.preflight;
+    expect(prefix).toMatch(/^[A-Za-z0-9_-]+\/$/);
+    for (const other of [config.prefixes.daily, config.prefixes.weekly]) {
+      expect(prefix.startsWith(other)).toBe(false);
+      expect(other.startsWith(prefix)).toBe(false);
+    }
+    expect(Number.isInteger(passphraseMinLength) && passphraseMinLength >= 12).toBe(true);
+  });
 });

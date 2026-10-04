@@ -13,7 +13,6 @@ import {
   latestEntry,
   parseBackupChoice,
   previousEntry,
-  scrubLog,
   sha256,
   validateManifest,
   type BackupConfig,
@@ -196,19 +195,5 @@ describe('listagem', () => {
     ]) {
       expect(() => parseBackupChoice(bad, config)).toThrow(/daily\/AAAA-MM-DD/);
     }
-  });
-});
-
-describe('scrubLog', () => {
-  it('tira linhas de COPY/INSERT, registros com tabulação e linhas com segredo', () => {
-    const text = [
-      'pg_dump: aviso',
-      'COPY "auth"."users" FROM stdin;',
-      'id\tfulana@exemplo.test',
-      'INSERT INTO x VALUES (1);',
-      'senha=frase-secreta-123 vazou',
-      'fim',
-    ].join('\n');
-    expect(scrubLog(text, ['frase-secreta-123'])).toBe('pg_dump: aviso\nfim');
   });
 });

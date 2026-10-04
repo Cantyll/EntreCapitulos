@@ -22,10 +22,6 @@ on:
         description: 'Só simular: abre o backup, confere o destino e as migrations, sem alterar nada'
         type: boolean
         default: true
-      verbose:
-        description: 'Mostrar a saída das ferramentas, filtrada (nunca mostra dados)'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -81,7 +77,6 @@ jobs:
         env:
           BACKUP_CHOICE: ${{ inputs.backup }}
           DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
-          BACKUP_VERBOSE: ${{ inputs.verbose && 'true' || 'false' }}
           PRODUCTION_PROJECT_REF: ${{ vars.PRODUCTION_PROJECT_REF }}
           RESTORE_TARGET_PROJECT_REF: ${{ secrets.RESTORE_TARGET_PROJECT_REF }}
           RESTORE_TARGET_DB_PASSWORD: ${{ secrets.RESTORE_TARGET_DB_PASSWORD }}
