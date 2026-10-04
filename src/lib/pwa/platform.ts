@@ -42,9 +42,13 @@ export type Platform = {
 /** O que fazer com este aparelho: o cartão, só a dica, ou nada. */
 export type InstallEligibility = 'card' | 'hint' | 'none';
 
-/** Navegadores de outras empresas no iOS (todos usam o motor do Safari, mas têm menu próprio). */
+/**
+ * Navegadores de outras empresas no iOS (todos usam o motor do Safari, mas têm menu próprio). `Chrome/`, `Firefox/` e
+ * `Edg/` são os nomes do agente de computador: o iPadOS os manda quando se pede o "site para computador". O Safari
+ * e os navegadores embutidos do iOS nunca trazem esses nomes.
+ */
 const IOS_OTHER_BROWSERS =
-  /\b(CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|YaBrowser|DuckDuckGo|Focus\/|Coast\/|Mercury|Vivaldi)\b/i;
+  /\b(CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|YaBrowser|DuckDuckGo|Focus\/|Coast\/|Mercury|Vivaldi|Chrome\/|Firefox\/|Edg\/)\b/i;
 
 /** Navegadores embutidos de aplicativos: o menu de compartilhar não é o do Safari. */
 const IN_APP_BROWSERS =

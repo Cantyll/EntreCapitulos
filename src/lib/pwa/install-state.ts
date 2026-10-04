@@ -8,10 +8,12 @@ import type { InstallEligibility } from './platform';
  *
  * O estado é uma PREFERÊNCIA DO APARELHO no localStorage, nunca enviada ao servidor e sem dado pessoal:
  * `{ visits, lastDay, dismissedAt, never }`. Quem lê aqui valida tudo de forma estrita: qualquer coisa fora do
- * formato (JSON quebrado, campo a mais, tipo errado) é ignorada e o estado volta ao zero. Se o navegador recusar o
- * armazenamento (modo com cookies bloqueados), o cartão fica escondido no site público (sem contagem não há
- * "2ª visita"). Os `catch` daqui NÃO engolem o erro: devolvem-no a quem chamou (o `InstallGate`), que o registra
- * UMA vez por carga de página com `logFailure`, só com o nome do erro (nunca a chave nem o valor).
+ * formato (JSON quebrado, campo a mais, tipo errado) é ignorada e o estado volta ao zero; como o estado volta ao zero,
+ * a visita do dia é contada e REGRAVA o valor: um texto quebrado se conserta sozinho na carga seguinte. Se o navegador
+ * recusar o armazenamento (modo com cookies bloqueados), nada é gravado e o cartão fica escondido no site público
+ * (sem contagem não há "2ª visita"). Os `catch` daqui NÃO engolem o erro: devolvem-no a quem chamou (o
+ * `InstallGate`), que o registra UMA vez por carga de página com `logFailure`, só com o nome do erro (nunca a chave
+ * nem o valor).
  */
 
 export type InstallState = {
@@ -210,21 +212,32 @@ export type LoadResult = {
   state: InstallState;
   /** O erro do navegador ou do `JSON.parse` (o nome e o construtor viram o registro; a chave e o valor nunca). */
   error: unknown;
+  /** Houve um erro para registrar (armazenamento recusado ou texto guardado quebrado). */
   failed: boolean;
+  /**
+   * Dá para gravar? Falso só quando o navegador recusou o armazenamento. Um texto quebrado NÃO impede: o estado volta
+   * ao zero e a próxima gravação o conserta.
+   */
+  writable: boolean;
 };
 
-/** Lê o estado do armazenamento. Se o armazenamento não existe ou recusa, devolve o estado vazio e o erro. */
+/**
+ * Lê o estado do armazenamento. Se o armazenamento recusa, devolve o estado vazio, o erro e `writable: false`; se o
+ * texto guardado está quebrado, devolve o estado vazio e o erro, mas `writable: true` (a gravação o conserta).
+ */
 export function loadInstallState(getStorage: () => StorageLike | null): LoadResult {
   let raw: string | null;
   try {
     const storage = getStorage();
-    if (!storage) return { state: EMPTY_INSTALL_STATE, error: undefined, failed: false };
+    if (!storage) {
+      return { state: EMPTY_INSTALL_STATE, error: undefined, failed: false, writable: true };
+    }
     raw = storage.getItem(INSTALL_RULES.storageKey);
   } catch (error) {
     // Quem chama registra o erro (só o nome) uma vez por carga de página; aqui o estado volta ao zero.
-    return { state: EMPTY_INSTALL_STATE, error, failed: true };
+    return { state: EMPTY_INSTALL_STATE, error, failed: true, writable: false };
   }
-  return parseInstallStateDetailed(raw);
+  return { ...parseInstallStateDetailed(raw), writable: true };
 }
 
 export type SaveResult = { error: unknown; failed: boolean };

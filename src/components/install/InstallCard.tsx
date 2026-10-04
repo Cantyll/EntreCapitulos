@@ -30,7 +30,7 @@ export function InstallCard({ view, surface, onLater, onInstalled }: Props) {
         data-install-card="hint"
       >
         <p>{INSTALL_HINT.text}</p>
-        <Button variant="soft" size="sm" onClick={onLater}>
+        <Button variant="soft" size="lg" onClick={onLater}>
           {INSTALL_HINT.later}
         </Button>
       </section>
@@ -49,10 +49,10 @@ export function InstallCard({ view, surface, onLater, onInstalled }: Props) {
       </div>
       <InstallSteps />
       <div className={styles.actions}>
-        <Button variant="soft" onClick={onLater}>
+        <Button variant="soft" size="lg" onClick={onLater}>
           {INSTALL_CARD.later}
         </Button>
-        <Button variant="ghost" onClick={onInstalled}>
+        <Button variant="ghost" size="lg" onClick={onInstalled}>
           {INSTALL_CARD.installed}
         </Button>
       </div>

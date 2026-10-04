@@ -935,6 +935,7 @@ describe('loadInstallState', () => {
       state: { visits: 3, lastDay: '2026-06-10', dismissedAt: null, never: false },
       error: undefined,
       failed: false,
+      writable: true,
     });
     expect(storage.getItem).toHaveBeenCalledTimes(1);
     expect(storage.getItem).toHaveBeenCalledWith(KEY);
@@ -946,6 +947,7 @@ describe('loadInstallState', () => {
       state: EMPTY_INSTALL_STATE,
       error: undefined,
       failed: false,
+      writable: true,
     });
   });
 
@@ -954,6 +956,7 @@ describe('loadInstallState', () => {
       state: EMPTY_INSTALL_STATE,
       error: undefined,
       failed: false,
+      writable: true,
     });
   });
 
@@ -963,6 +966,7 @@ describe('loadInstallState', () => {
       throw error;
     });
     expect(result.failed).toBe(true);
+    expect(result.writable).toBe(false);
     expect(result.error).toBe(error);
     expect(result.state).toEqual(EMPTY_INSTALL_STATE);
   });
@@ -977,6 +981,7 @@ describe('loadInstallState', () => {
     };
     const result = loadInstallState(() => storage);
     expect(result.failed).toBe(true);
+    expect(result.writable).toBe(false);
     expect(result.error).toBe(error);
     expect(result.state).toEqual(EMPTY_INSTALL_STATE);
   });
@@ -985,15 +990,47 @@ describe('loadInstallState', () => {
     const result = loadInstallState(() => {
       throw 'recusado';
     });
-    expect(result).toEqual({ state: EMPTY_INSTALL_STATE, error: 'recusado', failed: true });
+    expect(result).toEqual({
+      state: EMPTY_INSTALL_STATE,
+      error: 'recusado',
+      failed: true,
+      writable: false,
+    });
   });
 
-  it('texto guardado quebrado: falha com o SyntaxError e estado vazio', () => {
+  it('texto guardado quebrado: falha com o SyntaxError e estado vazio, mas dá para gravar', () => {
     const { storage } = memoryStorage({ [KEY]: '{"v":1,"visits":' });
     const result = loadInstallState(() => storage);
     expect(result.failed).toBe(true);
+    expect(result.writable).toBe(true);
     expect(result.error).toBeInstanceOf(SyntaxError);
     expect(result.state).toEqual(EMPTY_INSTALL_STATE);
+  });
+
+  it('texto guardado quebrado se conserta sozinho: a visita contada regrava e a leitura seguinte vem limpa', () => {
+    const { storage, data } = memoryStorage({ [KEY]: '{quebrado' });
+    const first = loadInstallState(() => storage);
+    expect(first.failed).toBe(true);
+    const decision = decide({
+      eligibility: 'card',
+      surface: 'public',
+      pathname: '/',
+      preview: false,
+      now: new Date(2026, 5, 10, 12),
+      state: first.state,
+    });
+    // O estado voltou ao zero, então a visita do dia é contada e há o que gravar.
+    expect(decision.persist).toBe(true);
+    expect(saveInstallState(() => storage, decision.state).failed).toBe(false);
+    expect(parseInstallState(data.get(KEY)!)).toEqual(decision.state);
+    const second = loadInstallState(() => storage);
+    expect(second).toEqual({
+      state: decision.state,
+      error: undefined,
+      failed: false,
+      writable: true,
+    });
+    expect(second.state.visits).toBe(1);
   });
 
   it('texto guardado fora do formato: estado vazio, sem falha', () => {
@@ -1002,6 +1039,7 @@ describe('loadInstallState', () => {
       state: EMPTY_INSTALL_STATE,
       error: undefined,
       failed: false,
+      writable: true,
     });
   });
 
@@ -1017,6 +1055,7 @@ describe('loadInstallState', () => {
       state: EMPTY_INSTALL_STATE,
       error: undefined,
       failed: false,
+      writable: true,
     });
   });
 });
@@ -1040,6 +1079,7 @@ describe('saveInstallState', () => {
       state: saved,
       error: undefined,
       failed: false,
+      writable: true,
     });
   });
 

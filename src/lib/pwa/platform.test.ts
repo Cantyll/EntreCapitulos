@@ -143,6 +143,29 @@ describe('detectPlatform: outros navegadores, um nome por vez', () => {
   });
 });
 
+describe('detectPlatform: iPad em "site para computador" com Chrome, Firefox ou Edge', () => {
+  // SINTÉTICO (formato do agente de computador de cada navegador): não sei qual agente exato cada um manda no iPadOS.
+  // O que importa: se trouxer o nome do navegador, não é o Safari e não recebe nem o cartão nem a dica "abra no Safari".
+  it.each([
+    ['Chrome', 'Chrome/139.0.0.0 Safari/537.36'],
+    ['Firefox', 'Firefox/142.0'],
+    ['Edge', 'Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0'],
+  ])('iPad (Macintosh + toque) com %s é "ios-other"', (_name, token) => {
+    const userAgent = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) ${token}`;
+    const platform = detectPlatform(input(userAgent, { maxTouchPoints: 5 }));
+    expect(platform.family).toBe('ios-other');
+    expect(installEligibility(platform)).toBe('none');
+  });
+
+  it('o mesmo agente num Mac de mesa (sem toque) continua sendo desktop', () => {
+    expect(detectPlatform(input(UA.macChrome, { maxTouchPoints: 0 })).family).toBe('desktop');
+  });
+
+  it('o Safari do iPad em modo desktop (sem nome de outro navegador) continua sendo o Safari', () => {
+    expect(detectPlatform(input(UA.macSafari, { maxTouchPoints: 5 })).family).toBe('ios-safari');
+  });
+});
+
 describe('detectPlatform: navegadores embutidos de aplicativos', () => {
   it.each([
     ['Instagram', UA.iphoneInstagram],
