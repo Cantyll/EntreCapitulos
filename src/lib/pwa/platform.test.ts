@@ -120,6 +120,29 @@ describe('detectPlatform: outros navegadores no iPhone e no iPad', () => {
   });
 });
 
+describe('detectPlatform: outros navegadores, um nome por vez', () => {
+  // Sintético: o agente do Safari mais o nome de cada navegador de outra empresa (todos têm menu próprio).
+  it.each([
+    'CriOS/139.0.7258.76',
+    'FxiOS/142.0',
+    'EdgiOS/139.0.3405.102',
+    'OPiOS/16.0.15',
+    'OPT/5.1.0',
+    'YaBrowser/25.8.0',
+    'DuckDuckGo/7',
+    'Focus/142.0',
+    'Coast/5.04',
+    'Mercury/8.9',
+    'Vivaldi/7.5',
+  ])('o agente do Safari mais "%s" não é o Safari', (token) => {
+    expect(detectPlatform(input(`${UA.iphoneSafari26} ${token}`)).family).toBe('ios-other');
+  });
+
+  it('um navegador de outra empresa que também cite um aplicativo continua "ios-other" (sem dica "abra no Safari")', () => {
+    expect(detectPlatform(input(`${UA.iphoneChrome} Instagram 389.0`)).family).toBe('ios-other');
+  });
+});
+
 describe('detectPlatform: navegadores embutidos de aplicativos', () => {
   it.each([
     ['Instagram', UA.iphoneInstagram],
@@ -136,6 +159,28 @@ describe('detectPlatform: navegadores embutidos de aplicativos', () => {
   it('um navegador embutido que imite o Safari por inteiro ainda é pego pelo nome do aplicativo', () => {
     const imitation = `${UA.iphoneSafari26} Instagram 389.0.0.43.81`;
     expect(detectPlatform(input(imitation)).family).toBe('ios-in-app');
+  });
+
+  // Sintético: o agente do Safari por inteiro mais o nome do aplicativo, para cada nome da lista conhecer o seu efeito
+  // mesmo quando o navegador embutido imita "Version/" e "Safari/" (a regra do Safari sozinha não os pegaria).
+  it.each([
+    'Instagram 389.0.0.43.81',
+    '[FBAN/FBIOS;FBAV/520.0.0.38.101]',
+    'FBIOS',
+    'FB_IAB/FB4A',
+    'Messenger',
+    'Line/14.5.0',
+    'TikTok',
+    'musical_ly_39.1.0',
+    'BytedanceWebview/d8a21c6',
+    'LinkedInApp/9.30.1234',
+    'Snapchat/12.0.0',
+    'Pinterest/9.0',
+    'Twitter for iPhone',
+    'MicroMessenger/8.0.50',
+    'GSA/370.0.742371180',
+  ])('o agente do Safari mais "%s" é navegador embutido', (token) => {
+    expect(detectPlatform(input(`${UA.iphoneSafari26} ${token}`)).family).toBe('ios-in-app');
   });
 
   it('um iPhone sem Version/ nem Safari/ e sem nome de aplicativo conhecido não vira Safari', () => {
