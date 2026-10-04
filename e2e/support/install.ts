@@ -146,6 +146,28 @@ export async function delayCardCode(
   return state;
 }
 
+/**
+ * Faz o download do código do cartão FALHAR (o pedido é cortado), o que acontece com rede instável, com uma aba aberta
+ * antes de um deploy ou com um bloqueador de conteúdo. Devolve um objeto cujo `hit` vira `true` quando o pedido foi cortado.
+ */
+export async function failCardCode(page: Page): Promise<{ hit: boolean }> {
+  const state = { hit: false };
+  await page.route('**/_next/static/chunks/*.js', async (route) => {
+    const response = await route.fetch();
+    const body = await response.text();
+    if (body.includes('data-install-card')) {
+      state.hit = true;
+      await route.abort('failed');
+      return;
+    }
+    const headers = { ...response.headers() };
+    delete headers['content-encoding'];
+    delete headers['content-length'];
+    await route.fulfill({ status: response.status(), headers, body });
+  });
+  return state;
+}
+
 /** Espera o React assumir a página e dá um tempo para o cartão (carregado sob demanda) aparecer, se fosse aparecer. */
 export async function settle(page: Page): Promise<void> {
   await untilHydrated(page.locator('main').first());

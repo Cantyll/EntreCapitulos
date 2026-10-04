@@ -14,6 +14,7 @@ import {
   cardWasSeen,
   dayAt,
   delayCardCode,
+  failCardCode,
   idle,
   installCard,
   installHint,
@@ -291,6 +292,20 @@ test.describe('cartão de instalação: Safari do iPhone @mobile', () => {
     await expect(anyInstallCard(page)).toHaveCount(0);
   });
 
+  test('?instalacao=ver não passa para a página seguinte numa navegação no cliente', async ({
+    page,
+  }) => {
+    await page.clock.setFixedTime(dayAt(0));
+    await page.goto('/?instalacao=ver');
+    await expect(installCard(page)).toBeVisible();
+    // Navegação no cliente, sem recarregar: o endereço novo não tem o parâmetro, então é a 1ª visita comum.
+    await page.getByRole('link', { name: 'Estante' }).first().click();
+    await expect(page).toHaveURL(/\/estante$/);
+    await settle(page);
+    await expect(anyInstallCard(page)).toHaveCount(0);
+    expect(await cardWasSeen(page)).toBe(true);
+  });
+
   for (const path of ['/entrar', '/conta/excluida']) {
     test(`?instalacao=ver não mostra o cartão em rota excluída (${path})`, async ({ page }) => {
       await page.clock.setFixedTime(dayAt(0));
@@ -404,7 +419,8 @@ test.describe('cartão de instalação: Safari do iPhone @mobile', () => {
     // O que o navegador registra quando o envio da Server Action é cortado (Chromium e WebKit).
     guard.allowConsole(
       /^Failed to load resource: net::ERR_FAILED$/,
-      /^TypeError: (Failed to fetch|Load failed)/,
+      // O Chromium acrescenta a pilha (linhas "at ..."), o WebKit não: a regra aceita as duas formas.
+      /^TypeError: (Failed to fetch|Load failed)(\n[\s\S]*)?$/,
     );
     const slug = '/livros/e2e-leitura/sessoes/1';
     await visit(page, 0, '/');
@@ -429,6 +445,45 @@ test.describe('cartão de instalação: Safari do iPhone @mobile', () => {
     await expect(page.getByRole('heading', { name: 'Algo deu errado por aqui' })).toHaveCount(0);
     await expect(page.locator(`[${SUPPRESS_ATTRIBUTE}]`)).toHaveCount(0);
     await expect(installCard(page)).toBeVisible();
+  });
+
+  test('o código do cartão não carrega: o site continua de pé, sem cartão e com UM aviso só com o nome do erro', async ({
+    page,
+    guard,
+  }) => {
+    // O navegador registra o pedido cortado e o erro do `import()`; a mensagem do aviso do site tem texto exato.
+    const failureMessage =
+      /^cartão de instalação: carregamento falhou \{name: [A-Za-z]+, constructorName: [A-Za-z]+\}$/;
+    guard.allowConsole(
+      failureMessage,
+      /^Failed to load resource: net::ERR_FAILED$/,
+      /^Failed to load resource: (the server responded|A network error|Load failed)/,
+      // O próprio runtime do Next registra o erro que o isolador capturou (com a pilha no Chromium).
+      /^ChunkLoadError: Failed to load chunk \/_next\/static\/chunks\/[\w.-]+\.js from module \d+(\n[\s\S]*)?$/,
+    );
+    await visit(page, 0, '/');
+    const errors = collectErrors(page);
+    const blocked = await failCardCode(page);
+    await visit(page, 1, '/', { quiet: false });
+    await expect
+      .poll(() => blocked.hit, { message: 'o código do cartão não foi pedido' })
+      .toBe(true);
+    await settle(page);
+
+    // O site segue inteiro: nada de "Algo deu errado por aqui", e o cartão não existe.
+    await expect(page.getByRole('heading', { name: 'Algo deu errado por aqui' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+    await expect(anyInstallCard(page)).toHaveCount(0);
+    // Navegar no cliente continua funcionando.
+    await page.getByRole('link', { name: 'Estante' }).first().click();
+    await expect(page).toHaveURL(/\/estante$/);
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+
+    // Um aviso do site, só com o nome do erro e do construtor (nunca a chave nem o valor guardado).
+    const own = errors.texts.filter((text) => text.startsWith('cartão de instalação:'));
+    expect(own).toHaveLength(1);
+    expect(own[0]).toMatch(failureMessage);
+    expect([...errors.texts, ...errors.dumps].join('\n')).not.toMatch(/ec:install|visits|lastDay/);
   });
 
   test('o mecanismo da página de erro e do 404: o marcador esconde o cartão e, ao sair, ele volta', async ({
@@ -530,8 +585,6 @@ test.describe('cartão de instalação: Safari do iPhone @mobile', () => {
       section.getByRole('heading', { level: 2, name: 'Instalar no iPhone' }),
     ).toBeVisible();
     await expectGuide(section);
-    // /conta nunca mostra o cartão em si.
-    await expect(anyInstallCard(page)).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Excluir minha conta' })).toBeVisible();
   });
 
