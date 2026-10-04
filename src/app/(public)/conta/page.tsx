@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { DeleteAccountForm } from '@/components/conta/DeleteAccountForm';
+import { InstallAccountSection } from '@/components/install/InstallAccountSection';
 import { NameForm } from '@/components/conta/NameForm';
 import styles from '@/components/conta/conta.module.css';
 import { PageHeader } from '@/components/site/PageHeader';
@@ -52,6 +53,9 @@ export default async function AccountPage() {
         )}
 
         <NameForm initialName={initialName} />
+
+        {/* Só no Safari do iPhone/iPad fora do app instalado: decide no navegador, depois da montagem. */}
+        <InstallAccountSection />
 
         <section className={styles.card} aria-labelledby="conta-dados-titulo">
           <h2 id="conta-dados-titulo">Baixar meus dados</h2>

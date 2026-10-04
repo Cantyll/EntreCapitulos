@@ -1,6 +1,7 @@
 import { unstable_rethrow } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
 
+import { InstallGate } from '@/components/install/InstallGate';
 import { SiteFooter } from '@/components/site/SiteFooter';
 import { SiteHeader } from '@/components/site/SiteHeader';
 import { SiteHeaderSkeleton } from '@/components/site/SiteHeaderSkeleton';
@@ -37,6 +38,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
         </Suspense>
         <main id="conteudo" tabIndex={-1} className={styles.main}>
           {children}
+          {/* Cartão "Instale o Entre Capítulos": só no navegador, no fim do conteúdo, antes do rodapé. */}
+          <InstallGate surface="public" />
         </main>
         <SiteFooter />
       </div>
