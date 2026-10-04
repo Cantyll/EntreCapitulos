@@ -296,6 +296,31 @@ describe('evaluateInstall: aparelhos que nunca mostram nada', () => {
   });
 });
 
+describe('evaluateInstall: a busca vem de quem decide, não de window.location', () => {
+  // Numa navegação no cliente o endereço do navegador muda DEPOIS da renderização: o InstallGate passa a busca do
+  // roteador, que muda junto com o pathname. O parâmetro explícito manda; sem ele vale window.location.search.
+  it('a busca passada manda sobre window.location.search (a página nova não herda a pré-visualização)', () => {
+    const fake = fakeWindow({ search: '?instalacao=ver' });
+    expect(evaluateInstall(fake.win, 'public', '/', day(10)).preview).toBe(true);
+    const next = evaluateInstall(fake.win, 'public', '/sobre', day(10), '');
+    expect(next.preview).toBe(false);
+    expect(next.decision.view).toBeNull();
+  });
+
+  it('um link para ?instalacao=ver vale mesmo com o endereço do navegador ainda sem o parâmetro', () => {
+    const fake = fakeWindow({ search: '' });
+    const result = evaluateInstall(fake.win, 'public', '/sobre', day(10), '?instalacao=ver');
+    expect(result.preview).toBe(true);
+    expect(result.decision.view).toBe('card');
+    expect(result.decision.persist).toBe(false);
+  });
+
+  it('sem o parâmetro explícito vale window.location.search', () => {
+    const fake = fakeWindow({ search: '?instalacao=ver' });
+    expect(evaluateInstall(fake.win, 'public', '/', day(10)).preview).toBe(true);
+  });
+});
+
 describe('evaluateInstall: ?instalacao=ver', () => {
   it('mostra o cartão já na 1ª visita, sem contar nem pedir para gravar', () => {
     const fake = fakeWindow({ search: '?instalacao=ver' });

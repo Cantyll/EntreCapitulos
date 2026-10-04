@@ -1,8 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { Container } from '@/components/ui/Container';
 import { INSTALL_RULES } from '@/content/install';
@@ -16,13 +16,15 @@ import {
   type InstallSurface,
 } from '@/lib/pwa/install-state';
 
+import { InstallCardBoundary } from './InstallCardBoundary';
+
 // O cartão (SVG e texto) só é baixado quando de fato vai aparecer.
 const InstallCard = dynamic(() => import('./InstallCard').then((module) => module.InstallCard), {
   ssr: false,
 });
 
-/** Registra cada tipo de falha do armazenamento UMA vez por carga de página (o módulo vive enquanto a página vive). */
-const reported = { read: false, write: false };
+/** Registra cada tipo de falha UMA vez por carga de página (o módulo vive enquanto a página vive). */
+const reported = { read: false, write: false, load: false };
 
 // Acessar `window.localStorage` já pode lançar (cookies bloqueados): quem chama está dentro de um try/catch.
 const getStorage = () => window.localStorage;
@@ -35,6 +37,14 @@ function saveOnce(state: InstallState): boolean {
     logFailure('cartão de instalação: gravação', error);
   }
   return !failed;
+}
+
+/** O código do cartão não carregou: o cartão some (ver `InstallCardBoundary`) e o erro é registrado UMA vez, só o nome. */
+function reportLoadFailure(error: unknown) {
+  if (!reported.load) {
+    reported.load = true;
+    logFailure('cartão de instalação: carregamento', error);
+  }
 }
 
 // `true` só no navegador, depois da hidratação: no servidor e na hidratação o cartão nunca existe (sem divergência).
@@ -67,15 +77,20 @@ type Props = {
  * O estado fica no localStorage, só neste aparelho, e nunca vai ao servidor. Se o armazenamento falhar, o erro é
  * registrado uma vez com `logFailure` (só o nome do erro: nunca a chave nem o valor).
  */
-export function InstallGate({ surface }: Props) {
+function InstallGateInner({ surface }: Props) {
   const pathname = usePathname();
+  // A busca vem do roteador, no mesmo instante que o `pathname` (`window.location` só muda depois da renderização).
+  const search = useSearchParams().toString();
   const isClient = useSyncExternalStore(subscribeNever, getClient, getServer);
   const suppressed = useSyncExternalStore(subscribeMarker, getMarker, getServer);
   const [hiddenAt, setHiddenAt] = useState<string | null>(null);
 
   const evaluation = useMemo(
-    () => (isClient ? evaluateInstall(window, surface, pathname, new Date()) : null),
-    [isClient, surface, pathname],
+    () =>
+      isClient
+        ? evaluateInstall(window, surface, pathname, new Date(), search === '' ? '' : `?${search}`)
+        : null,
+    [isClient, surface, pathname, search],
   );
 
   // Grava a visita contada (uma por dia) e registra uma falha de leitura. Só escreve fora; não muda estado.
@@ -107,13 +122,27 @@ export function InstallGate({ surface }: Props) {
   if (!evaluation?.decision.view || suppressed || hiddenAt === `${surface}:${pathname}`)
     return null;
   const card = (
-    <InstallCard
-      view={evaluation.decision.view}
-      surface={surface}
-      onLater={() => dismiss((state) => dismissLater(state, new Date()))}
-      onInstalled={() => dismiss(dismissForever)}
-    />
+    <InstallCardBoundary onError={reportLoadFailure}>
+      <InstallCard
+        view={evaluation.decision.view}
+        surface={surface}
+        onLater={() => dismiss((state) => dismissLater(state, new Date()))}
+        onInstalled={() => dismiss(dismissForever)}
+      />
+    </InstallCardBoundary>
   );
   // No site público o cartão fica na coluna do conteúdo (a página dele não o envolve num contêiner).
   return surface === 'public' ? <Container>{card}</Container> : card;
+}
+
+/**
+ * `useSearchParams()` exige um `Suspense` quando a página é pré-renderizada no build (o Next recusa o build sem ele).
+ * O servidor nunca renderiza o cartão, então o `fallback` nulo é idêntico ao que a decisão devolve antes da hidratação.
+ */
+export function InstallGate(props: Props) {
+  return (
+    <Suspense fallback={null}>
+      <InstallGateInner {...props} />
+    </Suspense>
+  );
 }

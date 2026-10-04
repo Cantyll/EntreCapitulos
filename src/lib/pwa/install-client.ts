@@ -34,15 +34,21 @@ export type InstallEvaluation = {
   canSave: boolean;
 };
 
+/**
+ * `search` é a busca (`?instalacao=ver`) da página que está sendo decidida. O `InstallGate` a passa do roteador, que
+ * muda junto com o `pathname`; sem ela vale `window.location.search` (correto só numa carga completa, porque numa
+ * navegação no cliente o endereço do navegador muda depois da renderização).
+ */
 export function evaluateInstall(
   win: InstallWindow,
   surface: InstallSurface,
   pathname: string,
   now: Date,
+  search: string = win.location.search,
 ): InstallEvaluation {
   const eligibility = installEligibility(readPlatform(win));
   // A pré-visualização só vale para o cartão do Safari (ver `decide`).
-  const preview = eligibility === 'card' && isPreviewRequest(win.location.search);
+  const preview = eligibility === 'card' && isPreviewRequest(search);
   // Aparelho que não é elegível: nada é lido nem contado.
   if (eligibility === 'none') {
     return {
