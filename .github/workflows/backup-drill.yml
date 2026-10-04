@@ -5,6 +5,9 @@ name: Prova de restauração do backup
 # (diário até 36 h; semanal até 8 dias). O texto puro nunca sai do runner. Se falhar, o GitHub avisa
 # pelas notificações (quem editou o agendamento por último).
 #
+# O primeiro passo é a pré-verificação das credenciais do R2 e da frase-senha (só leitura; texto fixo no
+# resumo do job). Se falhar, a prova não continua.
+#
 # Segurança: só schedule e workflow_dispatch (nunca pull_request); segredos no Environment "backup"
 # (restrito à main); sem artefatos, sem cache, sem "set -x".
 on:
@@ -12,11 +15,6 @@ on:
     # Domingo, 07:41 UTC: depois do backup das 06:23, que cria a cópia semanal.
     - cron: '41 7 * * 0'
   workflow_dispatch:
-    inputs:
-      verbose:
-        description: 'Mostrar a saída das ferramentas, filtrada (nunca mostra dados). Só vale no disparo manual'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -46,6 +44,15 @@ jobs:
           mkdir -p "$RUNNER_TEMP/backup"
           echo "BACKUP_WORKDIR=$RUNNER_TEMP/backup" >> "$GITHUB_ENV"
 
+      - name: Pré-verificação das credenciais
+        run: bash scripts/backup/preflight.sh drill
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+
       - name: Conferir a idade dos backups
         run: bash scripts/backup/drill.sh freshness
         env:
@@ -53,7 +60,6 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
-          BACKUP_VERBOSE: ${{ github.event_name == 'workflow_dispatch' && inputs.verbose && 'true' || 'false' }}
 
       # Banco local descartável, com as migrations deste commit (e o seed, que a restauração esvazia).
       - name: Start local Supabase
@@ -67,10 +73,14 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
-          BACKUP_VERBOSE: ${{ github.event_name == 'workflow_dispatch' && inputs.verbose && 'true' || 'false' }}
+
+      - name: Resumo da pré-verificação
+        if: always()
+        run: bash scripts/backup/preflight-summary.sh drill
 
       - name: Apagar os temporários
         if: always()
         run: |
           source scripts/backup/common.sh
           wipe_dir "$BACKUP_WORKDIR"
+          wipe_dir "$RUNNER_TEMP/preflight"

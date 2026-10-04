@@ -6,6 +6,7 @@ export interface BackupConfig {
   retentionDays: { daily: number; weekly: number };
   maxAgeHours: { daily: number; weekly: number };
   size: { minBytes: number; minRatioOfPrevious: number };
+  preflight: { prefix: string; passphraseMinLength: number };
   dump: {
     schemas: string[];
     excludeTables: string[];
@@ -67,4 +68,96 @@ export function previousEntry(entries: ListEntry[], todayKey: string): ListEntry
 export function dailyKey(config: BackupConfig, date: string): string;
 export function weeklyKey(config: BackupConfig, date: string): string;
 export function parseBackupChoice(value: string, config: BackupConfig): string;
-export function scrubLog(text: string, secretValues?: string[]): string;
+
+export type PreflightResult = 'OK' | 'FALHOU' | 'PULADO';
+
+export interface PreflightRecord {
+  item: string;
+  result: PreflightResult;
+  reason: string;
+  step?: string;
+  code?: number;
+  ident?: string;
+}
+
+export interface PreflightScope {
+  environment: 'backup' | 'restore';
+  title: string;
+  items: string[];
+}
+
+export interface PreflightEvaluation {
+  scope: string;
+  records: PreflightRecord[];
+  failed: boolean;
+  counts: { total: number; failed: number; skipped: number };
+}
+
+export interface PreflightRow {
+  item: string;
+  label: string;
+  short: string;
+  result: PreflightResult;
+  motivo: string;
+  acao: string;
+}
+
+export interface PreflightTextOptions {
+  passphraseMinLength?: number;
+}
+
+export const RESULTS: PreflightResult[];
+export const SECRET_NAMES: string[];
+export const SECRET_SPECS: Record<
+  string,
+  { hint: string; test: (value: string, config?: BackupConfig) => boolean }
+>;
+export const SCOPES: Record<string, PreflightScope>;
+export const REASON_IDS: string[];
+export function isScope(name: unknown): boolean;
+export function isStep(name: unknown): boolean;
+export function checkSecretFormat(
+  name: string,
+  value: string | undefined,
+  config?: BackupConfig,
+): 'ok' | 'absent' | 'empty' | 'whitespace' | 'format';
+export function isSafeIdentifier(value: unknown, secrets?: string[]): boolean;
+export function extractIdentifier(text: string, secrets?: string[]): string | null;
+export function classify(input: {
+  step: string;
+  exitCode: number;
+  text?: string;
+  secrets?: string[];
+}): PreflightRecord;
+export function internalFailure(step: string, exitCode: number): PreflightRecord;
+export function formatRecord(
+  name: string,
+  value: string | undefined,
+  config?: BackupConfig,
+): PreflightRecord;
+export function sanitizeRecord(raw: unknown): PreflightRecord | null;
+export function parseRecords(text: string): { records: PreflightRecord[]; invalid: number };
+export function evaluatePreflight(
+  records: PreflightRecord[],
+  scope: string,
+  options?: { invalid?: number },
+): PreflightEvaluation;
+export function describeRecord(
+  record: PreflightRecord,
+  scope: string,
+  options?: PreflightTextOptions,
+): PreflightRow;
+export function rotatedSkip(evaluation: PreflightEvaluation): boolean;
+export function renderPreflightSummary(
+  evaluation: PreflightEvaluation,
+  options?: PreflightTextOptions,
+): string;
+export function renderPreflightMissing(scope: string): string;
+export function preflightAnnotations(
+  evaluation: PreflightEvaluation,
+  options?: PreflightTextOptions,
+): string[];
+export function preflightLogLines(
+  evaluation: PreflightEvaluation,
+  options?: PreflightTextOptions,
+): string[];

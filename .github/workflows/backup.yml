@@ -4,6 +4,11 @@ name: Backup do banco
 # PRIVADO do Cloudflare R2. O arquivo nunca é commitado, nunca vira artefato nem cache e nunca aparece
 # em log: o resumo do job mostra só OK ou falha, o tamanho e a data.
 #
+# O PRIMEIRO passo é a pré-verificação das credenciais (scripts/backup/preflight.sh): roda TODAS as
+# verificações (formato dos segredos, R2, Supabase, frase-senha), mostra no resumo do job qual credencial está
+# errada (só texto fixo, nunca valor nem saída bruta de ferramenta) e, se qualquer uma falhar, o passo falha e
+# o backup NÃO continua (nenhum dump é gerado nem enviado).
+#
 # Segurança (docs/operacao.md, seção 15):
 # - Só schedule e workflow_dispatch. NUNCA pull_request nem pull_request_target.
 # - Os segredos vivem no Environment "backup" (restrito à branch main), não no repositório. A condição
@@ -23,8 +28,8 @@ on:
         description: 'Gravar também a cópia semanal agora (use depois de trocar a frase-senha, fora de domingo)'
         type: boolean
         default: false
-      verbose:
-        description: 'Mostrar a saída das ferramentas, filtrada (nunca mostra dados). Só vale no disparo manual'
+      passphrase_rotated:
+        description: 'Troquei a frase-senha de propósito: não comparar com os backups anteriores (depois, rode uma vez com force_weekly)'
         type: boolean
         default: false
 
@@ -57,6 +62,20 @@ jobs:
           mkdir -p "$RUNNER_TEMP/backup"
           echo "BACKUP_WORKDIR=$RUNNER_TEMP/backup" >> "$GITHUB_ENV"
 
+      # Primeiro passo útil: se falhar, os passos seguintes (dump e envio) não rodam.
+      - name: Pré-verificação das credenciais
+        run: bash scripts/backup/preflight.sh backup
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          PREFLIGHT_PASSPHRASE_ROTATED: ${{ github.event_name == 'workflow_dispatch' && inputs.passphrase_rotated && 'true' || 'false' }}
+
       - name: Gerar e criptografar o backup
         run: bash scripts/backup/make-backup.sh
         env:
@@ -64,7 +83,6 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
-          BACKUP_VERBOSE: ${{ github.event_name == 'workflow_dispatch' && inputs.verbose && 'true' || 'false' }}
 
       - name: Enviar ao R2 e conferir
         run: bash scripts/backup/upload.sh
@@ -75,10 +93,15 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           ACCEPT_SMALLER: ${{ github.event_name == 'workflow_dispatch' && inputs.accept_smaller && 'true' || 'false' }}
           BACKUP_FORCE_WEEKLY: ${{ github.event_name == 'workflow_dispatch' && inputs.force_weekly && 'true' || 'false' }}
-          BACKUP_VERBOSE: ${{ github.event_name == 'workflow_dispatch' && inputs.verbose && 'true' || 'false' }}
+
+      # Sempre roda (mesmo que um passo anterior falhe): a tabela da pré-verificação precisa existir.
+      - name: Resumo da pré-verificação
+        if: always()
+        run: bash scripts/backup/preflight-summary.sh backup
 
       - name: Apagar os temporários
         if: always()
         run: |
           source scripts/backup/common.sh
           wipe_dir "$BACKUP_WORKDIR"
+          wipe_dir "$RUNNER_TEMP/preflight"

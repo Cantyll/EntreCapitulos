@@ -64,11 +64,16 @@ jobs:
       # Backup (etapa 8d): ciclo completo contra o banco local e um S3 local (moto), só com os dados sintéticos
       # do seed: dump, criptografia, envio, conferência, download, descriptografia, restauração e contagens.
       # Não usa R2 nem nenhum segredo; o moto é instalado num ambiente virtual descartável e fixado por versão.
-      - name: Backup round trip (dump, encrypt, upload, restore)
+      #
+      # Pré-verificação das credenciais (preflight.sh) de ponta a ponta contra um S3 local COM autenticação (o IAM do
+      # moto ligado): chave de acesso inválida, chave secreta errada, bucket inexistente, token só de leitura,
+      # endpoint inalcançável e frase trocada, com o aws e o gpg de verdade. Valores sintéticos, sem R2 nem segredo.
+      - name: Backup round trip (dump, encrypt, upload, restore) and credentials preflight
         run: |
           python3 -m venv "$RUNNER_TEMP/moto"
           "$RUNNER_TEMP/moto/bin/pip" install --quiet 'moto[server]==5.2.3'
           MOTO_SERVER="$RUNNER_TEMP/moto/bin/moto_server" bash scripts/backup/roundtrip.sh
+          MOTO_SERVER="$RUNNER_TEMP/moto/bin/moto_server" bash scripts/backup/preflight-roundtrip.sh
 
       - name: Generate types
         run: npm run db:types

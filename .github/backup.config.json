@@ -5,6 +5,7 @@
   "retentionDays": { "daily": 14, "weekly": 56 },
   "maxAgeHours": { "daily": 36, "weekly": 192 },
   "size": { "minBytes": 1024, "minRatioOfPrevious": 0.5 },
+  "preflight": { "prefix": "_preflight/", "passphraseMinLength": 16 },
   "dump": {
     "schemas": ["public", "auth"],
     "excludeTables": [
