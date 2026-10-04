@@ -1,9 +1,12 @@
 import { NEXT_COOKIE } from '@/lib/auth/constants';
 import { PROGRESS_COOKIE } from '@/lib/spoiler/cookie';
 
+import { INSTALL_RULES } from '../install';
+
 /*
- * Os cookies do site. É a lista de "Cookies do site" do CLAUDE.md: precisa continuar igual. Todos são
- * essenciais para o que a pessoa pediu (entrar, lembrar até onde leu), por isso não há banner de
+ * Os cookies do site. É a lista de "Cookies do site e armazenamento local" do CLAUDE.md: precisa continuar igual
+ * (um teste compara os nomes dos cookies e os do armazenamento local com as duas tabelas de lá). Todos os cookies
+ * são essenciais para o que a pessoa pediu (entrar, lembrar até onde leu), por isso não há banner de
  * consentimento. Os nomes vêm das constantes do código (um teste confere).
  */
 
@@ -52,6 +55,13 @@ export const LOCAL_STORAGE_ITEMS: readonly LocalStorageInfo[] = [
     purpose: 'Cópia local do rascunho, para não perder o texto se o aplicativo for fechado.',
     duration: 'até o rascunho ser enviado ao servidor ou o navegador limpar os dados do site',
     who: 'só a equipe (quem usa o editor)',
+  },
+  {
+    // O nome e o número de dias vêm das regras do cartão (`src/content/install.ts`): mudou lá, muda aqui.
+    name: `\`${INSTALL_RULES.storageKey}\` (armazenamento local do site)`,
+    purpose: `Preferência do cartão "Instale o Entre Capítulos": guarda em quantos dias diferentes você abriu o site neste aparelho, o último desses dias, se você tocou em "Agora não" (e quando; o cartão pode voltar depois de ${INSTALL_RULES.dismissDays} dias) e se você tocou em "Já instalei". Não guarda nome, e-mail nem identificador de conta, e nunca é enviada ao servidor.`,
+    duration: 'até o navegador limpar os dados do site ("Já instalei" vale por todo esse tempo)',
+    who: 'só iPhone e iPad (Safari ou navegador embutido de outro aplicativo); nos demais aparelhos e no aplicativo instalado, nada é gravado',
   },
   {
     name: '`cf.turnstile.u` (armazenamento local do iframe da Cloudflare)',

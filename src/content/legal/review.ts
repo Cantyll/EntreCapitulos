@@ -1,3 +1,4 @@
+import { INSTALL_RULES } from '../install';
 import { PROPOSAL_FIELDS, pendingFields, type LegalData } from '../legal-config';
 import { LOCAL_STORAGE_ITEMS, SITE_COOKIES } from './cookies';
 import { buildPrivacy } from './privacy';
@@ -212,6 +213,16 @@ export const DATA_MAP: readonly DataRow[] = [
     basis: null,
     retention: null,
     sees: 'Só quem usa o editor (a equipe).',
+    source: 'codigo',
+  },
+  {
+    data: 'Preferência do cartão de instalação (neste aparelho)',
+    where: `localStorage do navegador (\`${INSTALL_RULES.storageKey}\`), só em iPhone e iPad (Safari ou navegador embutido de outro aplicativo); nunca é enviada ao servidor`,
+    purpose:
+      'Decidir quando mostrar o cartão que ensina a colocar o site na Tela de Início: dias distintos de visita, último dia, "Agora não" (e quando) e "Já instalei"',
+    basis: null,
+    retention: null,
+    sees: 'Só a própria pessoa (fica no aparelho).',
     source: 'codigo',
   },
 ];

@@ -312,6 +312,8 @@ A restauração **nunca** vai por cima da produção. O workflow **Restaurar bac
 
 #### Ensaio real (uma vez, antes de precisar)
 
+> **Pendente e obrigatório antes de convidar leitoras** (seção 16 e `lancamento.md`, seção 5). Ainda não foi feito: até lá, o backup nunca foi restaurado na nuvem de verdade.
+
 Para saber se tudo funciona de verdade, ensaie num **segundo projeto gratuito** (o limite de projetos gratuitos por conta é **não verificado**): crie um projeto de ensaio, siga os passos 1 a 4 e confira as contagens e um login por código. **Apague o projeto de ensaio e os segredos `RESTORE_TARGET_*` ao terminar**: ele terá dados reais das leitoras.
 
 **Limites conhecidos (não verificados na nuvem; o ensaio responde):**
@@ -383,3 +385,9 @@ Para saber se tudo funciona de verdade, ensaie num **segundo projeto gratuito** 
 | **A pré-verificação não chegou a terminar** | Job cancelado, tempo esgotado ou falha antes do script | Rode de novo |
 | **Falhou: … Código de saída N. Identificador do erro: X.** (passos do backup real) | Falha do dump, da criptografia ou do envio depois da pré-verificação | Procure o identificador acima; se for `DockerRunError`, o Docker do runner falhou (rode de novo) |
 
+## 16. Pendências obrigatórias antes de convidar leitoras
+
+Duas coisas que só você consegue fazer, e que **precisam estar feitas antes de convidar as primeiras leitoras**. Aqui só a lista e onde está o passo a passo; a checklist completa de lançamento é [`lancamento.md`](lancamento.md).
+
+1. **Ensaio de restauração do backup num segundo projeto gratuito do Supabase.** Passo a passo: seção 15, "Restaurar" e "Ensaio real". Simule primeiro (`dry_run` ligado), restaure de verdade, confira as contagens e um login por código, e **apague o projeto de ensaio e os segredos `RESTORE_TARGET_*`** ao terminar.
+2. **Teste de instalação no iPhone real**, no Safari e no app instalado: ícone e nome, abre sem barra, login por código dentro do app instalado, o cartão "Instale o Entre Capítulos" (2ª visita, `?instalacao=ver`), as seções de "Sobre o clube" e de "Minha conta", e a conferência dos **rótulos exatos do iOS em português**. Lista do que conferir: `lancamento.md`, seção 7.

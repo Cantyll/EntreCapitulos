@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { INSTALL_RULES } from '../install';
 import {
   A_DEFINIR,
   legalConfig,
@@ -11,7 +12,7 @@ import {
   type LegalData,
 } from '../legal-config';
 import { SOBRE } from '../sobre';
-import { SITE_COOKIES } from './cookies';
+import { LOCAL_STORAGE_ITEMS, SITE_COOKIES } from './cookies';
 import { buildPrivacy } from './privacy';
 import { buildTerms } from './terms';
 import type { LegalDoc } from './types';
@@ -230,13 +231,23 @@ describe('termos de uso', () => {
   });
 });
 
+const LOCAL_STORAGE_HEADING = '#### Armazenamento local (fora os cookies)';
+
+/** As duas tabelas da seção "Cookies do site e armazenamento local" do CLAUDE.md, cada uma como texto. */
+function claudeSections(): { cookies: string; localStorage: string } {
+  const claude = readFileSync(join(process.cwd(), 'CLAUDE.md'), 'utf8');
+  const start = claude.indexOf('### Cookies do site');
+  const split = claude.indexOf(LOCAL_STORAGE_HEADING);
+  const end = claude.indexOf('### Migrations');
+  expect(start, 'seção "### Cookies do site…" do CLAUDE.md').toBeGreaterThanOrEqual(0);
+  expect(split, `subseção "${LOCAL_STORAGE_HEADING}" do CLAUDE.md`).toBeGreaterThan(start);
+  expect(end).toBeGreaterThan(split);
+  return { cookies: claude.slice(start, split), localStorage: claude.slice(split, end) };
+}
+
 describe('lista de cookies', () => {
   it('está de acordo com a tabela "Cookies do site" do CLAUDE.md', () => {
-    const claude = readFileSync(join(process.cwd(), 'CLAUDE.md'), 'utf8');
-    const section = claude.slice(
-      claude.indexOf('### Cookies do site'),
-      claude.indexOf('### Migrations'),
-    );
+    const section = claudeSections().cookies;
     const documented = [...section.matchAll(/^\| `([^`]+)`/gm)].map((m) => m[1]!);
     expect(documented.length).toBeGreaterThanOrEqual(3);
     expect(SITE_COOKIES.map((cookie) => cookie.name.replace('…', '…'))).toEqual(
@@ -246,6 +257,71 @@ describe('lista de cookies', () => {
 
   it('só o do Google depende do login pelo Google', () => {
     expect(SITE_COOKIES.filter((c) => c.only).map((c) => c.name)).toEqual(['ec_next']);
+  });
+});
+
+describe('lista do armazenamento local', () => {
+  /** As linhas de dados da tabela: primeira coluna (o nome) e última (o "Existe"). */
+  const rows = (): { name: string; exists: string }[] =>
+    claudeSections()
+      .localStorage.split('\n')
+      .filter((line) => line.startsWith('| ') && !/^\|[-| ]+\|$/.test(line))
+      .map((line) =>
+        line
+          .slice(1, -1)
+          .split(/ \| /)
+          .map((cell) => cell.trim()),
+      )
+      .filter((cells) => cells[0] !== 'Item')
+      .map((cells) => ({ name: cells[0]!, exists: cells[cells.length - 1]! }));
+
+  it('está de acordo com a tabela "Armazenamento local" do CLAUDE.md (nomes, ordem e "Existe")', () => {
+    const documented = rows();
+    expect(documented.length).toBeGreaterThanOrEqual(3);
+    expect(LOCAL_STORAGE_ITEMS.map((item) => item.name)).toEqual(documented.map((r) => r.name));
+    expect(
+      LOCAL_STORAGE_ITEMS.map((item) => (item.only === 'turnstile' ? 'turnstile' : 'sempre')),
+    ).toEqual(documented.map((r) => (r.exists.includes('Turnstile') ? 'turnstile' : 'sempre')));
+  });
+
+  it('o item do cartão de instalação usa a chave e o prazo de src/content/install.ts', () => {
+    const item = LOCAL_STORAGE_ITEMS.find((i) => i.name.includes(INSTALL_RULES.storageKey))!;
+    expect(item).toBeDefined();
+    expect(item.purpose).toContain(`${INSTALL_RULES.dismissDays} dias`);
+    expect(item.purpose).toContain('nunca é enviada ao servidor');
+  });
+
+  it('só o item do Turnstile depende da verificação anti-robô', () => {
+    expect(LOCAL_STORAGE_ITEMS.filter((i) => i.only).map((i) => i.only)).toEqual(['turnstile']);
+  });
+});
+
+describe('cartão de instalação: texto da política', () => {
+  const privacy = allText(buildPrivacy(legalConfig, OFF));
+
+  it('diz o que é guardado, onde, por quanto tempo e que nunca vai ao servidor', () => {
+    expect(privacy).toContain(INSTALL_RULES.storageKey);
+    for (const piece of [
+      'iPhones e iPads',
+      'Tela de Início',
+      'em quantos dias diferentes você abriu o site',
+      '"Agora não"',
+      '"Já instalei"',
+      `${INSTALL_RULES.dismissDays} dias`,
+      'nunca é enviada ao servidor',
+      'até o navegador limpar os dados do site',
+      'o site não grava essa preferência',
+    ]) {
+      expect(privacy, piece).toContain(piece);
+    }
+  });
+
+  it('o parágrafo fica na seção de cookies e armazenamento, também com os recursos ligados', () => {
+    for (const features of [OFF, ON]) {
+      const section = buildPrivacy(legalConfig, features).sections.find((s) => s.id === 'cookies')!;
+      const text = allText({ title: '', lead: '', sections: [section] });
+      expect(text).toContain(INSTALL_RULES.storageKey);
+    }
   });
 });
 
