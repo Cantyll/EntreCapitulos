@@ -33,7 +33,10 @@ select set_eq(
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'execute')$$,
   array['is_admin', 'is_staff', 'start_book', 'finish_book', 'publish_session', 'unpublish_session',
-        'retract_comment', 'delete_my_account'],
+        'retract_comment', 'delete_my_account',
+        -- Member management (stage 8f): administration only, each one checks is_admin() inside.
+        'set_member_role', 'set_member_suspension', 'admin_delete_member', 'admin_member_contact',
+        'admin_member_export', 'admin_find_member_by_email', 'admin_masked_emails'],
   'the functions executable by authenticated are exactly the expected ones');
 
 -- 3a. Every security definer function pins an empty search_path.
@@ -49,7 +52,9 @@ select set_eq(
   $$select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and p.prosecdef$$,
   array['comments_before_insert', 'comments_flag_links', 'comments_rate_limit', 'comments_sync_approved_count',
-        'handle_new_user', 'is_admin', 'is_staff', 'retract_comment', 'delete_my_account'],
+        'handle_new_user', 'is_admin', 'is_staff', 'retract_comment', 'delete_my_account',
+        'set_member_role', 'set_member_suspension', 'admin_delete_member', 'admin_member_contact',
+        'admin_member_export', 'admin_find_member_by_email', 'admin_masked_emails'],
   'the security definer functions are exactly the expected ones');
 
 -- 4. Write grants of the API roles (anon, authenticated, PUBLIC). "*" = every column. Reads are open by design
@@ -95,6 +100,33 @@ select is(has_column_privilege('authenticated', 'public.profiles', 'role', 'upda
 select is(has_column_privilege('authenticated', 'public.profiles', 'avatar_url', 'update'), false, 'avatar_url is not writable');
 select is(has_column_privilege('authenticated', 'public.comments', 'body', 'update'), false, 'a comment body is not editable');
 select is(has_table_privilege('anon', 'public.comments', 'insert'), false, 'anon cannot insert comments');
+
+-- Member management (stage 8f). The audit and the suspensions are written only by the security definer functions:
+-- the only privilege the API roles have on them is SELECT (the RLS limits it to the administration, and to the
+-- person for their own suspension), and a visitor has none. The suspension is NOT a column of profiles (that
+-- table is readable by everybody).
+select is((select count(*)::int from information_schema.role_table_grants
+            where table_schema = 'public' and table_name in ('member_audit', 'member_suspensions')
+              and grantee in ('anon', 'authenticated', 'PUBLIC') and privilege_type <> 'SELECT'), 0,
+  'the API roles can only SELECT from member_audit and member_suspensions');
+select is((select count(*)::int from information_schema.column_privileges
+            where table_schema = 'public' and table_name in ('member_audit', 'member_suspensions')
+              and grantee in ('anon', 'PUBLIC') and privilege_type = 'SELECT'), 0,
+  'a visitor cannot read member_audit or member_suspensions');
+select is((select count(*)::int from information_schema.columns
+            where table_schema = 'public' and table_name = 'profiles' and column_name like '%suspend%'), 0,
+  'profiles (public) holds no suspension column');
+-- The administration functions are VOLATILE on purpose: PostgREST only accepts POST for volatile functions, so
+-- an e-mail address can never travel in a query string.
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public'
+              and p.proname in ('set_member_role', 'set_member_suspension', 'admin_delete_member', 'admin_member_contact',
+                                'admin_member_export', 'admin_find_member_by_email', 'admin_masked_emails')
+              and p.provolatile <> 'v'), 0, 'the administration functions are volatile (POST only)');
+-- The internal helpers are not reachable through the API.
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.proname in ('mask_email', 'delete_account_cascade')
+              and has_function_privilege('authenticated', p.oid, 'execute')), 0, 'mask_email and delete_account_cascade are internal');
 
 select * from finish();
 rollback;

@@ -153,6 +153,56 @@ export type Database = {
           },
         ];
       };
+      member_audit: {
+        Row: {
+          action: string;
+          actor_id: string;
+          created_at: string;
+          details: NonNullable<Json>;
+          id: string;
+          target_id: string;
+        };
+        Insert: {
+          action: string;
+          actor_id: string;
+          created_at?: string;
+          details?: NonNullable<Json>;
+          id?: string;
+          target_id: string;
+        };
+        Update: {
+          action?: string;
+          actor_id?: string;
+          created_at?: string;
+          details?: NonNullable<Json>;
+          id?: string;
+          target_id?: string;
+        };
+        Relationships: [];
+      };
+      member_suspensions: {
+        Row: {
+          suspended_at: string;
+          user_id: string;
+        };
+        Insert: {
+          suspended_at?: string;
+          user_id: string;
+        };
+        Update: {
+          suspended_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'member_suspensions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: true;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       profiles: {
         Row: {
           approved_comment_count: number;
@@ -371,6 +421,25 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      admin_delete_member: { Args: { p_user_id: string }; Returns: undefined };
+      admin_find_member_by_email: { Args: { p_email: string }; Returns: string };
+      admin_masked_emails: {
+        Args: { p_user_ids: string[] };
+        Returns: {
+          masked_email: string;
+          user_id: string;
+        }[];
+      };
+      admin_member_contact: {
+        Args: { p_user_id: string };
+        Returns: {
+          email: string;
+          last_sign_in_at: string;
+          providers: string[];
+        }[];
+      };
+      admin_member_export: { Args: { p_user_id: string }; Returns: Json };
+      delete_account_cascade: { Args: { p_user_id: string }; Returns: undefined };
       delete_my_account: { Args: Record<PropertyKey, never>; Returns: undefined };
       derive_avatar_url: { Args: { meta: Json }; Returns: string };
       derive_display_name: { Args: { meta: Json }; Returns: string };
@@ -405,6 +474,7 @@ export type Database = {
       };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
+      mask_email: { Args: { p_email: string }; Returns: string };
       publish_session: {
         Args: { p_session_id: string };
         Returns: {
@@ -433,6 +503,14 @@ export type Database = {
         };
       };
       retract_comment: { Args: { p_comment_id: string }; Returns: string };
+      set_member_role: {
+        Args: { p_expected_role?: string; p_role: string; p_user_id: string };
+        Returns: string;
+      };
+      set_member_suspension: {
+        Args: { p_suspended: boolean; p_user_id: string };
+        Returns: boolean;
+      };
       start_book: {
         Args: { p_book_id: string };
         Returns: {
