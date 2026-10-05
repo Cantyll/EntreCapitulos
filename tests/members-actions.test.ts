@@ -228,16 +228,16 @@ describe('changeMemberRole', () => {
     await changeMemberRole(ID, 'member', 'moderator', '');
     expect(logFailure).not.toHaveBeenCalled();
 
-    state.rpc.set_member_role = {
-      error: { code: 'XX000', message: `falha com ${EMAIL} Fulana Silva` },
-    };
+    const dbError = { code: 'XX000', message: `falha com ${EMAIL} Fulana Silva` };
+    state.rpc.set_member_role = { error: dbError };
     await changeMemberRole(ID, 'member', 'moderator', '');
     expect(logFailure).toHaveBeenCalledTimes(1);
-    const [, logged] = logFailure.mock.calls[0]!;
-    // O dublê recebe o objeto de erro inteiro; quem filtra é `logFailure` (só nome e códigos). O rótulo não tem dados.
-    expect(logFailure.mock.calls[0]![0]).toBe('members.role');
-    expect(JSON.stringify(logFailure.mock.calls[0]![0])).not.toContain('Fulana');
-    expect(logged).toBeDefined();
+    const [label, logged] = logFailure.mock.calls[0]!;
+    // O rótulo é fixo e sem dados; o segundo argumento é EXATAMENTE o objeto de erro (nunca `.message`, nem um
+    // texto montado com o e-mail ou o nome): quem filtra o conteúdo é o `logFailure` de verdade (só nome e códigos).
+    expect(label).toBe('members.role');
+    expect(logged).toBe(dbError);
+    expect(typeof logged).not.toBe('string');
   });
 });
 
@@ -386,7 +386,8 @@ describe('searchMembers', () => {
     state.rpc.admin_find_member_by_email = { error: { code: 'XX000', message: `x ${EMAIL}` } };
     await searchMembers(IDLE, form({ q: EMAIL }));
     expect(logFailure).toHaveBeenCalledWith('members.find-by-email', expect.anything());
-    expect(logFailure.mock.calls[0]![0]).not.toContain('@');
+    expect(logFailure.mock.calls[0]![0]).toBe('members.find-by-email');
+    expect(typeof logFailure.mock.calls[0]![1]).not.toBe('string');
   });
 
   it('resposta que não é uuid não vira redirecionamento', async () => {

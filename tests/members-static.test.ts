@@ -57,6 +57,8 @@ describe('download dos dados da pessoa', () => {
     expect(route.indexOf('isSameOrigin(')).toBeGreaterThan(-1);
     expect(route.indexOf('isSameOrigin(')).toBeLessThan(route.indexOf("requireRole('admin')"));
     expect(route.indexOf("requireRole('admin')")).toBeLessThan(route.indexOf('createClient()'));
+    // `indexOf` devolve -1 quando a chamada some, e -1 é menor que qualquer posição: confira que ela existe.
+    expect(route.indexOf('isUuid(id)')).toBeGreaterThan(-1);
     expect(route.indexOf('isUuid(id)')).toBeLessThan(route.indexOf('createClient()'));
   });
 
@@ -330,5 +332,35 @@ describe('controles de membros: foco, rede cortada e log (achados da revisão)',
     const code = component('ExportControl');
     expect(code.match(/router\.refresh\(\)/g)).toHaveLength(2);
     expect(code).toMatch(/disabled=\{cooling\}/);
+  });
+});
+
+describe('log dos arquivos de membros: só o rótulo fixo e o erro capturado (nunca e-mail, nome nem texto)', () => {
+  it('toda chamada de logFailure tem a forma logFailure(<rótulo>, <variável de erro>)', () => {
+    const calls: string[] = [];
+    for (const { path, code } of memberFiles) {
+      for (const match of code.matchAll(/\blogFailure\(([^;]*?)\);/g)) {
+        calls.push(`${path}: ${match[0]}`);
+        const [label, error, ...rest] = match[1]!.split(/,(?![^(]*\))/).map((part) => part.trim());
+        expect(rest, match[0]).toEqual([]);
+        // Rótulo: texto fixo ou o parâmetro `operation` do helper, sem interpolação.
+        expect(label, match[0]).toMatch(/^('[^'$`]*'|operation|label)$/);
+        // Erro: só uma variável (nada de `.message`, texto digitado, nome ou e-mail).
+        expect(error, match[0]).toMatch(/^[A-Za-z_$][\w$]*$/);
+        expect(error, match[0]).not.toMatch(/message|email|name|typed|body/i);
+      }
+    }
+    expect(calls.length).toBeGreaterThan(10);
+  });
+
+  it('os helpers que repassam o rótulo (failFromDb, countOf) só o recebem de literais fixos', () => {
+    const actions = memberFiles.find((file) => file.path.endsWith('membros/actions.ts'))!.code;
+    const fromDb = [...actions.matchAll(/(?<!function )\bfailFromDb\(\s*([^,:]+),/g)];
+    expect(fromDb.length).toBeGreaterThanOrEqual(5);
+    for (const match of fromDb) expect(match[1]!.trim(), match[0]).toMatch(/^'[^'$`]*'$/);
+    const queries = memberFiles.find((file) => file.path.endsWith('members/queries.ts'))!.code;
+    const counts = [...queries.matchAll(/(?<!function )\bcountOf\(\s*([^,:]+),/g)];
+    expect(counts.length).toBeGreaterThanOrEqual(4);
+    for (const match of counts) expect(match[1]!.trim(), match[0]).toMatch(/^'[^'$`]*'$/);
   });
 });
