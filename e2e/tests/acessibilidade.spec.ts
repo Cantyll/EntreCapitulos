@@ -77,6 +77,7 @@ test.describe('acessibilidade (axe, WCAG 2.0 A e AA)', () => {
     '/painel/sessoes',
     '/painel/sessoes/nova',
     '/painel/comentarios',
+    '/painel/membros',
   ]) {
     test(`painel: ${path}`, async ({ openAs }) => {
       test.slow();

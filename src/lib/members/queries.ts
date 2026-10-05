@@ -110,18 +110,25 @@ export async function getMemberList(
   const columns =
     filter === 'suspensos' ? `${LIST_COLUMNS}, member_suspensions!inner(user_id)` : LIST_COLUMNS;
 
-  let query = client.from('profiles').select(columns, { count: 'exact' });
-  if (filter === 'equipe') query = query.in('role', ['admin', 'moderator']);
-  if (filter === 'novos') {
-    const since = new Date(now.getTime() - NEW_MEMBER_DAYS * 86_400_000).toISOString();
-    query = query.gte('created_at', since);
-  }
-  if (search) query = query.ilike('display_name', likePrefix(search));
+  const build = () => {
+    let query = client.from('profiles').select(columns, { count: 'exact' });
+    if (filter === 'equipe') query = query.in('role', ['admin', 'moderator']);
+    if (filter === 'novos') {
+      const since = new Date(now.getTime() - NEW_MEMBER_DAYS * 86_400_000).toISOString();
+      query = query.gte('created_at', since);
+    }
+    if (search) query = query.ilike('display_name', likePrefix(search));
+    return query.order('created_at', { ascending: false }).order('id', { ascending: false });
+  };
 
-  const { data, count, error } = await query
-    .order('created_at', { ascending: false })
-    .order('id', { ascending: false })
-    .range(from, to);
+  let { data, count, error } = await build().range(from, to);
+
+  // Uma página além do fim: o PostgREST recusa (PGRST103, "Requested range not satisfiable") em vez de devolver
+  // uma lista vazia. Pede só a primeira linha para saber o total; a página redireciona para a última.
+  if (error?.code === 'PGRST103') {
+    ({ data, count, error } = await build().range(0, 0));
+    if (!error) return { ok: true, total: count ?? 0, items: [] };
+  }
 
   if (error) {
     if (filter === 'suspensos' && classifyMemberError(error) === 'unavailable') {
@@ -264,7 +271,7 @@ export async function getDeletionImpact(client: Client, id: string): Promise<Del
       'members.impact.replies',
       client
         .from('comments')
-        .select('id, parent:comments!comments_parent_id_fkey!inner(author_id)', COUNT)
+        .select('id, parent:parent_id!inner(author_id)', COUNT)
         .eq('parent.author_id', id)
         .neq('author_id', id),
     ),

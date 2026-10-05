@@ -29,8 +29,8 @@ function providerLabel(provider: string): string {
  * deste componente: não vai para a URL, cookie, `localStorage`, `sessionStorage`, nem para o cache do Next, e não
  * está nos dados que o servidor envia ao abrir a página. Some ao navegar (o componente é desmontado) e também
  * quando a página vai para o histórico (`pagehide`) ou volta dele (`pageshow`), para a cópia restaurada pelo
- * navegador não trazer o e-mail de volta. Cada clique que lê é registrado na auditoria; esconder e mostrar de novo
- * sem sair daqui não consulta (nem registra) outra vez.
+ * navegador não trazer o e-mail de volta. Cada vez que o e-mail é mostrado é uma consulta nova: ela é registrada
+ * na auditoria (esconder e mostrar de novo registra de novo, de propósito).
  */
 export function ContactReveal({ memberId }: { memberId: string }) {
   const router = useRouter();
