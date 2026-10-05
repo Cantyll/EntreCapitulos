@@ -745,124 +745,139 @@ test.describe('cartão de instalação: Safari do iPhone @mobile', () => {
   }
 
   /**
-   * CLS (só o Chromium implementa `layout-shift`): a 2ª visita carrega a página e, depois da hidratação, o cartão
-   * monta no fim do conteúdo. Páginas longas (o rodapé fica fora da tela) e uma página CURTA, em que o rodapé
-   * está na tela e o cartão o empurra para baixo. No e2e todas as páginas públicas são longas (a estante tem 80
-   * livros de teste), então a curta é simulada com um CSS de entrada que limita a altura do conteúdo da página:
-   * o cabeçalho, o rodapé e o cartão são os de verdade.
+   * DESLOCAMENTO DO RODAPÉ (CLS), COMPORTAMENTO ACEITO pela dona do projeto (sem reservar altura). O cartão só é
+   * decidido no navegador (de propósito: sem divergência de hidratação), então o servidor não reserva o espaço dele.
+   * O que fica registrado aqui, medido com o código do cartão atrasado para chegar DEPOIS da primeira pintura:
+   *  - página LONGA (o rodapé fica fora da tela): nenhum deslocamento, zero;
+   *  - página tão CURTA que o rodapé aparece na tela: o cartão empurra o rodapé para baixo, no máximo UMA vez por
+   *    carga, e só o rodapé se mexe (o conteúdo acima do cartão nunca se mexe: ver o teste anterior).
+   * Só o Chromium implementa `layout-shift`. No e2e todas as páginas públicas são longas (a estante tem 80 livros de
+   * teste), então a curta é simulada com um CSS de entrada que limita a altura do conteúdo da página: o cabeçalho, o
+   * rodapé e o cartão são os de verdade. Se um dia o espaço do cartão passar a ser reservado, este teste deve mudar
+   * junto com a decisão registrada no CLAUDE.md.
    */
   const CARD_DELAY = 1500;
-  /**
-   * ACHADO (relatado no PR da 8e): numa página tão curta que o rodapé aparece na tela, o cartão que chega DEPOIS da
-   * primeira pintura empurra o rodapé para baixo (CLS 0,15 medido, só do `footer`). O cartão só é decidido no
-   * navegador (de propósito: sem divergência de hidratação), então o servidor não consegue reservar o espaço dele.
-   * Nas páginas longas o rodapé está fora da tela e o CLS é 0. Fica `fixme` até a dona do projeto decidir o que fazer
-   * (por exemplo, aceitar, ou reservar uma altura mínima no fim do conteúdo no iPhone).
-   */
-  const SHORT_PAGE_SHIFT =
-    'o cartão que chega depois da 1ª pintura empurra o rodapé numa página curta (CLS 0,15 medido)';
-  const CLS_CASES: {
-    label: string;
-    path: string;
-    shorten?: number;
-    max: number;
-    known?: string;
-  }[] = [
-    { label: 'página longa (/estante)', path: '/estante', max: 0.01 },
-    { label: 'home', path: '/', max: 0.01 },
-    { label: '/sobre', path: '/sobre', max: 0.01 },
-    { label: 'a mais curta de verdade (/sessoes)', path: '/sessoes', max: 0.01 },
-    {
-      label: 'página curta simulada (conteúdo de 120px, rodapé na tela)',
-      path: '/sobre',
-      shorten: 120,
-      max: 0.01,
-      known: SHORT_PAGE_SHIFT,
-    },
+  const LONG_PAGES = [
+    { label: 'página longa (/estante)', path: '/estante' },
+    { label: 'home', path: '/' },
+    { label: '/sobre', path: '/sobre' },
+    { label: 'a mais curta de verdade (/sessoes)', path: '/sessoes' },
   ];
-  for (const { label, path, shorten, max, known } of CLS_CASES) {
-    test(`CLS pequeno com o cartão aparecendo na 2ª visita: ${label}`, async ({
+
+  type Shift = {
+    value: number;
+    /** Cada nó que se mexeu, com a posição vertical antes e depois e se ele é o rodapé ou está dentro dele. */
+    moves: { node: string; inFooter: boolean; fromY: number; toY: number }[];
+  };
+
+  /** Abre o `path` na 2ª visita com o código do cartão atrasado e devolve os deslocamentos de layout da carga. */
+  async function measureCardShifts(page: Page, path: string, shorten?: number) {
+    await page.addInitScript((limit) => {
+      const w = window as unknown as { __shifts: Shift[]; __fcp?: number };
+      w.__shifts = [];
+      // O relógio do teste substitui `performance.getEntries*`: a primeira pintura vem de um observador.
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.name === 'first-contentful-paint') w.__fcp = entry.startTime;
+        }
+      }).observe({ type: 'paint', buffered: true });
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries() as unknown as {
+          value: number;
+          hadRecentInput: boolean;
+          sources?: {
+            node?: Node | null;
+            previousRect: DOMRectReadOnly;
+            currentRect: DOMRectReadOnly;
+          }[];
+        }[]) {
+          if (entry.hadRecentInput) continue;
+          w.__shifts.push({
+            value: entry.value,
+            moves: (entry.sources ?? []).map((source) => ({
+              node: (source.node as Element | null)?.nodeName ?? '?',
+              inFooter: !!(source.node as Element | null)?.closest?.('footer'),
+              fromY: Math.round(source.previousRect.y),
+              toY: Math.round(source.currentRect.y),
+            })),
+          });
+        }
+      }).observe({ type: 'layout-shift', buffered: true });
+      if (limit) {
+        // O CSS entra assim que o `<html>` existe, antes da primeira pintura.
+        const add = () => {
+          if (!document.documentElement) return false;
+          const style = document.createElement('style');
+          style.textContent = `main#conteudo > :first-child { max-height: ${limit}px; overflow: hidden; }`;
+          document.documentElement.appendChild(style);
+          return true;
+        };
+        if (!add()) {
+          const observer = new MutationObserver(() => add() && observer.disconnect());
+          observer.observe(document, { childList: true });
+        }
+      }
+    }, shorten ?? 0);
+
+    await visit(page, 0, path);
+    // Rede lenta: o código do cartão chega 1,5 s depois da carga, bem depois da primeira pintura da página.
+    const slow = await delayCardCode(page, CARD_DELAY);
+    await visit(page, 1, path, { quiet: false });
+    // O cartão apareceu de verdade (senão a medida não prova nada).
+    await expect(installCard(page)).toBeVisible();
+    expect(slow.hit, 'o código do cartão não foi carregado sob demanda').toBe(true);
+    // Tempo para qualquer segundo deslocamento aparecer, se houvesse.
+    await page.waitForTimeout(1000);
+    const paint = await page.evaluate(
+      () => (window as unknown as { __fcp?: number }).__fcp ?? null,
+    );
+    expect(paint, 'a página já tinha sido pintada quando o cartão chegou').not.toBeNull();
+    expect(paint!).toBeLessThan(CARD_DELAY);
+    return page.evaluate(() => {
+      const footer = document.querySelector('footer')!.getBoundingClientRect();
+      return {
+        shifts: (window as unknown as { __shifts: Shift[] }).__shifts,
+        pageHeight: document.documentElement.scrollHeight,
+        footerInViewport: footer.top < window.innerHeight,
+      };
+    });
+  }
+
+  for (const { label, path } of LONG_PAGES) {
+    test(`rodapé fora da tela: o cartão aparecendo na 2ª visita não desloca nada (zero): ${label}`, async ({
       page,
     }, testInfo) => {
       test.skip(testInfo.project.name !== 'chromium-desktop', 'só o Chromium mede layout-shift');
-      test.fixme(!!known, known);
-      await page.addInitScript((limit) => {
-        const w = window as unknown as { __cls: number; __clsLog: string[] };
-        w.__cls = 0;
-        w.__clsLog = [];
-        // O relógio do teste substitui `performance.getEntries*`: a primeira pintura vem de um observador.
-        new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            if (entry.name === 'first-contentful-paint') {
-              (window as unknown as { __fcp: number }).__fcp = entry.startTime;
-            }
-          }
-        }).observe({ type: 'paint', buffered: true });
-        new PerformanceObserver((list) => {
-          for (const entry of list.getEntries() as unknown as {
-            value: number;
-            hadRecentInput: boolean;
-            sources?: { node?: Node | null }[];
-          }[]) {
-            if (entry.hadRecentInput) continue;
-            w.__cls += entry.value;
-            w.__clsLog.push(
-              `${entry.value.toFixed(4)} ${(entry.sources ?? [])
-                .map((s) => (s.node as Element | null)?.nodeName ?? '?')
-                .join(',')}`,
-            );
-          }
-        }).observe({ type: 'layout-shift', buffered: true });
-        if (limit) {
-          // O CSS entra assim que o `<html>` existe, antes da primeira pintura.
-          const add = () => {
-            if (!document.documentElement) return false;
-            const style = document.createElement('style');
-            style.textContent = `main#conteudo > :first-child { max-height: ${limit}px; overflow: hidden; }`;
-            document.documentElement.appendChild(style);
-            return true;
-          };
-          if (!add()) {
-            const observer = new MutationObserver(() => add() && observer.disconnect());
-            observer.observe(document, { childList: true });
-          }
-        }
-      }, shorten ?? 0);
-
-      await visit(page, 0, path);
-      // Rede lenta: o código do cartão chega 1,5 s depois da carga, bem depois da primeira pintura da página.
-      const slow = await delayCardCode(page, CARD_DELAY);
-      await visit(page, 1, path, { quiet: false });
-      // O cartão apareceu de verdade (senão o CLS pequeno não prova nada).
-      await expect(installCard(page)).toBeVisible();
-      expect(slow.hit, 'o código do cartão não foi carregado sob demanda').toBe(true);
-      await page.waitForTimeout(800);
-      const paint = await page.evaluate(
-        () => (window as unknown as { __fcp?: number }).__fcp ?? null,
-      );
-      expect(paint, 'a página já tinha sido pintada quando o cartão chegou').not.toBeNull();
-      expect(paint!).toBeLessThan(CARD_DELAY);
-      const result = await page.evaluate(() => {
-        const w = window as unknown as { __cls: number; __clsLog: string[] };
-        const footer = document.querySelector('footer')!.getBoundingClientRect();
-        return {
-          total: w.__cls,
-          log: w.__clsLog,
-          page: document.documentElement.scrollHeight,
-          footerInViewport: footer.top < window.innerHeight,
-        };
-      });
-      if (shorten) {
-        expect(result.footerInViewport, 'a página curta precisa mostrar o rodapé na tela').toBe(
-          true,
-        );
-      }
+      const result = await measureCardShifts(page, path);
       expect(
-        result.total,
-        `${label}: CLS ${result.total.toFixed(4)} ${JSON.stringify(result.log)} (altura ${result.page}px)`,
-      ).toBeLessThan(max);
+        result.footerInViewport,
+        `${label}: o rodapé precisa estar fora da tela (altura ${result.pageHeight}px)`,
+      ).toBe(false);
+      expect(result.shifts, `${label}: deslocamentos de layout`).toEqual([]);
     });
   }
+
+  test('rodapé na tela (página curta): o cartão empurra só o rodapé, uma vez por carga (comportamento aceito)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'só o Chromium mede layout-shift');
+    // Página curta SIMULADA: o conteúdo da página tem 120px e o rodapé aparece na tela.
+    const result = await measureCardShifts(page, '/sobre', 120);
+    expect(result.footerInViewport, 'a página curta precisa mostrar o rodapé na tela').toBe(true);
+
+    // Exatamente um deslocamento nesta carga (o cartão monta uma vez) e só o rodapé, ou algo dentro dele, se mexeu.
+    expect(result.shifts, JSON.stringify(result.shifts)).toHaveLength(1);
+    const [shift] = result.shifts;
+    expect(shift!.value, JSON.stringify(shift)).toBeGreaterThan(0);
+    expect(
+      shift!.moves.every((move) => move.inFooter),
+      JSON.stringify(shift),
+    ).toBe(true);
+    // O rodapé desceu: o cartão ocupou o espaço acima dele.
+    const footer = shift!.moves.find((move) => move.node === 'FOOTER');
+    expect(footer, JSON.stringify(shift)).toBeDefined();
+    expect(footer!.toY, JSON.stringify(shift)).toBeGreaterThan(footer!.fromY);
+  });
 
   // ---- falha de armazenamento ----------------------------------------------------------------------------
   test('armazenamento recusado na leitura: o site funciona, sem cartão, e UM aviso só com o nome do erro', async ({
