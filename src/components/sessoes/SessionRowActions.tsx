@@ -5,12 +5,12 @@ import { useState } from 'react';
 
 import { deleteDraftAction, unpublishSessionAction } from '@/app/painel/sessoes/actions';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/Icon';
 import { IconButton, IconLink } from '@/components/ui/IconButton';
 import { adminSessionHref, sessionHref } from '@/lib/routes';
 import type { SessionListItem } from '@/lib/sessions/queries';
 
-import { ConfirmDialog } from './ConfirmDialog';
 import styles from './sessoes.module.css';
 
 type Dialog = null | 'unpublish' | 'delete';

@@ -11,6 +11,7 @@ import {
   unpublishSessionAction,
 } from '@/app/painel/sessoes/actions';
 import { Button, ButtonLink } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/Icon';
 import {
   autoExcerpt,
@@ -30,7 +31,6 @@ import { adminBookHref, adminSessionsNoticeHref, sessionHref } from '@/lib/route
 import type { SessionSnapshot } from '@/lib/session-editor/snapshot';
 
 import { ChaptersPanel } from './ChaptersPanel';
-import { ConfirmDialog } from './ConfirmDialog';
 import { RichTextEditor } from './editor/RichTextEditor';
 import { NotesPanel } from './NotesPanel';
 import { QuestionsPanel } from './QuestionsPanel';
