@@ -158,6 +158,19 @@ describe('getMemberList', () => {
     expect(logFailure).not.toHaveBeenCalled();
   });
 
+  it('página além do fim: o PostgREST recusa (PGRST103); a lista pede só o total e devolve vazio', async () => {
+    const { client, log } = fakeClient((table, calls) => {
+      if (table !== 'profiles') return {};
+      return has(calls, 'range', 50, 74)
+        ? { error: { code: 'PGRST103', message: 'Requested range not satisfiable' } }
+        : { data: [profileRow(a)], count: 27 };
+    });
+    const result = await getMemberList(client, { filter: 'todos', page: 3, search: '' }, NOW);
+    expect(result).toEqual({ ok: true, total: 27, items: [] });
+    expect(has(log[1]!.calls, 'range', 0, 0)).toBe(true);
+    expect(logFailure).not.toHaveBeenCalled();
+  });
+
   it('erro na leitura dos perfis sobe (a lista falha de forma visível)', async () => {
     const { client } = fakeClient(() => ({ error: { code: '08006' } }));
     await expect(

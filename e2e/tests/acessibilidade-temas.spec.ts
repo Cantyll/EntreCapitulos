@@ -77,6 +77,7 @@ test.describe('contraste de cor sob vários temas', () => {
     '/painel/sessoes',
     '/painel/sessoes/nova',
     '/painel/comentarios',
+    '/painel/membros',
   ];
 
   for (const theme of THEMES) {
@@ -111,6 +112,20 @@ test.describe('contraste de cor sob vários temas', () => {
         await expect(member.getByRole('heading', { name: 'Excluir minha conta' })).toBeVisible();
         await applyTheme(member, theme.tokens);
         await expectContrast(member, `${theme.name} /conta`);
+      });
+
+      test('painel: perfil de membro, com o diálogo aberto', async ({ openAs }) => {
+        test.slow();
+        const person = await createUser({ name: `Tema ${Date.now().toString(36)}` });
+        const { page } = await openAs(await createAdmin());
+        await page.goto(`/painel/membros/${person.id}`);
+        await expect(page.getByRole('heading', { name: 'Cargo', exact: true })).toBeVisible();
+        await applyTheme(page, theme.tokens);
+        await expectContrast(page, `${theme.name} perfil de membro`);
+        await page.getByLabel('Novo cargo').selectOption('admin');
+        await page.getByRole('button', { name: 'Alterar cargo…' }).click();
+        await expect(page.getByRole('dialog')).toBeVisible();
+        await expectContrast(page, `${theme.name} perfil de membro com diálogo`);
       });
 
       for (const path of PANEL) {
