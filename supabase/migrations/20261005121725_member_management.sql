@@ -21,6 +21,9 @@
 --      addition: a person who is not staff and is suspended is refused (`comments_suspended:`).
 --   5. delete_my_account() keeps its checks and messages; the delete itself moved to the shared
 --      internal function delete_account_cascade().
+--   6. comments_sync_approved_count() also fires on DELETE. Deleting an account cascades into other
+--      people's replies under the deleted person's comments; before, the approved counter of those
+--      other people never went down (it drives "3 approved comments = published directly").
 --
 -- Before this migration is applied nothing breaks: the interface of part 2 treats the missing
 -- functions and tables as "database update pending".
@@ -165,6 +168,7 @@ as $$
 declare
   v_uid uuid := (select auth.uid());
   v_current text;
+  v_anonymous boolean;
 begin
   -- (1) quick check, no lock: a non-administrator never waits for the lock.
   if not (select public.is_admin()) then
@@ -212,6 +216,24 @@ begin
      and exists (select 1 from public.member_suspensions s where s.user_id = p_user_id) then
     raise exception 'member_suspended: reactivate the comments before giving a staff role'
       using errcode = 'P0001';
+  end if;
+
+  -- A staff role never goes to an anonymous sign-in: that throwaway session has no e-mail and no way
+  -- back, and is_admin() trusts profiles.role without looking at the claim. Only when the role really
+  -- changes to a staff role (demotions and no-ops never read auth.users). If the database cannot read
+  -- auth.users the guard cannot run and the change goes ahead; the same failure makes every e-mail
+  -- feature answer contact_unavailable:, so it is not silent.
+  if p_role in ('admin', 'moderator') and v_current <> p_role then
+    begin
+      select u.is_anonymous into v_anonymous from auth.users u where u.id = p_user_id;
+    exception
+      when insufficient_privilege then
+        v_anonymous := false;
+    end;
+    if coalesce(v_anonymous, false) then
+      raise exception 'target_anonymous: an anonymous sign-in cannot receive a staff role'
+        using errcode = 'P0001';
+    end if;
   end if;
 
   if v_current = p_role then
@@ -481,8 +503,9 @@ $$;
 -- ---------------------------------------------------------------------------------------------
 -- 8. Finding people: exact e-mail search and masked e-mails for the list
 -- ---------------------------------------------------------------------------------------------
--- Exact match, case-insensitive, trimmed; returns the id only (the page then opens that person).
--- Never a prefix or a pattern, so "%" and "_" mean nothing special here.
+-- Exact match, case-insensitive, trimmed (spaces, tabs and line breaks around it); returns the id only
+-- (the page then opens that person). Never a prefix or a pattern, so "%" and "_" mean nothing special
+-- here. Like the contact data it reads auth.users: a refused read answers contact_unavailable:.
 create function public.admin_find_member_by_email(p_email text)
 returns uuid
 language plpgsql
@@ -492,7 +515,7 @@ set search_path = ''
 as $$
 declare
   v_id uuid;
-  v_email text := lower(btrim(coalesce(p_email, '')));
+  v_email text := lower(btrim(coalesce(p_email, ''), E' \t\r\n'));
 begin
   if not (select public.is_admin()) then
     raise exception 'not_admin: only the administration can search by e-mail' using errcode = '42501';
@@ -502,17 +525,24 @@ begin
     return null;
   end if;
 
-  select u.id into v_id
-    from auth.users u
-    join public.profiles p on p.id = u.id
-   where lower(u.email) = v_email
-   limit 1;
+  begin
+    select u.id into v_id
+      from auth.users u
+      join public.profiles p on p.id = u.id
+     where lower(u.email) = v_email
+     limit 1;
+  exception
+    when insufficient_privilege then
+      raise exception 'contact_unavailable: the database cannot read the account data'
+        using errcode = 'P0001';
+  end;
 
   return v_id;
 end;
 $$;
 
--- The list never carries a full address: at most 100 ids per call, each with the masked address.
+-- The list never carries a full address: at most 100 ids per call, each with the masked address. A
+-- refused read of auth.users answers contact_unavailable: (the list then has no e-mail column).
 create function public.admin_masked_emails(p_user_ids uuid[])
 returns table (user_id uuid, masked_email text)
 language plpgsql
@@ -533,10 +563,16 @@ begin
     raise exception 'too_many: ask for at most 100 members at a time' using errcode = '22023';
   end if;
 
-  return query
-    select u.id, public.mask_email(u.email)
-      from auth.users u
-     where u.id = any (p_user_ids);
+  begin
+    return query
+      select u.id, public.mask_email(u.email)
+        from auth.users u
+       where u.id = any (p_user_ids);
+  exception
+    when insufficient_privilege then
+      raise exception 'contact_unavailable: the database cannot read the account data'
+        using errcode = 'P0001';
+  end;
 end;
 $$;
 
@@ -676,3 +712,59 @@ $$;
 
 revoke all on function public.delete_my_account() from public, anon;
 grant execute on function public.delete_my_account() to authenticated;
+
+-- ---------------------------------------------------------------------------------------------
+-- 11. The approved counter also goes down when a comment row is deleted
+-- ---------------------------------------------------------------------------------------------
+-- Comments are never deleted by clients (removal is logical), but deleting an account cascades into the
+-- person's comments AND into the replies other people wrote under them. Without this the counter of
+-- those other people stayed too high and a newcomer could skip moderation. Same function as in
+-- 20260930184031_initial_schema.sql plus the DELETE branch; the trigger gains "or delete". When the
+-- deleted comment belongs to the account that is being deleted, the profile row is already gone and the
+-- update matches nothing.
+create or replace function public.comments_sync_approved_count()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_delta integer := 0;
+  v_author uuid;
+begin
+  if tg_op = 'INSERT' then
+    v_author := new.author_id;
+    if new.status = 'approved' then
+      v_delta := 1;
+    end if;
+  elsif tg_op = 'DELETE' then
+    v_author := old.author_id;
+    if old.status = 'approved' then
+      v_delta := -1;
+    end if;
+  else
+    v_author := new.author_id;
+    if old.status <> 'approved' and new.status = 'approved' then
+      v_delta := 1;
+    elsif old.status = 'approved' and new.status <> 'approved' then
+      v_delta := -1;
+    end if;
+  end if;
+
+  if v_delta <> 0 then
+    update public.profiles
+       set approved_comment_count = greatest(approved_comment_count + v_delta, 0)
+     where id = v_author;
+  end if;
+
+  return null;
+end;
+$$;
+
+revoke execute on function public.comments_sync_approved_count() from public, anon, authenticated;
+
+drop trigger comments_sync_approved_count on public.comments;
+
+create trigger comments_sync_approved_count
+  after insert or update of status or delete on public.comments
+  for each row execute function public.comments_sync_approved_count();
