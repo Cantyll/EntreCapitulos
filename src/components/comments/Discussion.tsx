@@ -1,11 +1,14 @@
+import Link from 'next/link';
+
 import { Avatar } from '@/components/ui/Avatar';
 import { ButtonLink } from '@/components/ui/Button';
 import { ProgressSelect } from '@/components/public/ProgressSelect';
 import type { CurrentUser } from '@/lib/auth/session';
 import { signInPath } from '@/lib/auth/safe-next';
-import { spoilerChoices, type CommentOrder } from '@/lib/comments';
+import { COMMENT_MESSAGES, spoilerChoices, type CommentOrder } from '@/lib/comments';
 import { toDisplayThread } from '@/lib/comments/display';
 import { loadDiscussionPage } from '@/lib/comments/queries';
+import { isOwnCommentsSuspended } from '@/lib/members/own-suspension';
 import { sessionHref } from '@/lib/routes';
 import { effectiveProgress } from '@/lib/spoiler';
 
@@ -58,7 +61,13 @@ export async function Discussion({
 
   const here = sessionHref(bookSlug, sessionNumber);
   const choices = spoilerChoices(chapterTo, totalChapters);
-  const canComment = commentsOpen && viewer !== null && viewer.nameConfirmed;
+  // Quem está com os comentários suspensos (etapa 8f) vê um aviso no lugar do campo. A equipe nunca é suspensa,
+  // então nem se consulta. Falha na leitura vale como "não suspenso": o banco recusa de qualquer jeito.
+  const suspended =
+    commentsOpen && viewer !== null && viewer.nameConfirmed && viewer.role === 'member'
+      ? await isOwnCommentsSuspended(viewer.id)
+      : false;
+  const canComment = commentsOpen && viewer !== null && viewer.nameConfirmed && !suspended;
   const welcomeHref = `/boas-vindas?next=${encodeURIComponent(here)}`;
 
   return (
@@ -91,6 +100,13 @@ export async function Discussion({
           <ButtonLink href={welcomeHref as never} size="sm">
             Escolher meu nome
           </ButtonLink>
+        </div>
+      ) : suspended ? (
+        <div className={`${styles.card} ${styles.guest}`} data-comments-suspended>
+          <p role="note">
+            {COMMENT_MESSAGES.comments_suspended}{' '}
+            <Link href="/privacidade#quem-controla">Ver o e-mail de contato</Link>
+          </p>
         </div>
       ) : (
         <div className={`${styles.card} ${styles.composer}`}>

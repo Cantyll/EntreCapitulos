@@ -377,6 +377,7 @@ describe('erros do banco', () => {
     ['session_not_published: only', '23514', 'session_not_published'],
     ['comments_closed: not accepting', '23514', 'comments_closed'],
     ['invalid_parent: replies go', '23514', 'invalid_parent'],
+    ['comments_suspended: your comments are suspended', '23514', 'comments_suspended'],
   ])('%s', (message, code, key) => {
     expect(classifyCommentError({ message, code })).toBe(key);
   });

@@ -248,6 +248,7 @@ describe('createComment: resultado', () => {
     ['comments_closed: not accepting', 'comments_closed'],
     ['invalid_parent: replies go', 'invalid_parent'],
     ['rate_limited: too many comments in a short time', 'rate_limited'],
+    ['comments_suspended: your comments are suspended', 'comments_suspended'],
   ])(
     'erro do banco "%s" vira mensagem em pt-BR, sem log e sem invalidar',
     async (message, code) => {

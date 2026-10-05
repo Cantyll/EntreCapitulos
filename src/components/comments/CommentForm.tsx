@@ -146,6 +146,11 @@ export function CommentForm({
           {state.message}
         </p>
       )}
+      {state.status === 'error' && state.code === 'comments_suspended' && (
+        <Link className={styles.formLink} href="/privacidade#quem-controla">
+          Ver o e-mail de contato
+        </Link>
+      )}
       {state.status === 'error' && state.code === 'profile_incomplete' && (
         <Link className={styles.formLink} href={welcomeHref as never}>
           Escolher meu nome
