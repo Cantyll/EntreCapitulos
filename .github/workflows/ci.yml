@@ -59,6 +59,7 @@ jobs:
       # enxerga o erro) e que quem não é administrador nunca espera a trava. O pgTAP roda numa transação só e não
       # consegue provar isso. O script só roda contra o banco local, não usa segredo e restaura tudo ao sair.
       - name: Race test (two administrators changing roles at the same time)
+        timeout-minutes: 5
         run: bash scripts/db/member-role-race.sh
 
       # docs/seguranca.md é gerado do banco: falha se uma migration mudou permissões e o documento não.
