@@ -4,7 +4,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { ButtonLink } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { Logo } from '@/components/ui/Logo';
-import { hasRole, type Role } from '@/lib/auth/roles';
+import { ROLE_LABELS, hasRole, type Role } from '@/lib/auth/roles';
 import { NEW_SESSION_HREF } from '@/lib/navigation';
 
 import { AdminNav } from './AdminNav';
@@ -12,12 +12,6 @@ import styles from './AdminSidebar.module.css';
 
 /** Barra lateral do protótipo, para telas acima de 1020px. */
 type AdminSidebarProps = { pendingComments: number; role: Role; displayName: string };
-
-const ROLE_LABEL: Record<Role, string> = {
-  admin: 'Administração',
-  moderator: 'Moderação',
-  member: 'Membro',
-};
 
 export function AdminSidebar({ pendingComments, role, displayName }: AdminSidebarProps) {
   return (
@@ -43,7 +37,7 @@ export function AdminSidebar({ pendingComments, role, displayName }: AdminSideba
           <Avatar name={displayName} size="sm" />
           <div>
             <b>{displayName}</b>
-            <small>{ROLE_LABEL[role]}</small>
+            <small>{ROLE_LABELS[role]}</small>
           </div>
         </div>
       </div>

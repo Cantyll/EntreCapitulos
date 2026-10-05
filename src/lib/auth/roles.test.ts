@@ -33,11 +33,11 @@ describe('parseRole', () => {
 });
 
 describe('painel por papel', () => {
-  it('a moderadora vê só Comentários', () => {
+  it('a moderação vê só Comentários', () => {
     expect(getAdminNavFor('moderator').map((i) => i.label)).toEqual(['Comentários']);
   });
 
-  it('a administradora vê todos os itens', () => {
+  it('a administração vê todos os itens', () => {
     expect(getAdminNavFor('admin')).toHaveLength(adminNav.length);
   });
 
@@ -66,7 +66,7 @@ describe('painel por papel', () => {
     expect(getAdminNavFor('member')).toEqual([]);
   });
 
-  it('"Nova sessão" só para a administradora', () => {
+  it('"Nova sessão" só para a administração', () => {
     expect(getAdminTabbar('admin').canCreateSession).toBe(true);
     expect(getAdminTabbar('moderator').canCreateSession).toBe(false);
   });

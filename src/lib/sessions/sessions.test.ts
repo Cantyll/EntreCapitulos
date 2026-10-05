@@ -637,7 +637,7 @@ describe('publishSession', () => {
     ],
     [
       { code: '42501', message: 'not_admin: only the administrator can publish a session' },
-      'Só a administradora',
+      'Só a administração',
     ],
     [
       { code: '23514', message: 'chapter_beyond_total: the session goes past' },

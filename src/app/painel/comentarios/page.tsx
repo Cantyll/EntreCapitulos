@@ -6,6 +6,7 @@ import { AdminPage } from '@/components/admin/AdminPage';
 import { InstallGate } from '@/components/install/InstallGate';
 import { ModerationBoard, type BoardItem } from '@/components/moderacao/ModerationBoard';
 import styles from '@/components/moderacao/moderation.module.css';
+import { ROLE_LABELS } from '@/lib/auth/roles';
 import { requireRole } from '@/lib/auth/session';
 import { getModerationPage } from '@/lib/comments/admin-queries';
 import {
@@ -101,7 +102,10 @@ export default async function CommentsAdminPage({
               sempre espera aprovação e chega com o alerta &ldquo;Contém link&rdquo;, mesmo de quem
               já é de confiança.
             </li>
-            <li>Comentários da administradora e das moderadoras são publicados direto.</li>
+            <li>
+              Comentários da {ROLE_LABELS.admin.toLowerCase()} e da{' '}
+              {ROLE_LABELS.moderator.toLowerCase()} são publicados direto.
+            </li>
             <li>
               Ninguém apaga comentário: remover tira do ar e guarda em &ldquo;Removidos&rdquo;.
               Restaurar devolve para &ldquo;Para aprovar&rdquo;.

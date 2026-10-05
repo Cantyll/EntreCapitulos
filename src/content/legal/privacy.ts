@@ -106,7 +106,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
       blocks: [
         {
           type: 'note',
-          text: 'Seu nome de exibição e seus comentários são públicos: qualquer visitante, mesmo sem entrar, consegue ler o seu nome, o texto, a data e até que capítulo você tinha lido. Também é público se a pessoa é autora ou moderadora. Não escreva no comentário nada que você não queira que apareça para todo mundo. Seu e-mail não é público.',
+          text: 'Seu nome de exibição e seus comentários são públicos: qualquer visitante, mesmo sem entrar, consegue ler o seu nome, o texto, a data e até que capítulo você tinha lido. Também é público se a conta é da administração ou da moderação (um selo aparece ao lado do nome). Não escreva no comentário nada que você não queira que apareça para todo mundo. Seu e-mail não é público.',
         },
       ],
     },

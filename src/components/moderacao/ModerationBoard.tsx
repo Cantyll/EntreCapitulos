@@ -15,6 +15,7 @@ import {
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
+import { ROLE_LABELS } from '@/lib/auth/roles';
 import type { ModerationItem } from '@/lib/comments/admin-queries';
 import { spoilerChoices, type ModerationTab } from '@/lib/comments';
 import { sessionHref } from '@/lib/routes';
@@ -29,7 +30,7 @@ type Props = {
   emptyText: string;
 };
 
-const ROLE_BADGE = { admin: 'Autora', moderator: 'Moderadora' } as const;
+const ROLE_BADGE = { admin: ROLE_LABELS.admin, moderator: ROLE_LABELS.moderator } as const;
 
 /**
  * A lista de moderação e o aviso do resultado das ações. Cada ação chama uma Server Action (que confere o

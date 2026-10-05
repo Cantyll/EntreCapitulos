@@ -6,7 +6,7 @@ import { createAdmin, createModerator } from '../support/users';
 /**
  * Navegação do painel (etapa 8b): o menu só tem áreas que existem. Membros, Votações e Configurações
  * não aparecem nem na barra lateral nem em "Mais", mas as rotas continuam atrás do papel de
- * administradora e mostram "Em breve", sem número nem nome.
+ * administração e mostram "Em breve", sem número nem nome.
  */
 const SOON = [
   { path: '/painel/membros', title: 'Membros' },
@@ -64,7 +64,7 @@ test.describe('navegação do painel', () => {
     });
   }
 
-  test('a moderadora continua indo direto para Comentários e não abre as áreas "Em breve"', async ({
+  test('a moderação continua indo direto para Comentários e não abre as áreas "Em breve"', async ({
     openAs,
     guard,
   }) => {

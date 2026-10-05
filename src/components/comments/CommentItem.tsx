@@ -5,6 +5,7 @@ import { useCallback, useId, useRef, useState } from 'react';
 import { useReveal } from '@/components/public/useReveal';
 import { Avatar } from '@/components/ui/Avatar';
 import { Icon } from '@/components/ui/Icon';
+import { ROLE_LABELS } from '@/lib/auth/roles';
 import { isCommentCovered } from '@/lib/comments';
 import type { DisplayComment } from '@/lib/comments/display';
 
@@ -34,7 +35,8 @@ type Props = {
   replyCount?: number;
 };
 
-const ROLE_BADGE = { admin: 'Autora', moderator: 'Moderadora' } as const;
+/** Selo público ao lado do nome: o cargo, com o rótulo neutro (pode haver mais de uma conta em cada cargo). */
+const ROLE_BADGE = { admin: ROLE_LABELS.admin, moderator: ROLE_LABELS.moderator } as const;
 
 /**
  * Um comentário (ou resposta). O texto é SEMPRE texto (`white-space: pre-wrap`, sem HTML e sem link

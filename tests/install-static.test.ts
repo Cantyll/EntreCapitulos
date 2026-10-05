@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 /*
  * Regras do cartão de instalação (etapa 8e) que se garantem lendo o código:
- *  - onde o cartão é montado (site público, Visão geral e Comentários da moderadora) e onde ele nunca aparece;
+ *  - onde o cartão é montado (site público, Visão geral e Comentários da moderação) e onde ele nunca aparece;
  *  - o servidor nunca decide pelo aparelho (nada de user-agent fora do cliente);
  *  - erro e 404 se marcam com <NoInstallCard />;
  *  - o registro de falhas leva só o nome do erro, uma vez por carga de página;
@@ -94,7 +94,7 @@ describe('onde o cartão é montado', () => {
     expect(startsClient(read('src/app/(public)/layout.tsx'))).toBe(false);
   });
 
-  it('o GettingStartedSlot (Visão geral da administradora) usa o InstallGate do painel', () => {
+  it('o GettingStartedSlot (Visão geral da administração) usa o InstallGate do painel', () => {
     const slot = read('src/components/admin/overview/GettingStartedSlot.tsx');
     expect(slot).toMatch(/from '@\/components\/install\/InstallGate'/);
     expect(slot).toContain('<InstallGate surface="panel" />');
@@ -104,7 +104,7 @@ describe('onde o cartão é montado', () => {
     expect(read('src/app/painel/page.tsx')).toContain('<GettingStartedSlot />');
   });
 
-  it('Comentários mostra o cartão do painel só para a moderadora', () => {
+  it('Comentários mostra o cartão do painel só para a moderação', () => {
     const page = read('src/app/painel/comentarios/page.tsx');
     expect(page).toMatch(/from '@\/components\/install\/InstallGate'/);
     expect(page).toMatch(

@@ -1,6 +1,7 @@
 import { ButtonLink } from '@/components/ui/Button';
 import { Container } from '@/components/ui/Container';
 import { Logo } from '@/components/ui/Logo';
+import { ROLE_LABELS } from '@/lib/auth/roles';
 
 import styles from './forbidden.module.css';
 
@@ -13,8 +14,8 @@ export default function Forbidden() {
           <Logo />
           <h1>Você não tem acesso a esta página</h1>
           <p>
-            Esta área é restrita à equipe do clube. Se você acha que deveria ter acesso, fale com a
-            administradora.
+            Esta área é restrita à equipe do clube. Se você acha que deveria ter acesso, fale com a{' '}
+            {ROLE_LABELS.admin.toLowerCase()}.
           </p>
           <div className={styles.actions}>
             <ButtonLink href="/">Voltar para o início</ButtonLink>

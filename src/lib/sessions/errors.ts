@@ -5,7 +5,7 @@
 type DbErrorLike = { code?: string | null; message?: string | null; details?: string | null };
 
 export const SESSION_MESSAGES = {
-  not_admin: 'Só a administradora pode fazer isso.',
+  not_admin: 'Só a administração pode fazer isso.',
   session_not_found: 'Sessão não encontrada. Atualize a página.',
   book_not_found: 'O livro desta sessão não foi encontrado.',
   invalid_state: 'A sessão já mudou de estado em outro lugar. Atualize a página.',

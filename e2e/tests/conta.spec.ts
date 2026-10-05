@@ -128,7 +128,7 @@ test.describe('minha conta', () => {
     await page.goto('/conta');
     const field = page.getByLabel(/Para confirmar, digite/);
     await untilHydrated(field);
-    // A tela ainda mostra o formulário de membro, mas a pessoa virou moderadora no banco.
+    // A tela ainda mostra o formulário de membro, mas a pessoa virou moderação no banco.
     sql(`update public.profiles set role = 'moderator' where id = ${lit(user.id)};`);
     await field.fill('EXCLUIR');
     await page.getByRole('button', { name: 'Excluir minha conta para sempre' }).click();

@@ -71,16 +71,16 @@ As migrations ficam em `supabase/migrations/` e só são aplicadas depois que a 
 
 O workflow roda uma execução por vez e nunca envia dados de exemplo (`seed.sql`): eles existem só para o banco de desenvolvimento.
 
-### 6. Promover a primeira administradora
+### 6. Promover a primeira conta de administração
 
-Ninguém vira administradora ao se cadastrar: nenhum fluxo do site concede esse papel, e o banco recusa qualquer tentativa de mudar o próprio papel. A promoção é feita uma vez, à mão, **depois do primeiro login** da pessoa (assim o perfil dela já existe).
+Ninguém vira administração ao se cadastrar: nenhum fluxo do site concede esse papel, e o banco recusa qualquer tentativa de mudar o próprio papel. A promoção é feita uma vez, à mão, **depois do primeiro login** da pessoa (assim o perfil dela já existe).
 
-No painel do Supabase, abra **SQL Editor**, cole o comando abaixo trocando o e-mail pelo que a administradora usou para entrar, e clique em **Run**:
+No painel do Supabase, abra **SQL Editor**, cole o comando abaixo trocando o e-mail pelo que a pessoa da administração usou para entrar, e clique em **Run**:
 
 ```sql
 update public.profiles
 set role = 'admin'
-where id = (select id from auth.users where email = 'email-da-administradora@exemplo.com');
+where id = (select id from auth.users where email = 'email-da-administracao@exemplo.com');
 ```
 
 Para conferir, rode:
@@ -92,7 +92,7 @@ join auth.users u on u.id = p.id
 where p.role <> 'member';
 ```
 
-Deve aparecer uma linha com `admin`. Para criar uma moderadora, use o mesmo comando com `'moderator'` no lugar de `'admin'`.
+Deve aparecer uma linha com `admin`. Para criar uma conta de moderação, use o mesmo comando com `'moderator'` no lugar de `'admin'`.
 
 ## Configurar o login (Supabase Auth)
 
@@ -169,7 +169,7 @@ Quem entra pela primeira vez passa por **/boas-vindas** ("Como devemos chamar vo
 
 ## Livros e capas
 
-Tudo fica em **Painel → Livros** (só a administradora). A moderadora não vê esta página.
+Tudo fica em **Painel → Livros** (só a administração). A moderação não vê esta página.
 
 ### Cadastrar o primeiro livro
 
@@ -227,13 +227,13 @@ O filtro é uma cortesia de leitura, **não uma trava de segurança**: o texto c
 
 ## Moderar comentários
 
-Tudo isto é feito em **Painel → Comentários**, pelo celular ou pelo computador. A administradora e as moderadoras usam a mesma tela.
+Tudo isto é feito em **Painel → Comentários**, pelo celular ou pelo computador. A administração e a moderação usam a mesma tela.
 
 **Quando um comentário vai para "Para aprovar":**
 
 - É um dos **3 primeiros comentários de uma pessoa**. Depois que 3 forem aprovados, os próximos dela ou dele são publicados direto.
 - Tem um **link** (`http://`, `https://` ou `www.`). Vai para a análise **mesmo que a pessoa já seja de confiança** e chega com o alerta "Contém link". (Endereço sem esses começos, como `exemplo.com`, não é segurado.)
-- Comentários da administradora e das moderadoras são publicados direto.
+- Comentários da administração e da moderação são publicados direto.
 
 **O que você pode fazer:**
 
@@ -245,15 +245,15 @@ Tudo isto é feito em **Painel → Comentários**, pelo celular ou pelo computad
 
 O número ao lado de "Comentários" no menu é o de comentários esperando aprovação.
 
-**Para tornar alguém moderadora**, no **SQL Editor** do Supabase (a pessoa precisa já ter entrado no site uma vez):
+**Para dar a alguém o cargo de moderação**, no **SQL Editor** do Supabase (a pessoa precisa já ter entrado no site uma vez):
 
 ```sql
 update public.profiles
 set role = 'moderator'
-where id = (select id from auth.users where email = 'email-da-moderadora@exemplo.com');
+where id = (select id from auth.users where email = 'email-da-moderacao@exemplo.com');
 ```
 
-Para conferir, use a consulta de conferência de "Promover a primeira administradora" (acima) e veja a linha com `moderator`. Para voltar a ser membro, troque `'moderator'` por `'member'`. A moderadora só abre a tela de Comentários; as outras áreas do painel respondem "sem permissão". Nome e papel que aparecem ao lado dos comentários podem levar até 5 minutos para mudar na página das sessões.
+Para conferir, use a consulta de conferência de "Promover a primeira conta de administração" (acima) e veja a linha com `moderator`. Para voltar a ser membro, troque `'moderator'` por `'member'`. A moderação só abre a tela de Comentários; as outras áreas do painel respondem "sem permissão". Nome e papel que aparecem ao lado dos comentários podem levar até 5 minutos para mudar na página das sessões.
 
 **Ordem para aplicar esta etapa:** faça o merge, aguarde o deploy da Vercel e rode **Actions → Database deploy** (primeiro com **dry run** ligado, depois desligado). A migration `…_comment_link_hold.sql` só acrescenta a regra do link e o alerta "Contém link". **Antes de aplicar, tudo funciona** com as regras que já existiam (comentar, responder, aprovar, spoiler): só os comentários com link não ficam segurados nem alertados. Nada quebra por aplicar a migration depois do deploy.
 
@@ -266,7 +266,7 @@ Para conferir, use a consulta de conferência de "Promover a primeira administra
 - **Trocar o nome** que aparece nos comentários (mesmas regras do primeiro acesso: sem `@`, até 60 caracteres).
 - **Baixar meus dados:** um arquivo JSON com perfil, e-mail, **todos** os comentários da pessoa (aprovados, em análise e removidos) e o progresso de leitura. Só dados dela: nada de outras pessoas, nem as sinalizações internas da equipe.
 - **Excluir um comentário:** "Excluir meu comentário", embaixo de cada comentário dela, inclusive os que ainda estão em análise. O texto é **apagado do banco** e trocado por "[comentário removido pelo autor]"; o comentário sai da página. **As respostas de outras pessoas a ele continuam no banco, mas não aparecem mais**, porque a página só mostra resposta embaixo de um comentário publicado (é a mesma regra de quando a moderação remove o comentário).
-- **Excluir a conta:** exige digitar `EXCLUIR`. Apaga o perfil, o e-mail, **todos os comentários da pessoa e as respostas que outras pessoas escreveram a eles**, e o progresso de leitura. Não tem volta. A pessoa sai da conta e os cookies do site são apagados. **Contas da equipe (administradora e moderadora) não podem ser excluídas por aqui:** o papel precisa ser retirado antes (veja abaixo).
+- **Excluir a conta:** exige digitar `EXCLUIR`. Apaga o perfil, o e-mail, **todos os comentários da pessoa e as respostas que outras pessoas escreveram a eles**, e o progresso de leitura. Não tem volta. A pessoa sai da conta e os cookies do site são apagados. **Contas da equipe (administração e moderação) não podem ser excluídas por aqui:** o papel precisa ser retirado antes (veja abaixo).
 
 **Limites e regras do banco** (migration `…_privacy_abuse_controls.sql`):
 
@@ -417,7 +417,7 @@ No iPhone e no iPad, o site pode ser colocado na Tela de Início e aberto como u
 **Quando e onde aparece**
 
 - **Só no Safari do iPhone e do iPad, fora do app já instalado.** Em outros navegadores do iPhone (Chrome, Firefox, Edge), no Android e no computador não aparece nada. No navegador embutido de aplicativos (Instagram, Facebook…) aparece só a dica "Para instalar como aplicativo, abra este site no Safari."
-- **Site público:** a partir da **2ª visita** (uma visita é um dia diferente; recarregar a página não conta), no fim da página, antes do rodapé. **Painel:** desde o primeiro acesso, na Visão geral (administradora) e no topo de Comentários (moderadora).
+- **Site público:** a partir da **2ª visita** (uma visita é um dia diferente; recarregar a página não conta), no fim da página, antes do rodapé. **Painel:** desde o primeiro acesso, na Visão geral (administração) e no topo de Comentários (moderação).
 - **"Agora não"** esconde o cartão por 60 dias; **"Já instalei"** esconde para sempre (neste aparelho). Ele nunca aparece em `/entrar`, `/boas-vindas`, `/conta/excluida` nem nas páginas de erro e de "página não encontrada".
 - **Para consultar depois:** a página "Sobre o clube" (seção "Leia como aplicativo", para todo mundo) e "Minha conta" (seção "Instalar no iPhone", só no Safari do iPhone) têm os passos e as observações que dependem da versão do iOS (por exemplo, deixar ligada a opção "Abrir como app da Web", se o iOS a mostrar).
 
@@ -513,8 +513,8 @@ Ele só aparece com `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED` igual a `true` (e **fica 
 ## Decisões conhecidas
 
 - **Excluir uma conta apaga os comentários da pessoa e, por consequência, as respostas de outras pessoas a eles.** É uma cascata no banco (`profiles → comments → respostas`), escolhida para que a exclusão da conta realmente remova o que a pessoa escreveu. A própria pessoa exclui a conta em **Minha conta** (contas da equipe não podem); um pedido por e-mail segue o passo a passo de "Privacidade e dados pessoais".
-- **Os perfis são legíveis publicamente.** Qualquer visitante, sem login, consegue ler o nome de exibição e o avatar de todos os membros (e quem é administradora ou moderadora). O e-mail nunca está no perfil, e quem se cadastra sem informar nome aparece como "Leitor". Isso precisa constar da política de privacidade (etapa 7).
+- **Os perfis são legíveis publicamente.** Qualquer visitante, sem login, consegue ler o nome de exibição e o avatar de todos os membros (e quem é da administração ou da moderação). O e-mail nunca está no perfil, e quem se cadastra sem informar nome aparece como "Leitor". Isso precisa constar da política de privacidade (etapa 7).
 - **A moderação não apaga comentários:** ela marca como `removed` (exclusão lógica). Quem apaga é o autor, em "Excluir meu comentário" (o texto é sobrescrito no banco), ou a pessoa ao excluir a conta. Uma sessão que já recebeu comentários não pode ser excluída.
-- **O painel só abre para quem tem papel no banco.** O proxy (`src/proxy.ts`) redireciona quem não está logado, mas a autorização real é `requireRole` (lê `profiles.role`) e o RLS. A moderadora só acessa Comentários; o resto do painel dá 403.
-- **Livros são públicos.** Sessões publicadas como públicas aparecem para todo mundo; as marcadas como "só membros" exigem login. Rascunhos só a administradora vê.
+- **O painel só abre para quem tem papel no banco.** O proxy (`src/proxy.ts`) redireciona quem não está logado, mas a autorização real é `requireRole` (lê `profiles.role`) e o RLS. A moderação só acessa Comentários; o resto do painel dá 403.
+- **Livros são públicos.** Sessões publicadas como públicas aparecem para todo mundo; as marcadas como "só membros" exigem login. Rascunhos só a administração vê.
 - **O total de capítulos de cada livro é uma estimativa.** O banco não trava uma sessão por passar do total.
