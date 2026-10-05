@@ -161,6 +161,34 @@ export const DATA_MAP: readonly DataRow[] = [
     source: 'codigo',
   },
   {
+    data: 'Consulta de e-mail, último acesso e provedor de login pela administração',
+    where: 'Supabase Auth (`auth.users`), lido por funções do banco que só a administração chama',
+    purpose: 'Dar suporte e atender pedidos sobre os dados (LGPD)',
+    basis: 3,
+    retention: 1,
+    sees: 'Só a administração, depois de um clique; cada consulta fica na auditoria. Na lista de membros só aparece o e-mail mascarado.',
+    source: 'codigo',
+  },
+  {
+    data: 'Suspensão de comentários (quem está impedido de comentar)',
+    where: 'Supabase (tabela `member_suspensions`, separada de `profiles`, que é pública)',
+    purpose: 'Impedir que uma conta publique comentários (abuso)',
+    basis: 3,
+    retention: 1,
+    sees: 'A própria pessoa e a administração.',
+    source: 'codigo',
+  },
+  {
+    data: 'Auditoria das ações da administração sobre pessoas',
+    where: 'Supabase (tabela `member_audit`; só funções do banco gravam)',
+    purpose:
+      'Registrar quem mudou um cargo, suspendeu ou reativou comentários, consultou o e-mail, baixou os dados ou excluiu uma conta',
+    basis: 3,
+    retention: null,
+    sees: 'Só a administração. Guarda só identificadores internos (uuid) de quem agiu e de quem sofreu a ação, o tipo da ação, a data e, na mudança de cargo, o cargo de antes e o de depois. Nunca nome, e-mail nem texto. Continua depois da exclusão da conta (ver `audit.retention`).',
+    source: 'codigo',
+  },
+  {
     data: 'Registros técnicos de acesso (IP, data e hora, navegador, páginas)',
     where: 'Registros dos provedores (Vercel, Supabase e outros)',
     purpose: 'Operar e proteger o serviço',
@@ -253,7 +281,8 @@ export const FUTURE_FEATURES: readonly string[] = [
   'Ferramenta de análise de audiência (analytics) ou estatísticas do painel: hoje o site não usa nenhuma.',
   'Notificações push (Web Push): permissão do navegador e identificadores do aparelho.',
   'Service worker e leitura offline: cópias do conteúdo guardadas no aparelho.',
-  'Denúncias de comentários, membros e papéis: novos dados e novos papéis.',
+  'Denúncias de comentários e de membros: novos dados.',
+  'Convites por e-mail, mensagens aos membros, ações em lote, banimento com prazo, anotações da administração sobre pessoas e cargos personalizados (a gestão de membros de hoje não faz nada disso): cada um mudaria o que a política diz.',
   'Edição de comentário pelo autor: hoje o banco não deixa mudar o texto.',
   'Busca no site.',
 ];
@@ -274,6 +303,19 @@ export const LAWYER_QUESTIONS: readonly string[] = [
   'Cópias de segurança (Cloudflare R2): qual a base legal e o mecanismo de transferência internacional para guardar um dump criptografado fora do Brasil, qual prazo de retenção das cópias é adequado (a proposta técnica é 14 dias para as diárias e 56 dias para as semanais) e como conciliar o direito de exclusão com dados que continuam nas cópias até expirarem?',
   'Registro mínimo de exclusões (proposta adiada, não implementada): guardar só o identificador da conta excluída e a data, pelo mesmo prazo das cópias, para reaplicar as exclusões depois de restaurar um backup, é aceitável e como deve constar na política?',
   'Contas da equipe: a exclusão só depois de retirar o papel de equipe, a pedido por e-mail, está de acordo com os direitos do titular?',
+];
+
+/**
+ * Perguntas da segunda rodada (etapa 8f, gestão de membros pela administração): o que a administração passou a
+ * poder fazer e registrar sobre as pessoas. Ficam num grupo à parte para o advogado responder em separado.
+ */
+export const SECOND_ROUND_QUESTIONS: readonly string[] = [
+  'Retenção da auditoria: por quanto tempo guardar as linhas de auditoria das ações da administração sobre pessoas (`audit.retention`, hoje "A DEFINIR")? O que justifica o prazo e como ele se concilia com a eliminação de dados quando a conta é excluída?',
+  'Identificadores de quem agiu e de quem sofreu a ação depois da exclusão: as linhas de auditoria sobre uma conta excluída (e as em que ela era a autora da ação) continuam ligadas só ao identificador interno (uuid), sem nome, e-mail nem texto. Esse identificador ainda é dado pessoal? Ele também aparece nas cópias de segurança, nos registros da Vercel (`/painel/membros/<uuid>`) e nos 8 primeiros caracteres do nome do arquivo de dados. Precisa ser tratado na política e nos prazos?',
+  'A administração vendo e-mail e último acesso: a administração vê o e-mail, o último acesso e o provedor de login de qualquer pessoa, para suporte e pedidos da LGPD, depois de um clique e com registro de cada consulta. Qual a base legal adequada, o texto da política basta, e é preciso limitar quem tem o cargo de administração ou registrar a finalidade de cada consulta?',
+  'Suspensão de comentários: a administração pode suspender os comentários de uma conta, sem motivo, prazo nem aviso além da mensagem no campo de comentário. Isso é uma sanção que exige aviso prévio, motivo, prazo ou canal de contestação? Precisa constar nos Termos de Uso?',
+  'Leitura de e-mail por função do projeto gerenciado: o e-mail é lido da tabela de contas do Supabase (provedor gerenciado) por funções do banco, executadas com o papel dono das funções, e o uso é registrado só pelo nosso próprio registro. Isso muda o papel do Supabase como operador, ou exige alguma cláusula ou aviso? E como descrever o caso em que o projeto gerenciado não permite essa leitura?',
+  'As linhas de auditoria sobre a pessoa (mudança de cargo, suspensão, consulta ao e-mail pela administração) fazem parte do direito de acesso? Devem constar na exportação dela, com ou sem o nome de quem agiu?',
 ];
 
 // --- O documento -------------------------------------------------------------------------------------------
@@ -451,6 +493,16 @@ export function buildReviewDocument(config: LegalData): string {
       '## (h) Perguntas para o advogado',
       '',
       ...LAWYER_QUESTIONS.map((question, index) => `${index + 1}. ${question}`),
+    ].join('\n'),
+  );
+
+  parts.push(
+    [
+      '## (i) Perguntas da segunda rodada',
+      '',
+      'Sobre a gestão de membros pela administração (etapa 8f): o que a administração passou a poder ver, fazer e registrar sobre as pessoas. O texto de `/privacidade` já descreve esses pontos; o prazo de retenção da auditoria (`audit.retention`) está "A DEFINIR".',
+      '',
+      ...SECOND_ROUND_QUESTIONS.map((question, index) => `${index + 1}. ${question}`),
     ].join('\n'),
   );
 

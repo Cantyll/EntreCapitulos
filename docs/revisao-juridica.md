@@ -2,7 +2,7 @@
 
 > **Documento TEMPORÁRIO**, para entregar ao advogado. Pode ser apagado depois da revisão (ver o README). É **gerado** a partir de `src/content/` (`legal-config.ts`, `legal/privacy.ts`, `legal/terms.ts`, `legal/providers.ts` e `legal/cookies.ts`) por `UPDATE_LEGAL_REVIEW=1 npx vitest run src/content/legal/review.test.ts`; um teste falha se ele ficar diferente das fontes. Não edite à mão.
 
-Última atualização dos textos: 4 de outubro de 2026. Os textos são **RASCUNHO** (`legalReviewed` = `false`).
+Última atualização dos textos: 5 de outubro de 2026. Os textos são **RASCUNHO** (`legalReviewed` = `false`).
 
 Cada fato abaixo vem marcado com a origem: **do código**, **informado pelo dono do site**, **não verificado**.
 
@@ -20,16 +20,19 @@ A base legal e a retenção de cada linha apontam para os itens de `legalBases` 
 
 | Dado | Onde é guardado | Finalidade | Base legal proposta | Retenção proposta | Quem vê | Existe | Origem do fato |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| E-mail | Supabase Auth (tabela `auth.users`) | Entrar na conta, enviar o código de acesso e responder pedidos | item 1 da lista de bases: (art. 7º, V, da LGPD) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados. | A própria pessoa e quem administra o Supabase. Não é público. | sempre | do código |
-| Nome de exibição | Supabase (tabela `profiles`) | Mostrar quem comentou | item 2 da lista de bases: (art. 7º, V) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados. | Qualquer visitante (público). | sempre | do código |
-| Nome, e-mail e foto vindos do Google | Supabase (nome inicial e endereço da foto em `profiles`; e-mail em `auth.users`) | Criar a conta de quem escolhe entrar com o Google | item 1 da lista de bases: (art. 7º, V, da LGPD) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados. | O nome é público. O endereço da foto é legível publicamente pela API (a interface mostra só as iniciais). O e-mail não é público. | só com o login do Google ativo | do código |
-| Papel (membro, moderação ou administração) | Supabase (`profiles.role`) | Distinguir a equipe e liberar a moderação | item 3 da lista de bases: (art. 7º, IX) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados. | Qualquer visitante (aparece como selo "Administração" ou "Moderação"). | sempre | do código |
+| E-mail | Supabase Auth (tabela `auth.users`) | Entrar na conta, enviar o código de acesso e responder pedidos | item 1 da lista de bases: (art. 7º, V, da LGPD) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados; a administração também pode excluir uma conta (por abuso ou a pedido da pessoa), com o mesmo efeito. | A própria pessoa e quem administra o Supabase. Não é público. | sempre | do código |
+| Nome de exibição | Supabase (tabela `profiles`) | Mostrar quem comentou | item 2 da lista de bases: (art. 7º, V) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados; a administração também pode excluir uma conta (por abuso ou a pedido da pessoa), com o mesmo efeito. | Qualquer visitante (público). | sempre | do código |
+| Nome, e-mail e foto vindos do Google | Supabase (nome inicial e endereço da foto em `profiles`; e-mail em `auth.users`) | Criar a conta de quem escolhe entrar com o Google | item 1 da lista de bases: (art. 7º, V, da LGPD) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados; a administração também pode excluir uma conta (por abuso ou a pedido da pessoa), com o mesmo efeito. | O nome é público. O endereço da foto é legível publicamente pela API (a interface mostra só as iniciais). O e-mail não é público. | só com o login do Google ativo | do código |
+| Papel (membro, moderação ou administração) | Supabase (`profiles.role`) | Distinguir a equipe e liberar a moderação | item 3 da lista de bases: (art. 7º, IX) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados; a administração também pode excluir uma conta (por abuso ou a pedido da pessoa), com o mesmo efeito. | Qualquer visitante (aparece como selo "Administração" ou "Moderação"). | sempre | do código |
 | Comentários e respostas (texto, data, estado de moderação) | Supabase (tabela `comments`) | Exibir e moderar a conversa | item 2 da lista de bases: (art. 7º, V) | Comentários: enquanto a conta existir ou até você excluir o comentário. Ao excluir, o texto é substituído por um aviso e o original deixa de ser guardado. Comentários removidos pela moderação ficam guardados, sem exibição pública, até a exclusão da conta de quem os escreveu ou até você pedir, pelo e-mail de contato, que o texto seja apagado antes. | Aprovados: qualquer visitante (ou só membros, em sessão "só para membros"). Em análise: o autor e a equipe. Removidos: o autor e a equipe. | sempre | do código |
 | Capítulo lido (no momento do comentário) e aviso de spoiler | Supabase (`comments.read_up_to` e `comments.spoiler_up_to`) | Mostrar até onde a pessoa tinha lido e cobrir spoiler | item 2 da lista de bases: (art. 7º, V) | Comentários: enquanto a conta existir ou até você excluir o comentário. Ao excluir, o texto é substituído por um aviso e o original deixa de ser guardado. Comentários removidos pela moderação ficam guardados, sem exibição pública, até a exclusão da conta de quem os escreveu ou até você pedir, pelo e-mail de contato, que o texto seja apagado antes. | Qualquer visitante, junto do comentário. | sempre | do código |
 | Alerta interno "Contém link" | Supabase (tabela `comment_flags`) | Ajudar a moderação a analisar comentários com link | item 3 da lista de bases: (art. 7º, IX) | Comentários: enquanto a conta existir ou até você excluir o comentário. Ao excluir, o texto é substituído por um aviso e o original deixa de ser guardado. Comentários removidos pela moderação ficam guardados, sem exibição pública, até a exclusão da conta de quem os escreveu ou até você pedir, pelo e-mail de contato, que o texto seja apagado antes. | Só a equipe. | sempre | do código |
 | Progresso de leitura (com conta) | Supabase (tabela `reading_progress`) | Guardar até que capítulo a pessoa leu e esconder spoilers | item 2 da lista de bases: (art. 7º, V) | Progresso de leitura: enquanto a conta existir. Para quem não tem conta, por até 1 ano no próprio navegador (cookie). | Só a própria pessoa. | sempre | do código |
 | Progresso de leitura (sem conta) | Cookie `ec_progress` no navegador | O mesmo, para quem não tem conta | item 2 da lista de bases: (art. 7º, V) | Progresso de leitura: enquanto a conta existir. Para quem não tem conta, por até 1 ano no próprio navegador (cookie). | Só o navegador da pessoa (o servidor lê o cookie para esconder os spoilers). | sempre | do código |
-| Sessão de login | Cookies `sb-…-auth-token` e as tabelas de sessão do Supabase Auth | Manter a pessoa conectada | item 1 da lista de bases: (art. 7º, V, da LGPD) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados. | A própria pessoa e quem administra o Supabase. | sempre | do código |
+| Sessão de login | Cookies `sb-…-auth-token` e as tabelas de sessão do Supabase Auth | Manter a pessoa conectada | item 1 da lista de bases: (art. 7º, V, da LGPD) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados; a administração também pode excluir uma conta (por abuso ou a pedido da pessoa), com o mesmo efeito. | A própria pessoa e quem administra o Supabase. | sempre | do código |
+| Consulta de e-mail, último acesso e provedor de login pela administração | Supabase Auth (`auth.users`), lido por funções do banco que só a administração chama | Dar suporte e atender pedidos sobre os dados (LGPD) | item 3 da lista de bases: (art. 7º, IX) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados; a administração também pode excluir uma conta (por abuso ou a pedido da pessoa), com o mesmo efeito. | Só a administração, depois de um clique; cada consulta fica na auditoria. Na lista de membros só aparece o e-mail mascarado. | sempre | do código |
+| Suspensão de comentários (quem está impedido de comentar) | Supabase (tabela `member_suspensions`, separada de `profiles`, que é pública) | Impedir que uma conta publique comentários (abuso) | item 3 da lista de bases: (art. 7º, IX) | Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados; a administração também pode excluir uma conta (por abuso ou a pedido da pessoa), com o mesmo efeito. | A própria pessoa e a administração. | sempre | do código |
+| Auditoria das ações da administração sobre pessoas | Supabase (tabela `member_audit`; só funções do banco gravam) | Registrar quem mudou um cargo, suspendeu ou reativou comentários, consultou o e-mail, baixou os dados ou excluiu uma conta | item 3 da lista de bases: (art. 7º, IX) | sem item específico (a definir pelo advogado) | Só a administração. Guarda só identificadores internos (uuid) de quem agiu e de quem sofreu a ação, o tipo da ação, a data e, na mudança de cargo, o cargo de antes e o de depois. Nunca nome, e-mail nem texto. Continua depois da exclusão da conta (ver `audit.retention`). | sempre | do código |
 | Registros técnicos de acesso (IP, data e hora, navegador, páginas) | Registros dos provedores (Vercel, Supabase e outros) | Operar e proteger o serviço | item 3 da lista de bases: (art. 7º, IX) | Registros técnicos e de segurança: mantidos pelos provedores por períodos definidos por eles, em regra curtos, e pelo prazo que a lei exigir. | Os provedores e quem administra as contas deles. | sempre | não verificado |
 | Verificação anti-robô (dados do navegador enviados à Cloudflare) | Cloudflare Turnstile (o site não guarda estes dados) | Confirmar que o pedido de código vem de uma pessoa | item 3 da lista de bases: (art. 7º, IX) | sem item específico (a definir pelo advogado) | A Cloudflare. | só com o Turnstile ativo | não verificado |
 | Pedidos de privacidade enviados por e-mail | Caixa de e-mail dos controladores | Atender os pedidos e comprovar o atendimento | item 4 da lista de bases: (art. 7º, II) e (art. 7º, VI) | Pedidos de privacidade enviados por e-mail: pelo tempo necessário para atender e comprovar o atendimento. | Os controladores. | sempre | informado pelo dono do site |
@@ -88,6 +91,9 @@ O clube é destinado a pessoas com 16 anos ou mais. O site não verifica a idade
 - Comentários e respostas: o texto, a data, o estado de moderação (em análise, publicado ou removido), o aviso de spoiler, se houver, e até que capítulo você tinha lido quando comentou. Nome, texto e esse capítulo são públicos.
 - Alertas de moderação: quando um comentário tem um link, a equipe vê um alerta interno ("Contém link"). Só a equipe vê.
 - Progresso de leitura: até que capítulo você leu em cada livro. Com conta, fica guardado no banco de dados; sem conta, fica num cookie do seu navegador.
+- Consulta de contato pela administração: a administração do clube pode ver o seu e-mail, a data do seu último acesso e como você entra (código por e-mail ou Google), só para dar suporte e atender pedidos sobre os seus dados. Cada consulta fica registrada.
+- Situação dos comentários: a administração pode suspender a publicação de comentários de uma conta. Essa informação só a própria pessoa e a administração veem.
+- Registro das ações da administração (auditoria): quando a administração muda um cargo, suspende ou reativa comentários, consulta o e-mail, baixa os dados ou exclui uma conta, fica registrado quem fez, em qual conta, o quê e quando. O registro não guarda nome, e-mail nem texto: só os identificadores internos das contas e, na mudança de cargo, o cargo de antes e o de depois. Só a administração o vê.
 - Registros técnicos: os provedores de hospedagem e de banco de dados podem registrar dados técnicos de acesso, como endereço IP, data e hora, tipo de navegador e páginas acessadas, para operar e proteger o serviço. O site não usa ferramentas de análise de audiência nem de publicidade.
 - Quando a verificação anti-robô (Cloudflare Turnstile) estiver ativa, ela é usada na tela de entrada para confirmar que o envio vem de uma pessoa. Ela recebe dados do seu navegador; os dados exatos são definidos pela Cloudflare.
 
@@ -102,6 +108,7 @@ O clube é destinado a pessoas com 16 anos ou mais. O site não verifica a idade
 - Publicar, moderar e exibir comentários e respostas.
 - Guardar até onde você leu, para a próxima visita.
 - Proteger o site contra abuso e spam (limite de comentários por minuto e por hora, análise de comentários com link e, quando ativa, a verificação anti-robô no envio do código).
+- Dar suporte, atender os pedidos sobre os dados e proteger a comunidade: a administração pode ver o e-mail de uma conta, suspender os comentários dela ou excluí-la, e registra essas ações.
 - Cumprir obrigações legais e exercer direitos em eventual disputa.
 
 #### 5. Bases legais
@@ -146,7 +153,7 @@ Transferência internacional das cópias de segurança: A DEFINIR. Este ponto de
 
 Por quanto tempo guardamos cada tipo de dado:
 
-- Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados.
+- Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados; a administração também pode excluir uma conta (por abuso ou a pedido da pessoa), com o mesmo efeito.
 - Comentários: enquanto a conta existir ou até você excluir o comentário. Ao excluir, o texto é substituído por um aviso e o original deixa de ser guardado. Comentários removidos pela moderação ficam guardados, sem exibição pública, até a exclusão da conta de quem os escreveu ou até você pedir, pelo e-mail de contato, que o texto seja apagado antes.
 - Progresso de leitura: enquanto a conta existir. Para quem não tem conta, por até 1 ano no próprio navegador (cookie).
 - Registros técnicos e de segurança: mantidos pelos provedores por períodos definidos por eles, em regra curtos, e pelo prazo que a lei exigir.
@@ -165,6 +172,10 @@ Você pode excluir seus comentários que estejam visíveis ou em análise, quand
 
 Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe. Peça pelo e-mail de contato.
 
+O registro das ações da administração guarda só os identificadores internos das contas. Quando uma conta é excluída, as linhas sobre ela (e as em que ela era a autora da ação) continuam, ligadas só a esse identificador, que já não corresponde a nenhum perfil, sem nome, e-mail nem texto.
+
+Por quanto tempo guardamos o registro das ações da administração: A DEFINIR. Este ponto depende de análise jurídica.
+
 #### 8. Seus direitos (LGPD, art. 18)
 
 A LGPD garante que você peça, a qualquer momento: confirmação de que tratamos seus dados; acesso aos dados; correção de dados incompletos, inexatos ou desatualizados; anonimização, bloqueio ou eliminação de dados desnecessários ou tratados fora da lei; portabilidade; eliminação dos dados tratados com o seu consentimento; informação sobre com quem compartilhamos os dados; informação sobre a possibilidade de não dar consentimento e suas consequências; e a revogação do consentimento.
@@ -175,6 +186,7 @@ Como exercer, na prática:
 - Baixar uma cópia dos seus dados: em Minha conta, "Baixar meus dados" (um arquivo com o seu perfil, e-mail, todos os seus comentários e o seu progresso).
 - Excluir um comentário que esteja visível ou em análise: "Excluir meu comentário", embaixo dele. Para um comentário removido pela moderação, peça pelo e-mail de contato.
 - Excluir a sua conta: em Minha conta, "Excluir minha conta". Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe. Peça pelo e-mail de contato.
+- Pedir uma cópia dos seus dados ou a exclusão da conta pelo e-mail de contato: a administração confirma que o pedido vem do e-mail cadastrado na conta e atende pelo painel, com a mesma cópia e a mesma exclusão de "Minha conta". Cada uma dessas ações fica registrada.
 - Qualquer outro pedido (por exemplo, confirmar o tratamento, corrigir algo que você não consegue editar ou pedir informações): escreva para Felipe.golinus@gmail.com, a partir do e-mail cadastrado na conta.
 
 Prazo para responder aos pedidos:
@@ -203,7 +215,7 @@ Quando a verificação de segurança está ativa, o site carrega scripts da Clou
 
 #### 10. Mudanças nesta política
 
-Podemos atualizar esta política. A data da última atualização é 4 de outubro de 2026.
+Podemos atualizar esta política. A data da última atualização é 5 de outubro de 2026.
 
 ### Termos de Uso
 
@@ -256,7 +268,7 @@ O tratamento dos seus dados pessoais está descrito na Política de Privacidade.
 
 #### 8. Mudanças nestes termos
 
-Podemos atualizar estes termos. A data da última atualização é 4 de outubro de 2026.
+Podemos atualizar estes termos. A data da última atualização é 5 de outubro de 2026.
 
 #### 9. Contato
 
@@ -276,7 +288,7 @@ Cada campo preenchido tem o comentário `// PROPOSTA: validar com advogado` em `
 - `retention`
 - `requestDeadline`
 
-**Ainda "A DEFINIR":** `backups.internationalTransfer`, `backups.retention`
+**Ainda "A DEFINIR":** `backups.internationalTransfer`, `backups.retention`, `audit.retention`
 
 **Revisão profissional (`legalReviewed`):** `false`. Enquanto for `false`, as páginas mostram "Rascunho em revisão" e ficam com `noindex`.
 
@@ -289,7 +301,8 @@ Nenhuma destas existe hoje (do código).
 - Ferramenta de análise de audiência (analytics) ou estatísticas do painel: hoje o site não usa nenhuma.
 - Notificações push (Web Push): permissão do navegador e identificadores do aparelho.
 - Service worker e leitura offline: cópias do conteúdo guardadas no aparelho.
-- Denúncias de comentários, membros e papéis: novos dados e novos papéis.
+- Denúncias de comentários e de membros: novos dados.
+- Convites por e-mail, mensagens aos membros, ações em lote, banimento com prazo, anotações da administração sobre pessoas e cargos personalizados (a gestão de membros de hoje não faz nada disso): cada um mudaria o que a política diz.
 - Edição de comentário pelo autor: hoje o banco não deixa mudar o texto.
 - Busca no site.
 
@@ -309,3 +322,14 @@ Nenhuma destas existe hoje (do código).
 12. Cópias de segurança (Cloudflare R2): qual a base legal e o mecanismo de transferência internacional para guardar um dump criptografado fora do Brasil, qual prazo de retenção das cópias é adequado (a proposta técnica é 14 dias para as diárias e 56 dias para as semanais) e como conciliar o direito de exclusão com dados que continuam nas cópias até expirarem?
 13. Registro mínimo de exclusões (proposta adiada, não implementada): guardar só o identificador da conta excluída e a data, pelo mesmo prazo das cópias, para reaplicar as exclusões depois de restaurar um backup, é aceitável e como deve constar na política?
 14. Contas da equipe: a exclusão só depois de retirar o papel de equipe, a pedido por e-mail, está de acordo com os direitos do titular?
+
+## (i) Perguntas da segunda rodada
+
+Sobre a gestão de membros pela administração (etapa 8f): o que a administração passou a poder ver, fazer e registrar sobre as pessoas. O texto de `/privacidade` já descreve esses pontos; o prazo de retenção da auditoria (`audit.retention`) está "A DEFINIR".
+
+1. Retenção da auditoria: por quanto tempo guardar as linhas de auditoria das ações da administração sobre pessoas (`audit.retention`, hoje "A DEFINIR")? O que justifica o prazo e como ele se concilia com a eliminação de dados quando a conta é excluída?
+2. Identificadores de quem agiu e de quem sofreu a ação depois da exclusão: as linhas de auditoria sobre uma conta excluída (e as em que ela era a autora da ação) continuam ligadas só ao identificador interno (uuid), sem nome, e-mail nem texto. Esse identificador ainda é dado pessoal? Ele também aparece nas cópias de segurança, nos registros da Vercel (`/painel/membros/<uuid>`) e nos 8 primeiros caracteres do nome do arquivo de dados. Precisa ser tratado na política e nos prazos?
+3. A administração vendo e-mail e último acesso: a administração vê o e-mail, o último acesso e o provedor de login de qualquer pessoa, para suporte e pedidos da LGPD, depois de um clique e com registro de cada consulta. Qual a base legal adequada, o texto da política basta, e é preciso limitar quem tem o cargo de administração ou registrar a finalidade de cada consulta?
+4. Suspensão de comentários: a administração pode suspender os comentários de uma conta, sem motivo, prazo nem aviso além da mensagem no campo de comentário. Isso é uma sanção que exige aviso prévio, motivo, prazo ou canal de contestação? Precisa constar nos Termos de Uso?
+5. Leitura de e-mail por função do projeto gerenciado: o e-mail é lido da tabela de contas do Supabase (provedor gerenciado) por funções do banco, executadas com o papel dono das funções, e o uso é registrado só pelo nosso próprio registro. Isso muda o papel do Supabase como operador, ou exige alguma cláusula ou aviso? E como descrever o caso em que o projeto gerenciado não permite essa leitura?
+6. As linhas de auditoria sobre a pessoa (mudança de cargo, suspensão, consulta ao e-mail pela administração) fazem parte do direito de acesso? Devem constar na exportação dela, com ou sem o nome de quem agiu?

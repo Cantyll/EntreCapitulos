@@ -73,12 +73,14 @@ describe('legalConfig', () => {
     expect(Array.isArray(pending)).toBe(true);
   });
 
-  it('hoje as pendências são as cópias de segurança (transferência e retenção) e a revisão profissional', () => {
+  it('hoje as pendências são as cópias de segurança, a retenção da auditoria e a revisão profissional', () => {
     expect(pendingFields(legalConfig).sort()).toEqual([
+      'audit.retention',
       'backups.internationalTransfer',
       'backups.retention',
     ]);
     expect(pendingItems(legalConfig).sort()).toEqual([
+      'audit.retention',
       'backups.internationalTransfer',
       'backups.retention',
       'legalReviewed',

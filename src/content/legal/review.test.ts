@@ -12,6 +12,7 @@ import {
   FUTURE_FEATURES,
   LAWYER_QUESTIONS,
   REVIEW_FEATURES,
+  SECOND_ROUND_QUESTIONS,
   buildReviewDocument,
 } from './review';
 import { buildTerms } from './terms';
@@ -68,7 +69,7 @@ describe('docs/revisao-juridica.md (documento temporário para o advogado)', () 
       expect(generated, id).toContain(region);
     }
     expect(generated).toContain(
-      'Ainda "A DEFINIR":** `backups.internationalTransfer`, `backups.retention`',
+      'Ainda "A DEFINIR":** `backups.internationalTransfer`, `backups.retention`, `audit.retention`',
     );
     expect(generated).toContain('(`legalReviewed`):** `false`');
   });
@@ -132,5 +133,42 @@ describe('docs/revisao-juridica.md (documento temporário para o advogado)', () 
     expect(generated.toLowerCase()).not.toMatch(
       /n[ãa]o saem do brasil|n[ãa]o h[áa] transfer[êe]ncia internacional/,
     );
+  });
+
+  it('a seção (i) "Perguntas da segunda rodada" traz as seis perguntas sobre a gestão de membros', () => {
+    expect(SECOND_ROUND_QUESTIONS).toHaveLength(6);
+    expect(generated).toContain('## (i) Perguntas da segunda rodada');
+    const section = generated.slice(generated.indexOf('## (i) Perguntas da segunda rodada'));
+    SECOND_ROUND_QUESTIONS.forEach((question, index) => {
+      expect(section).toContain(`${index + 1}. ${question}`);
+    });
+    for (const topic of [
+      'Retenção da auditoria',
+      'Identificadores de quem agiu e de quem sofreu a ação depois da exclusão',
+      'A administração vendo e-mail e último acesso',
+      'Suspensão de comentários',
+      'Leitura de e-mail por função do projeto gerenciado',
+    ]) {
+      expect(section, topic).toContain(topic);
+    }
+    // A sexta, exatamente como pedida.
+    expect(section).toContain(
+      '6. As linhas de auditoria sobre a pessoa (mudança de cargo, suspensão, consulta ao e-mail pela administração) fazem parte do direito de acesso? Devem constar na exportação dela, com ou sem o nome de quem agiu?',
+    );
+    // A pergunta do rodapé do arquivo é a última seção: a (i) vem depois da (h).
+    expect(generated.indexOf('## (h) Perguntas para o advogado')).toBeLessThan(
+      generated.indexOf('## (i) Perguntas da segunda rodada'),
+    );
+  });
+
+  it('o mapa de dados cobre o que a administração vê, a suspensão e a auditoria', () => {
+    const names = DATA_MAP.map((item) => item.data);
+    expect(names).toContain(
+      'Consulta de e-mail, último acesso e provedor de login pela administração',
+    );
+    expect(names).toContain('Suspensão de comentários (quem está impedido de comentar)');
+    expect(names).toContain('Auditoria das ações da administração sobre pessoas');
+    expect(generated).toContain('Selo "Administração" ou "Moderação"'.replace('Selo', 'selo'));
+    expect(generated).not.toMatch(/moderadora ou administradora|selo "Autora"/);
   });
 });

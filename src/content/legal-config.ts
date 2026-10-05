@@ -47,6 +47,10 @@ export type LegalData = {
     internationalTransfer: string;
     retention: string;
   };
+  /** Registro das ações da administração sobre pessoas (etapa 8f): só identificadores internos, cargos e o tipo da ação. */
+  audit: {
+    retention: string;
+  };
 };
 
 /** Texto de um campo: uma frase ou uma lista de itens. */
@@ -62,7 +66,7 @@ export const legalConfig = {
   privacyContactEmail: 'Felipe.golinus@gmail.com',
   minimumAge: 16,
   /** Data da última atualização dos textos. */
-  lastUpdated: '4 de outubro de 2026',
+  lastUpdated: '5 de outubro de 2026',
 
   /** Região onde cada provedor roda a parte usada pelo site. */
   regions: {
@@ -94,7 +98,7 @@ export const legalConfig = {
 
   // PROPOSTA: validar com advogado
   retention: [
-    'Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados.',
+    'Conta e perfil (e-mail e nome de exibição): enquanto a conta existir. Ao excluir a conta em "Minha conta", esses dados são apagados; a administração também pode excluir uma conta (por abuso ou a pedido da pessoa), com o mesmo efeito.',
     'Comentários: enquanto a conta existir ou até você excluir o comentário. Ao excluir, o texto é substituído por um aviso e o original deixa de ser guardado. Comentários removidos pela moderação ficam guardados, sem exibição pública, até a exclusão da conta de quem os escreveu ou até você pedir, pelo e-mail de contato, que o texto seja apagado antes.',
     'Progresso de leitura: enquanto a conta existir. Para quem não tem conta, por até 1 ano no próprio navegador (cookie).',
     'Registros técnicos e de segurança: mantidos pelos provedores por períodos definidos por eles, em regra curtos, e pelo prazo que a lei exigir.',
@@ -113,6 +117,15 @@ export const legalConfig = {
    */
   backups: {
     internationalTransfer: A_DEFINIR,
+    retention: A_DEFINIR,
+  },
+
+  /**
+   * Auditoria das ações da administração (etapa 8f): mudança de cargo, suspensão, consulta de e-mail, cópia dos
+   * dados e exclusão de conta. O registro guarda só os identificadores internos (uuid) de quem agiu e de quem
+   * sofreu a ação, o tipo da ação e a data; nunca nome, e-mail nem texto. O prazo depende do advogado.
+   */
+  audit: {
     retention: A_DEFINIR,
   },
 } as const satisfies LegalData;

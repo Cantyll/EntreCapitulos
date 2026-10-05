@@ -73,7 +73,7 @@ O workflow roda uma execução por vez e nunca envia dados de exemplo (`seed.sql
 
 ### 6. Promover a primeira conta de administração
 
-Ninguém vira administração ao se cadastrar: nenhum fluxo do site concede esse papel, e o banco recusa qualquer tentativa de mudar o próprio papel. A promoção é feita uma vez, à mão, **depois do primeiro login** da pessoa (assim o perfil dela já existe).
+Ninguém vira administração ao se cadastrar: nenhum fluxo do site concede esse papel, e o banco recusa qualquer tentativa de mudar o próprio papel. **Só a primeira conta de administração precisa do SQL**, porque ainda não existe ninguém para usar o painel; todas as outras mudanças de cargo se fazem em **Painel → Membros** (veja "Membros e cargos"). A promoção é feita uma vez, à mão, **depois do primeiro login** da pessoa (assim o perfil dela já existe).
 
 No painel do Supabase, abra **SQL Editor**, cole o comando abaixo trocando o e-mail pelo que a pessoa da administração usou para entrar, e clique em **Run**:
 
@@ -92,7 +92,7 @@ join auth.users u on u.id = p.id
 where p.role <> 'member';
 ```
 
-Deve aparecer uma linha com `admin`. Para criar uma conta de moderação, use o mesmo comando com `'moderator'` no lugar de `'admin'`.
+Deve aparecer uma linha com `admin`. Para dar o cargo de moderação ou de administração a outras pessoas, use **Painel → Membros**, não o SQL. **Antes de convidar as leitoras, tenha pelo menos duas contas de administração** (o banco recusa tirar o cargo da última, e uma conta que perde o acesso ao e-mail não deixa ninguém no comando).
 
 ## Configurar o login (Supabase Auth)
 
@@ -245,17 +245,38 @@ Tudo isto é feito em **Painel → Comentários**, pelo celular ou pelo computad
 
 O número ao lado de "Comentários" no menu é o de comentários esperando aprovação.
 
-**Para dar a alguém o cargo de moderação**, no **SQL Editor** do Supabase (a pessoa precisa já ter entrado no site uma vez):
-
-```sql
-update public.profiles
-set role = 'moderator'
-where id = (select id from auth.users where email = 'email-da-moderacao@exemplo.com');
-```
-
-Para conferir, use a consulta de conferência de "Promover a primeira conta de administração" (acima) e veja a linha com `moderator`. Para voltar a ser membro, troque `'moderator'` por `'member'`. A moderação só abre a tela de Comentários; as outras áreas do painel respondem "sem permissão". Nome e papel que aparecem ao lado dos comentários podem levar até 5 minutos para mudar na página das sessões.
+**Para dar a alguém o cargo de moderação** (ou tirá-lo): **Painel → Membros**, abra a pessoa (ela precisa já ter entrado no site uma vez), em **Cargo** escolha **Moderação** e confirme. Veja "Membros e cargos". A moderação só abre a tela de Comentários e Minha conta; as outras áreas do painel respondem "sem permissão". O cargo vale na próxima página ou ação da pessoa, e o selo ao lado dos comentários dela muda na hora.
 
 **Ordem para aplicar esta etapa:** faça o merge, aguarde o deploy da Vercel e rode **Actions → Database deploy** (primeiro com **dry run** ligado, depois desligado). A migration `…_comment_link_hold.sql` só acrescenta a regra do link e o alerta "Contém link". **Antes de aplicar, tudo funciona** com as regras que já existiam (comentar, responder, aprovar, spoiler): só os comentários com link não ficam segurados nem alertados. Nada quebra por aplicar a migration depois do deploy.
+
+## Membros e cargos
+
+Tudo em **Painel → Membros**, só para a **administração** (a moderação e os membros recebem "sem permissão"). Os cargos são três e fixos:
+
+| Cargo | O que faz |
+| --- | --- |
+| **Administração** | Abre todo o painel (livros, sessões, comentários e membros) e pode mudar cargos, suspender comentários e excluir contas. |
+| **Moderação** | Abre só **Comentários** e **Minha conta**. Os comentários dela são publicados direto. |
+| **Membro** | Lê e comenta com as regras da moderação (os 3 primeiros comentários e os que têm link esperam aprovação) e usa **Minha conta**. |
+
+**A lista.** No topo, quatro números reais (membros, equipe, comentários suspensos e novos em 7 dias). Uma **caixa de busca só**: o começo do nome ou o **e-mail exato** (um texto com `@` é e-mail: a busca vai por POST, abre direto o perfil e o e-mail **nunca** entra na URL nem no log). Filtros **Todos, Equipe, Suspensos e Novos**, 25 por página. A lista mostra só o e-mail **mascarado** (`a***@dominio.com`, feito no banco); no celular ela vira cartões.
+
+**O perfil de uma pessoa** (`/painel/membros/<id>`) traz, cada ação com uma confirmação:
+
+- **Mostrar e-mail:** o e-mail, o último acesso e o provedor de login, só depois do clique e **sem ficarem guardados** na página (nem na URL, nem no navegador, nem no cache; somem ao navegar). **Cada consulta fica registrada na auditoria.**
+- **Alterar cargo:** a confirmação diz o que muda; para dar **Administração** é preciso **digitar o nome da pessoa** (conferido no servidor). Se outra pessoa da administração mudou o cargo enquanto a tela estava aberta, o banco recusa e a tela pede para atualizar. Regras do banco: ninguém muda o **próprio** cargo, a **última** Administração nunca perde o cargo, quem está **suspenso** não recebe cargo de equipe e uma conta **anônima** também não.
+- **Suspender e reativar comentários** (só de membros: quem tem cargo de equipe nunca é suspenso). A pessoa continua lendo o site e usando Minha conta, mas não publica comentários nem respostas: no lugar do campo ela vê "Seus comentários estão suspensos. Fale com a administração pelo e-mail de contato.", sem motivo nem data.
+- **Baixar dados da pessoa:** o mesmo arquivo de **Baixar meus dados** (JSON, versão 2), só com os dados dela. O nome do arquivo é `dados-<8 primeiros caracteres do id>-<data>.json` (nunca o nome nem o e-mail). Fica registrado na auditoria. Guarde-o num lugar privado e envie **só** ao e-mail cadastrado da própria conta.
+- **Excluir conta** (só de membros): digitar `EXCLUIR`. O diálogo mostra **quantos comentários** da pessoa e **quantas respostas de outras pessoas** somem junto. **Não tem volta**; as cópias de segurança podem guardar os dados até expirarem; e excluir **não impede** a pessoa de criar outra conta (para abuso, use **Suspender**). Quem tem cargo de equipe precisa antes mudar para Membro. **Faça um backup manual antes de excluir uma conta** (Actions → Backup do banco → Run workflow, e espere o resumo dizer OK).
+- **Auditoria:** as últimas 50 ações da administração sobre a pessoa (mudança de cargo, suspensão, consulta de e-mail, dados baixados, exclusão), com o nome de quem agiu. O registro não guarda nome, e-mail nem texto, só os identificadores internos.
+
+A **própria conta** aparece sem nenhuma ação (use **Minha conta**). Não há convites por e-mail, mensagens aos membros, ações em lote, banimento com prazo, anotações sobre pessoas nem cargos personalizados.
+
+**Pedidos de cópia ou exclusão dos dados (LGPD)** se atendem por aqui: veja "Atender por e-mail um pedido de cópia ou de exclusão dos dados", em "Privacidade e dados pessoais".
+
+**Emergência pelo SQL.** O SQL Editor só serve quando **nenhuma** pessoa da administração consegue entrar (por exemplo, a única conta perdeu o acesso ao e-mail): o comando está em `docs/operacao.md`, seção 7. Ele **contorna a auditoria e as travas** do banco (inclusive a da última Administração) e não deixa registro em `member_audit`: não o use no dia a dia.
+
+**Ordem para aplicar esta etapa:** esta parte **não tem migration**: faça o merge e aguarde o deploy da Vercel. Ela depende da migration `…_member_management.sql` (da parte anterior da etapa 8f), que precisa estar aplicada (**Actions → Database deploy**, dry run primeiro). Sem ela a lista e os perfis abrem, e cargo, suspensão, exclusão e e-mail mostram "Falta aplicar a atualização do banco (Database deploy)". Na nuvem, **confira** que "Mostrar e-mail" funciona (`docs/lancamento.md`, seção 5): o banco gerenciado pode não deixar as funções lerem o e-mail, e aí a tela avisa e nada é registrado.
 
 ## Privacidade e dados pessoais
 
@@ -278,61 +299,24 @@ Para conferir, use a consulta de conferência de "Promover a primeira conta de a
 
 ### Atender por e-mail um pedido de cópia ou de exclusão dos dados
 
-Use o e-mail de contato de `src/content/legal-config.ts` (campo `privacyContactEmail`). **O prazo de resposta (`requestDeadline` em `legal-config.ts`) hoje é uma PROPOSTA de 15 dias, a validar com um advogado: confirme antes de prometê-lo.** Sempre que possível, peça que a própria pessoa use **Minha conta** (baixar os dados / excluir a conta): é mais seguro, porque quem pede já está logada. Quando ela não conseguir entrar, siga os passos abaixo no **SQL Editor** do Supabase. Ele roda com poderes totais e **não pede confirmação**: leia cada comando antes de executar.
+Use o e-mail de contato de `src/content/legal-config.ts` (campo `privacyContactEmail`). **O prazo de resposta (`requestDeadline` em `legal-config.ts`) hoje é uma PROPOSTA de 15 dias, a validar com um advogado: confirme antes de prometê-lo.** O passo a passo completo, com a verificação de identidade e o registro do pedido, está em `docs/operacao.md`, seção 8. Em resumo:
 
-1. **Confirme quem pede.** Responda **para o e-mail cadastrado na conta** e peça que a pessoa confirme o pedido a partir dele. Nunca envie dados para outro endereço.
-2. **Ache a conta** (troque o e-mail e confira que volta **uma** linha):
+1. **Confirme quem pede.** Responda **só para o e-mail cadastrado na conta**, nunca para outro endereço, e peça que a pessoa confirme o pedido a partir dele. Para a **cópia**, confirme com a pessoa antes de enviar e envie **somente** para o e-mail cadastrado da própria conta. Para a **exclusão**, oriente a pessoa a excluir em **Minha conta**; se ela não conseguir entrar, confirme a identidade respondendo ao e-mail cadastrado e só então exclua pelo painel.
+2. **Ache a conta** em **Painel → Membros** (busca por e-mail exato ou por nome) e confira que é a pessoa certa.
+3. **Cópia dos dados:** no perfil, **Baixar dados da pessoa…**. Guarde o arquivo num lugar privado (nunca no repositório) e envie só ao e-mail confirmado.
+4. **Exclusão:** se o cargo for Administração ou Moderação, só siga se a pessoa realmente deixará a equipe e mude o cargo para Membro antes. **Faça um backup manual** e, no perfil, use **Excluir conta…** (digite `EXCLUIR`). O painel já atualiza as páginas públicas; se alguma página aberta ainda mostrar o comentário, atualize-a.
+5. **Registre o pedido** (data e resultado, **sem dados pessoais**) num lugar **fora do repositório público**.
+6. **Responda por e-mail** dizendo o que foi feito. As cópias de segurança podem reter os dados por um período: **o que dizer sobre isso depende da retenção definida com o advogado (A DEFINIR)**; não afirme prazos que você não conferiu.
 
-   ```sql
-   select u.id, u.email, u.created_at, p.display_name, p.role
-   from auth.users u join public.profiles p on p.id = u.id
-   where u.email = 'email-da-pessoa@exemplo.com';
-   ```
+**Pedido para apagar o texto de um comentário removido pela moderação** (o botão "Excluir meu comentário" não existe para ele, e o painel não tem tela para isso): confirme o autor (passo 1) e, no **SQL Editor** do Supabase, troque o texto pelo aviso padrão (`removed` continua como está, e nada aparece no site). O SQL Editor roda com poderes totais e não pede confirmação: leia o comando antes de executar.
 
-3. **Pedido de cópia dos dados.** Troque o `ID` pelo `id` do passo 2 (o mesmo valor nas três consultas). Depois de cada uma, use o botão de exportar do resultado (CSV ou JSON) e junte tudo num arquivo enviado só ao e-mail confirmado:
+```sql
+update public.comments
+set body = '[comentário removido pelo autor]'
+where id = 'ID-DO-COMENTARIO' and author_id = 'ID-DA-PESSOA' and status = 'removed';
+```
 
-   ```sql
-   select * from public.profiles where id = 'ID';
-   select c.id, c.status, c.body, c.parent_id, c.session_id, c.read_up_to, c.spoiler_up_to, c.created_at
-   from public.comments c where c.author_id = 'ID' order by c.created_at;
-   select rp.chapter, rp.updated_at, b.title from public.reading_progress rp
-   join public.books b on b.id = rp.book_id where rp.user_id = 'ID';
-   ```
-
-   Não inclua comentários de outras pessoas nem as sinalizações da equipe (`comment_flags`).
-
-4. **Pedido de exclusão da conta.** Primeiro confira o papel (passo 2). Se for `member`, vá ao passo seguinte. Se for `admin` ou `moderator`, só continue se a pessoa realmente deixará a equipe, e retire o papel antes:
-
-   ```sql
-   update public.profiles set role = 'member' where id = 'ID';
-   ```
-
-5. **Confira o que será apagado** (um só usuário, e quantos comentários vão junto):
-
-   ```sql
-   select (select count(*) from auth.users where id = 'ID') as usuarios,
-          (select count(*) from public.comments where author_id = 'ID') as comentarios;
-   ```
-
-6. **Exclua.** É definitivo. Apaga em cascata o perfil, os comentários da pessoa, as respostas de outras pessoas a eles, as sinalizações e o progresso:
-
-   ```sql
-   delete from auth.users where id = 'ID';
-   ```
-
-   Confira que `usuarios` volta a `0` repetindo a consulta do passo 5. Nas páginas das sessões, os comentários apagados podem continuar aparecendo por **até 5 minutos** (o cache público). Se precisar sumir na hora, use **Redeploy** na Vercel.
-
-   **Pedido para apagar o texto de um comentário removido pela moderação** (o botão "Excluir meu comentário" não existe para ele): confirme o autor (passo 1), ache o comentário e troque o texto pelo aviso padrão, no **SQL Editor** (`removed` continua como está, e nada aparece no site):
-
-   ```sql
-   update public.comments
-   set body = '[comentário removido pelo autor]'
-   where id = 'ID-DO-COMENTARIO' and author_id = 'ID' and status = 'removed';
-   ```
-
-   Confira que voltou **uma** linha. O texto original deixa de existir no banco (as cópias de segurança do provedor podem ainda tê-lo por um tempo, ver `retention`).
-
-7. **Responda por e-mail** dizendo o que foi feito. Se a exclusão for feita pelo SQL, as cópias de segurança do Supabase podem reter os dados por um período: **o que dizer sobre isso depende do plano contratado e de análise jurídica (A DEFINIR)**; não afirme prazos que você não conferiu.
+Confira que voltou **uma** linha. O texto original deixa de existir no banco (as cópias de segurança podem ainda tê-lo por um tempo, ver `retention`).
 
 ## Cabeçalhos de segurança e CSP
 
@@ -512,7 +496,7 @@ Ele só aparece com `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED` igual a `true` (e **fica 
 
 ## Decisões conhecidas
 
-- **Excluir uma conta apaga os comentários da pessoa e, por consequência, as respostas de outras pessoas a eles.** É uma cascata no banco (`profiles → comments → respostas`), escolhida para que a exclusão da conta realmente remova o que a pessoa escreveu. A própria pessoa exclui a conta em **Minha conta** (contas da equipe não podem); um pedido por e-mail segue o passo a passo de "Privacidade e dados pessoais".
+- **Excluir uma conta apaga os comentários da pessoa e, por consequência, as respostas de outras pessoas a eles.** É uma cascata no banco (`profiles → comments → respostas`), escolhida para que a exclusão da conta realmente remova o que a pessoa escreveu. A própria pessoa exclui a conta em **Minha conta** (contas da equipe não podem), ou a administração a exclui em **Painel → Membros** (só de membros; excluir não impede a pessoa de criar outra conta). Um pedido por e-mail segue o passo a passo de "Privacidade e dados pessoais".
 - **Os perfis são legíveis publicamente.** Qualquer visitante, sem login, consegue ler o nome de exibição e o avatar de todos os membros (e quem é da administração ou da moderação). O e-mail nunca está no perfil, e quem se cadastra sem informar nome aparece como "Leitor". Isso precisa constar da política de privacidade (etapa 7).
 - **A moderação não apaga comentários:** ela marca como `removed` (exclusão lógica). Quem apaga é o autor, em "Excluir meu comentário" (o texto é sobrescrito no banco), ou a pessoa ao excluir a conta. Uma sessão que já recebeu comentários não pode ser excluída.
 - **O painel só abre para quem tem papel no banco.** O proxy (`src/proxy.ts`) redireciona quem não está logado, mas a autorização real é `requireRole` (lê `profiles.role`) e o RLS. A moderação só acessa Comentários; o resto do painel dá 403.

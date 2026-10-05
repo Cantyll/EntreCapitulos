@@ -98,7 +98,7 @@ describe('painel', () => {
         const name = part.slice(0, part.indexOf('('));
         if (NO_PUBLIC_CACHE.has(name)) continue;
         expect(part, `${name} precisa chamar invalidate… ou updateTag`).toMatch(
-          /invalidate(Books|Session|Comments)\(|refreshAfterBookChange\(|refreshPublic\(|moderate\(|refresh\(|updateTag\(/,
+          /invalidate(Books|Session|Comments)\(|refreshAfterBookChange\(|refreshPublic\(|moderate\(|refresh\(|updateTag\(|expire(CommentsOf|AllPublicComments)\(/,
         );
       }
     },

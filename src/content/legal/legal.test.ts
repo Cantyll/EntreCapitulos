@@ -168,11 +168,14 @@ describe('política de privacidade', () => {
     for (const name of ['ec_progress', 'sb-…-auth-token']) expect(text).toContain(name);
   });
 
-  it('com a configuração entregue, o único "A DEFINIR" do texto são as duas pendências das cópias de segurança (menos a conferência do Turnstile)', () => {
+  it('com a configuração entregue, os únicos "A DEFINIR" do texto são as duas pendências das cópias de segurança e a retenção da auditoria (menos a conferência do Turnstile)', () => {
     const delivered = allText(buildPrivacy(legalConfig, { google: true, turnstile: false }));
-    expect(delivered.match(/A DEFINIR/g)).toHaveLength(2);
+    expect(delivered.match(/A DEFINIR/g)).toHaveLength(3);
     expect(delivered).toContain('Transferência internacional das cópias de segurança: A DEFINIR');
     expect(delivered).toContain('Por quanto tempo guardamos as cópias de segurança: A DEFINIR');
+    expect(delivered).toContain(
+      'Por quanto tempo guardamos o registro das ações da administração: A DEFINIR',
+    );
   });
 
   it('as cópias de segurança podem conter dados já excluídos, e o texto diz isso sem afirmar que ficam no Brasil', () => {
@@ -325,13 +328,67 @@ describe('cartão de instalação: texto da política', () => {
   });
 });
 
+describe('gestão de membros pela administração (etapa 8f)', () => {
+  const doc = buildPrivacy(legalConfig, OFF);
+  const privacy = allText(doc);
+  const section = (id: string) =>
+    allText({ title: '', lead: '', sections: doc.sections.filter((s) => s.id === id) });
+
+  it('diz que a administração vê e-mail e último acesso, para suporte e pedidos da LGPD, com registro', () => {
+    for (const piece of [
+      'a administração do clube pode ver o seu e-mail, a data do seu último acesso',
+      'só para dar suporte e atender pedidos sobre os seus dados',
+      'Cada consulta fica registrada',
+    ]) {
+      expect(section('dados'), piece).toContain(piece);
+    }
+  });
+
+  it('diz que a administração pode suspender comentários e excluir contas', () => {
+    expect(section('dados')).toContain('suspender a publicação de comentários de uma conta');
+    expect(section('finalidades')).toContain('suspender os comentários dela ou excluí-la');
+    expect(section('direitos')).toContain(
+      'a administração confirma que o pedido vem do e-mail cadastrado',
+    );
+    expect(section('retencao')).toContain('a administração também pode excluir');
+  });
+
+  it('descreve a auditoria sem dado pessoal e deixa a retenção A DEFINIR, com o aviso de revisão', () => {
+    expect(section('dados')).toContain('Registro das ações da administração (auditoria)');
+    expect(section('dados')).toContain('não guarda nome, e-mail nem texto');
+    expect(section('retencao')).toContain(
+      'Por quanto tempo guardamos o registro das ações da administração: A DEFINIR',
+    );
+    expect(section('retencao')).toContain('ligadas só a esse identificador');
+    // Preenchida, vira proposta e traz o aviso.
+    const filled = allText(
+      buildPrivacy({ ...legalConfig, audit: { retention: '12 meses.' } }, OFF),
+    );
+    expect(filled).toContain('12 meses.');
+    expect(filled).toContain('Este ponto ainda precisa ser validado por um advogado.');
+  });
+
+  it('o selo público é "administração ou moderação", nunca "autora"', () => {
+    expect(section('publico')).toContain('da administração ou da moderação');
+    expect(privacy).not.toMatch(/autora|administradora|moderadora/i);
+  });
+
+  it('não promete nada que o código não faça (sem convite, mensagem, lote nem banimento com prazo)', () => {
+    expect(privacy).not.toMatch(
+      /convite por e-mail|mensagens aos membros|ações em lote|banimento/i,
+    );
+  });
+});
+
 describe('detecção dos pendentes na configuração entregue', () => {
-  it('só as cópias de segurança (transferência e retenção) ficaram A DEFINIR, além da revisão profissional', () => {
+  it('só as cópias de segurança (transferência e retenção) e a retenção da auditoria ficaram A DEFINIR, além da revisão profissional', () => {
     expect(pendingFields(legalConfig).sort()).toEqual([
+      'audit.retention',
       'backups.internationalTransfer',
       'backups.retention',
     ]);
     expect(pendingItems(legalConfig).sort()).toEqual([
+      'audit.retention',
       'backups.internationalTransfer',
       'backups.retention',
       'legalReviewed',
@@ -341,6 +398,7 @@ describe('detecção dos pendentes na configuração entregue', () => {
   it('a configuração de antes (tudo pendente) é detectada campo a campo', () => {
     expect(pendingFields(pending).sort()).toEqual(
       [
+        'audit.retention',
         'backups.internationalTransfer',
         'backups.retention',
         'internationalTransfer',
