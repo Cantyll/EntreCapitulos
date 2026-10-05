@@ -62,4 +62,5 @@ export type DynamicRoutesExist = [
   Expect<'/livros/x/sessoes/1' extends Route<'/livros/x/sessoes/1'> ? true : false>,
   Expect<'/painel/livros/x' extends Route<'/painel/livros/x'> ? true : false>,
   Expect<'/painel/sessoes/x' extends Route<'/painel/sessoes/x'> ? true : false>,
+  Expect<'/painel/membros/x' extends Route<'/painel/membros/x'> ? true : false>,
 ];
