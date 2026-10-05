@@ -3,9 +3,13 @@
  * própria pessoa leu sob o RLS e copia campo a campo (lista fixa), então um campo a mais que chegue por
  * engano (e-mail de terceiros, dados de outra pessoa) nunca entra no arquivo. Nunca inclui: comentários
  * de outras pessoas, sinalizações da equipe, tokens nem identificadores de sessão do Auth.
+ *
+ * Versões: 1 (etapa 7a) e 2 (etapa 8f: `profile.commentsSuspended`, a situação da suspensão de comentários, que
+ * a própria pessoa também recebe). O arquivo que a administração baixa de uma pessoa tem o mesmo formato.
  */
+import { formatIsoDay } from '@/lib/site';
 
-export const EXPORT_VERSION = 1;
+export const EXPORT_VERSION = 2;
 
 export type ExportAccountInput = {
   id: string;
@@ -54,6 +58,8 @@ export type AccountExport = {
     role: string;
     approvedCommentCount: number;
     displayNameConfirmedAt: string | null;
+    /** Os comentários dela estão suspensos pela administração? (versão 2) */
+    commentsSuspended: boolean;
     createdAt: string;
     updatedAt: string;
   } | null;
@@ -84,6 +90,7 @@ export function buildAccountExport(input: {
   profile: ExportProfileInput | null;
   comments: readonly ExportCommentInput[];
   progress: readonly ExportProgressInput[];
+  commentsSuspended: boolean;
 }): AccountExport {
   const { account, profile } = input;
   return {
@@ -102,6 +109,7 @@ export function buildAccountExport(input: {
       role: profile.role,
       approvedCommentCount: profile.approved_comment_count,
       displayNameConfirmedAt: profile.display_name_confirmed_at,
+      commentsSuspended: input.commentsSuspended,
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
     },
@@ -127,7 +135,7 @@ export function buildAccountExport(input: {
   };
 }
 
-/** Nome do arquivo baixado: só a data (fuso de Brasília não importa para o nome). */
+/** Nome do arquivo baixado: só a data, a de Brasília (às 23h30 o instante já é do dia seguinte em UTC). */
 export function exportFileName(at: Date): string {
-  return `entre-capitulos-meus-dados-${at.toISOString().slice(0, 10)}.json`;
+  return `entre-capitulos-meus-dados-${formatIsoDay(at)}.json`;
 }

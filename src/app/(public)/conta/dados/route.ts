@@ -5,6 +5,7 @@ import {
   type ExportCommentInput,
   type ExportProgressInput,
 } from '@/lib/account/export';
+import { classifyMemberError } from '@/lib/members/errors';
 import { createClient } from '@/lib/supabase/server';
 
 /*
@@ -68,9 +69,25 @@ export async function GET() {
       .select('chapter, updated_at, books(slug, title)')
       .eq('user_id', user.id);
 
-    const [profile, progress] = await Promise.all([profileQuery, progressQuery]);
+    // A situação da suspensão de comentários (versão 2 do arquivo): a pessoa lê só a PRÓPRIA linha pelo RLS.
+    const suspensionQuery = supabase
+      .from('member_suspensions')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const [profile, progress, suspension] = await Promise.all([
+      profileQuery,
+      progressQuery,
+      suspensionQuery,
+    ]);
     if (profile.error) throw profile.error;
     if (progress.error) throw progress.error;
+    // Sem a tabela (migration ainda não aplicada) não existe suspensão nenhuma. Qualquer outro erro derruba o
+    // arquivo: uma cópia de dados que omite uma informação em silêncio é pior que um erro.
+    if (suspension.error && classifyMemberError(suspension.error) !== 'unavailable') {
+      throw suspension.error;
+    }
 
     const now = new Date();
     const body = buildAccountExport({
@@ -87,6 +104,7 @@ export async function GET() {
       profile: profile.data,
       comments,
       progress: progress.data as unknown as ExportProgressInput[],
+      commentsSuspended: suspension.data !== null && !suspension.error,
     });
 
     return json(body, 200, {

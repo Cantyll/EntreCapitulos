@@ -44,6 +44,23 @@ export function formatFullDate(value: DateInput): string {
     : '';
 }
 
+/**
+ * "2026-10-04": o DIA de calendário de um instante no fuso de Brasília, para nomes de arquivo. Às 23h30 de
+ * Brasília o instante já é do dia seguinte em UTC, e o nome do arquivo tem de dizer o dia que a pessoa viveu.
+ */
+export function formatIsoDay(value: DateInput): string {
+  const date = toDate(value);
+  if (!date) return '';
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: SITE_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
 const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /**

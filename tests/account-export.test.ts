@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildAccountExport, exportFileName } from '@/lib/account/export';
+import { EXPORT_VERSION, buildAccountExport, exportFileName } from '@/lib/account/export';
 
 /*
  * "Baixar meus dados": o arquivo só leva o que é da própria pessoa. Duas camadas: a função pura copia campo a
@@ -16,6 +16,8 @@ const { state, eqs, logFailure } = vi.hoisted(() => ({
     authError: null as unknown,
     comments: [] as unknown[],
     failComments: false,
+    suspended: false,
+    suspensionError: null as { code: string } | null,
   },
   eqs: [] as string[],
   logFailure: vi.fn(),
@@ -33,6 +35,11 @@ vi.mock('@/lib/supabase/server', () => ({
           return state.failComments
             ? { data: null, error: { code: '08006' } }
             : { data: state.comments, error: null };
+        }
+        if (table === 'member_suspensions') {
+          return state.suspensionError
+            ? { data: null, error: state.suspensionError }
+            : { data: state.suspended ? { user_id: ME } : null, error: null };
         }
         if (table === 'profiles') {
           return {
@@ -85,6 +92,7 @@ describe('buildAccountExport', () => {
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-02T00:00:00Z',
     },
+    commentsSuspended: false,
     comments: [
       {
         id: 'c1',
@@ -110,7 +118,9 @@ describe('buildAccountExport', () => {
 
   it('traz perfil, e-mail, comentários de QUALQUER status e progresso', () => {
     const out = buildAccountExport(base);
-    expect(out.exportVersion).toBe(1);
+    expect(out.exportVersion).toBe(2);
+    expect(EXPORT_VERSION).toBe(2);
+    expect(out.profile?.commentsSuspended).toBe(false);
     expect(out.generatedAt).toBe('2026-10-02T15:00:00.000Z');
     expect(out.account.email).toBe('eu@exemplo.com');
     expect(out.profile?.displayName).toBe('Maria');
@@ -151,6 +161,12 @@ describe('buildAccountExport', () => {
     expect(text).not.toContain('resposta');
   });
 
+  it('a situação da suspensão vai no perfil (versão 2)', () => {
+    expect(
+      buildAccountExport({ ...base, commentsSuspended: true }).profile?.commentsSuspended,
+    ).toBe(true);
+  });
+
   it('sem perfil, sem comentários e sem progresso continua válido', () => {
     const out = buildAccountExport({ ...base, profile: null, comments: [], progress: [] });
     expect(out.profile).toBeNull();
@@ -158,9 +174,16 @@ describe('buildAccountExport', () => {
     expect(out.readingProgress).toEqual([]);
   });
 
-  it('nome do arquivo só com a data', () => {
+  it('nome do arquivo só com a data de Brasília', () => {
     expect(exportFileName(new Date('2026-10-02T23:59:00Z'))).toBe(
       'entre-capitulos-meus-dados-2026-10-02.json',
+    );
+    // 23h30 de Brasília de 4/10 já é 5/10 em UTC: o nome diz o dia que a pessoa viveu.
+    expect(exportFileName(new Date('2026-10-05T02:30:00Z'))).toBe(
+      'entre-capitulos-meus-dados-2026-10-04.json',
+    );
+    expect(exportFileName(new Date('2026-10-05T03:30:00Z'))).toBe(
+      'entre-capitulos-meus-dados-2026-10-05.json',
     );
   });
 });
@@ -176,6 +199,8 @@ describe('GET /conta/dados', () => {
     state.authError = null;
     state.comments = [];
     state.failComments = false;
+    state.suspended = false;
+    state.suspensionError = null;
     eqs.length = 0;
     logFailure.mockClear();
   });
@@ -215,6 +240,7 @@ describe('GET /conta/dados', () => {
     expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
     expect(eqs.sort()).toEqual([
       `comments.author_id=${ME}`,
+      `member_suspensions.user_id=${ME}`,
       `profiles.id=${ME}`,
       `reading_progress.user_id=${ME}`,
     ]);
@@ -222,6 +248,26 @@ describe('GET /conta/dados', () => {
     expect(body.account.email).toBe('eu@exemplo.com');
     expect(body.account.providers).toEqual(['email', 'google']);
     expect(body.comments).toHaveLength(1);
+  });
+
+  it('versão 2: a situação da suspensão da PRÓPRIA pessoa vai no perfil', async () => {
+    const { GET } = await import('@/app/(public)/conta/dados/route');
+    expect((await (await GET()).json()).profile.commentsSuspended).toBe(false);
+    state.suspended = true;
+    const body = await (await GET()).json();
+    expect(body.exportVersion).toBe(2);
+    expect(body.profile.commentsSuspended).toBe(true);
+  });
+
+  it('sem a tabela (migration não aplicada) não há suspensão; qualquer outro erro derruba o arquivo', async () => {
+    const { GET } = await import('@/app/(public)/conta/dados/route');
+    state.suspensionError = { code: 'PGRST205' };
+    const missing = await GET();
+    expect(missing.status).toBe(200);
+    expect((await missing.json()).profile.commentsSuspended).toBe(false);
+
+    state.suspensionError = { code: '08006' };
+    expect((await GET()).status).toBe(500);
   });
 
   it('falha do banco: 500 em pt-BR, log sem dados e nada no corpo', async () => {
