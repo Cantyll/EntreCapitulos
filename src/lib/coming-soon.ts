@@ -7,11 +7,6 @@ import type { Route } from 'next';
  * e entra em `adminNav` (lib/navigation.ts).
  */
 export const comingSoonPages = {
-  membros: {
-    href: '/painel/membros' satisfies Route,
-    title: 'Membros',
-    description: 'A lista de membros, os papéis e o convite de novas pessoas ainda não existem.',
-  },
   votacoes: {
     href: '/painel/votacoes' satisfies Route,
     title: 'Votações',

@@ -29,6 +29,12 @@ const SHORTCUTS: { href: Route; icon: IconName; label: string; text: string }[] 
     label: 'Comentários',
     text: 'Aprovar, remover e restaurar os comentários das leitoras.',
   },
+  {
+    href: '/painel/membros',
+    icon: 'users',
+    label: 'Membros',
+    text: 'Ver as pessoas do clube, mudar cargos e suspender comentários.',
+  },
 ];
 
 /** Página inicial do painel da administradora. Só traz atalhos para o que existe; o resto é "Em breve". */
