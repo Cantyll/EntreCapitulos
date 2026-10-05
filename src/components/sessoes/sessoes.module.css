@@ -518,32 +518,6 @@
   font-size: 14px;
 }
 
-dialog.dialog {
-  width: min(480px, calc(100vw - 32px));
-  max-width: 480px;
-  padding: 22px;
-  border: 1px solid var(--line-2);
-  border-radius: var(--r);
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: var(--shadow);
-}
-
-dialog.dialog::backdrop {
-  background: rgba(42, 30, 36, 0.45);
-}
-
-.dialogBody {
-  display: grid;
-  gap: 14px;
-}
-
-.dialogBody h2 {
-  font-family: var(--serif);
-  font-size: 22px;
-  font-weight: 500;
-}
-
 .summary {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

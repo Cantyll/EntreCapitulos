@@ -4,10 +4,10 @@ import { useEditorState, type Editor } from '@tiptap/react';
 import { useRef, useState, type FormEvent, type MouseEvent } from 'react';
 
 import { Icon, type IconName } from '@/components/ui/Icon';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 import { isSafeHref } from '@/lib/session-body';
 
 import styles from './editor.module.css';
-import { useKeyboardInset } from './useKeyboardInset';
 
 /*
  * Barra de formatação. Em tela de toque com o teclado aberto ela fica ancorada logo acima dele
