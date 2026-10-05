@@ -79,9 +79,18 @@ describe('ConfirmDialog (folha inferior no toque)', () => {
   });
 
   it('campos de 16px, botões de 44px e sem animação com prefers-reduced-motion', () => {
-    expect(touch).toMatch(/\.body input[\s\S]*font-size:\s*16px/);
+    // O corpo da regra dos campos (não qualquer `font-size: 16px` que venha depois, como o do `.error`).
+    expect(touch).toMatch(
+      /\.body input,\s*\.body select,\s*\.body textarea\s*\{[^}]*font-size:\s*16px/,
+    );
+    expect(touch).toMatch(/\.body\s*\{[^}]*font-size:\s*16px/);
     expect(touch).toMatch(/min-height:\s*44px/);
     expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*animation:\s*none/);
+  });
+
+  it('um título com palavra longa (nome sem espaço) não alarga a folha', () => {
+    expect(css).toMatch(/\.body\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+    expect(css).toMatch(/\.body h2\s*\{[^}]*overflow-wrap:\s*anywhere/);
   });
 
   it('o componente não usa confirm() do navegador e devolve o foco a quem abriu', () => {
