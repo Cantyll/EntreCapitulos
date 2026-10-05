@@ -47,6 +47,16 @@ describe('configuração do backup (.github/backup.config.json)', () => {
     expect(schemas).toEqual(['public', 'auth']);
   });
 
+  it('as tabelas da gestão de membros (etapa 8f) entram no backup: sem elas o backup diário falharia', () => {
+    // O backup falha se o dump trouxer uma tabela fora de `allowedTables`. `member_audit` e `member_suspensions`
+    // nascem na migration `member_management`; esquecer de listá-las quebraria o backup do dia seguinte ao Database deploy.
+    expect(config.dump.allowedTables).toEqual(
+      expect.arrayContaining(['public.member_audit', 'public.member_suspensions']),
+    );
+    expect(config.dump.excludeTables).not.toContain('public.member_audit');
+    expect(config.dump.excludeTables).not.toContain('public.member_suspensions');
+  });
+
   it('sessões e tokens do Auth ficam fora do backup', () => {
     expect(config.dump.excludeTables).toEqual(
       expect.arrayContaining([

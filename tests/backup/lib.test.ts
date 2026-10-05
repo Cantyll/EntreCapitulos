@@ -61,6 +61,22 @@ describe('checkTables', () => {
     expect(() => checkTables({ ...all, 'auth.sessions': 4 }, config)).toThrow(/auth\.sessions/);
   });
 
+  it('aceita o dump de um banco com as tabelas da gestão de membros, com linhas', () => {
+    expect(() =>
+      checkTables({ ...all, 'public.member_audit': 12, 'public.member_suspensions': 2 }, config),
+    ).not.toThrow();
+  });
+
+  it('aceita um dump de antes da migration (sem as tabelas da gestão de membros): o primeiro backup depois do Database deploy não pode falhar por isso', () => {
+    const counts = { ...all };
+    delete counts['public.member_audit'];
+    delete counts['public.member_suspensions'];
+    expect(checkTables(counts, config).absent).toEqual([
+      'public.member_audit',
+      'public.member_suspensions',
+    ]);
+  });
+
   it('não confunde tabela vazia com tabela ausente', () => {
     expect(() => checkTables({ ...all, 'public.books': 0 }, config)).not.toThrow();
   });
