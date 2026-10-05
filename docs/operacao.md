@@ -76,6 +76,17 @@ Ninguém vira administração ao se cadastrar. **O dia a dia é no painel:** **P
 - **Antes de lançar, tenha pelo menos duas contas de administração:** com uma só, perder o acesso ao e-mail dela deixa o site sem ninguém no comando (`docs/lancamento.md`).
 - A **primeira** conta de administração é a única que precisa do SQL (README, "Promover a primeira conta de administração").
 
+### Suspender e reativar os comentários de um membro
+
+Para abuso (spam, ofensas), o caminho é **suspender**, não excluir. **Painel → Membros →** abra a pessoa **→ Comentários → Suspender comentários…** e confirme.
+
+- **O que a pessoa vê:** continua lendo o site e usando Minha conta, mas não publica comentários nem respostas. No lugar do campo de comentário aparece "Seus comentários estão suspensos. Fale com a administração pelo e-mail de contato." (sem motivo nem data), com um atalho para onde o e-mail de contato está. O banco recusa qualquer tentativa de comentar, mesmo por outro caminho.
+- **O que não muda:** os comentários que ela já publicou continuam como estão, e ela ainda pode excluir os próprios.
+- **Reativar:** na mesma tela, **Reativar comentários…**. A pessoa volta a comentar com as regras de sempre da moderação.
+- **Quem não pode ser suspenso:** quem tem cargo de equipe. Mude o cargo para **Membro** antes de suspender. O contrário também vale: quem está suspenso não recebe cargo de equipe até ser reativado.
+- **Auditoria:** cada suspensão e cada reativação ficam registradas na **Auditoria** da pessoa (quem fez, quando). O motivo não é guardado: anote o motivo fora do repositório público, se precisar dele.
+- A suspensão só aparece para a própria pessoa e para a administração (não é pública).
+
 ### Emergência: pelo SQL Editor
 
 **Só quando nenhuma pessoa da administração consegue entrar no painel** (por exemplo, a única conta perdeu o acesso ao e-mail). O SQL Editor roda com poderes totais e **contorna a auditoria e as travas do banco** (inclusive a que impede tirar a última Administração): o que for feito aqui **não deixa registro em `member_audit`**. Depois, **anote fora do repositório público** o que foi feito e quando (sem dados pessoais) e entre no painel para conferir o resultado.
