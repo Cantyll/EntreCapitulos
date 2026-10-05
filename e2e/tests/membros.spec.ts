@@ -583,8 +583,9 @@ test.describe('perfil', () => {
     await expect(
       person.getByRole('link', { name: 'Ver o e-mail de contato' }).first(),
     ).toHaveAttribute('href', '/privacidade#quem-controla');
-    expect(await person.locator('main').innerText()).not.toMatch(
-      /\d{1,2} de \w+ de 20\d\d.*suspens/i,
+    // O aviso inteiro, e só ele: qualquer motivo ou data, em qualquer frase, quebraria a igualdade.
+    await expect(person.locator('[data-comments-suspended]')).toHaveText(
+      `${notice} Ver o e-mail de contato`,
     );
     // O resto do site segue igual: ela ainda lê e abre Minha conta.
     await person.goto('/conta');
@@ -678,6 +679,116 @@ test.describe('perfil', () => {
     await expect(
       page.getByRole('list').filter({ hasText: 'Dados da pessoa baixados' }),
     ).toBeVisible();
+  });
+
+  test('equipe promovida com a tela aberta: o banco recusa suspender e excluir, em português', async ({
+    openAs,
+  }) => {
+    const target = await createUser({ name: unique('Virou') });
+    const { page } = await openAs(await createAdmin());
+    await openProfile(page, target.id);
+    // Outro caminho promove a pessoa enquanto esta tela (que ainda mostra os botões) fica aberta.
+    sql(`update public.profiles set role = 'moderator' where id = ${lit(target.id)};`);
+
+    await button(page, 'Suspender comentários…').click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Suspender comentários', exact: true }).click();
+    await expect(
+      dialog
+        .getByRole('alert')
+        .filter({ hasText: 'Quem tem cargo de equipe não tem os comentários' }),
+    ).toBeVisible();
+    expect(isSuspended(target.id)).toBe(false);
+    await dialog.getByRole('button', { name: 'Cancelar' }).click();
+    await expect(dialog).toHaveCount(0);
+
+    await button(page, 'Excluir conta…').click();
+    await dialog.getByLabel(/Para confirmar, digite EXCLUIR/).fill('EXCLUIR');
+    await dialog.getByRole('button', { name: 'Excluir conta', exact: true }).click();
+    await expect(
+      dialog.getByRole('alert').filter({ hasText: 'Esta conta tem cargo de equipe' }),
+    ).toBeVisible();
+    // A conta continua, e a recusa não deixou rastro de exclusão na auditoria.
+    expect(sqlNumber(`select count(*) from auth.users where id = ${lit(target.id)};`)).toBe(1);
+    expect(auditCount(target.id, 'delete_account')).toBe(0);
+    expect(auditCount(target.id, 'suspend')).toBe(0);
+  });
+
+  test('Esc duas vezes enquanto a ação roda não fecha o diálogo nem esconde o resultado', async ({
+    openAs,
+  }, testInfo) => {
+    test.skip(testInfo.project.name === 'webkit-mobile', 'Esc é do teclado');
+    const target = await createUser({ name: unique('Espera') });
+    const { page } = await openAs(await createAdmin());
+    await openProfile(page, target.id);
+    // Atrasa só a Server Action: o diálogo fica "ocupado" por tempo suficiente para apertar Esc duas vezes.
+    await page.route(`**${profilePath(target.id)}`, async (route) => {
+      if (route.request().method() === 'POST' && route.request().headers()['next-action']) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      await route.continue();
+    });
+
+    await button(page, 'Suspender comentários…').click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Suspender comentários', exact: true }).click();
+    await expect(dialog.getByRole('button', { name: 'Suspendendo…' })).toBeVisible();
+    // O Chromium fecha o <dialog> no segundo Esc sem nova interação, mesmo com o primeiro cancelado.
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeVisible();
+
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Comentários suspensos.' }),
+    ).toBeVisible();
+    await expect(dialog).toHaveCount(0);
+    expect(isSuspended(target.id)).toBe(true);
+    // O botão continua funcionando: o estado não ficou preso.
+    await expect(button(page, 'Reativar comentários…')).toBeEnabled();
+  });
+
+  test('nome longo e sem espaços não alarga os diálogos nem tira os botões da tela', async ({
+    openAs,
+  }) => {
+    const long = `${unique('L')}_${'a_'.repeat(30)}`.slice(0, 60);
+    expect(long).toHaveLength(60);
+    const target = await createUser({ name: long });
+    const { page } = await openAs(await createAdmin());
+    await openProfile(page, target.id);
+    const viewport = page.viewportSize()!;
+
+    const check = async (open: () => Promise<void>, confirmName: string) => {
+      await open();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+      await dialog.evaluate((el) =>
+        Promise.all(el.getAnimations().map((animation) => animation.finished)),
+      );
+      expect(
+        await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth),
+        'sem rolagem horizontal dentro do diálogo',
+      ).toBe(true);
+      for (const name of [confirmName, 'Cancelar']) {
+        const box = (await dialog.getByRole('button', { name, exact: true }).boundingBox())!;
+        expect(box.x, name).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width, name).toBeLessThanOrEqual(viewport.width);
+      }
+      await dialog.getByRole('button', { name: 'Cancelar' }).click();
+      await expect(dialog).toHaveCount(0);
+    };
+
+    await check(() => button(page, 'Excluir conta…').click(), 'Excluir conta');
+    await check(() => button(page, 'Suspender comentários…').click(), 'Suspender comentários');
+    await check(async () => {
+      await page.getByLabel('Novo cargo').selectOption('admin');
+      await button(page, 'Alterar cargo…').click();
+    }, 'Alterar cargo');
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+      'a página também não rola de lado',
+    ).toBe(true);
   });
 
   test('excluir a conta: contagens reais, EXCLUIR digitado e a cascata inteira', async ({
@@ -821,7 +932,10 @@ test.describe('"Mostrar e-mail"', () => {
     await expect(page.getByText(target.email)).toHaveCount(0);
     expect(await page.content()).not.toContain(target.email);
 
-    // Navegação "de verdade" (carrega outra página e volta, o que pode restaurar a cópia do navegador): idem.
+    // Navegação "de verdade" (carrega outra página e volta). O Playwright desliga o bfcache do Chromium, então
+    // aqui a página é recarregada: o passo só prova que uma carga nova não traz o e-mail. A restauração pelo
+    // bfcache (os eventos `pagehide` e `pageshow` do `ContactReveal`) só se confere no Safari real
+    // (`docs/lancamento.md`).
     await reveal();
     await page.goto('/conta');
     await page.goBack();
@@ -840,6 +954,24 @@ test.describe('"Mostrar e-mail"', () => {
     await expect(page.getByText(target.email)).toHaveCount(0);
     expect(await page.content()).not.toContain(target.email);
     void browserName;
+  });
+});
+
+test.describe('"Mostrar e-mail" e o foco', () => {
+  test('depois de mostrar o foco vai para os dados; depois de ocultar volta ao botão', async ({
+    openAs,
+  }) => {
+    const target = await createUser({ name: unique('Foco') });
+    const { page } = await openAs(await createAdmin());
+    await openProfile(page, target.id);
+    await button(page, 'Mostrar e-mail').click();
+    const data = page.getByRole('group', { name: 'Dados de contato da pessoa' });
+    await expect(data).toContainText(target.email);
+    // Sem isto o botão que tinha o foco sai da tela e o foco cai no <body>, em silêncio.
+    await expect(data).toBeFocused();
+    await button(page, 'Ocultar e-mail').click();
+    await expect(page.getByText(target.email)).toHaveCount(0);
+    await expect(button(page, 'Mostrar e-mail')).toBeFocused();
   });
 });
 
@@ -893,6 +1025,12 @@ test.describe('diálogos de confirmação', () => {
       const target44 = (await dialog.getByRole('button', { name, exact: true }).boundingBox())!;
       expect(target44.height, name).toBeGreaterThanOrEqual(44);
     }
+    // O texto do diálogo (avisos, itens da lista e rótulo do campo) também tem pelo menos 16px.
+    const textSizes = await dialog
+      .locator('p, li, label')
+      .evaluateAll((nodes) => nodes.map((el) => parseFloat(getComputedStyle(el).fontSize)));
+    expect(textSizes.length).toBeGreaterThan(4);
+    expect(Math.min(...textSizes)).toBeGreaterThanOrEqual(16);
     const input = dialog.getByLabel(/Para confirmar, digite EXCLUIR/);
     expect(
       await input.evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),

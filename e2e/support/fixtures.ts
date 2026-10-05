@@ -8,6 +8,12 @@ export type Guard = {
   allowStatus: (...statuses: number[]) => void;
   /** Mensagens de console esperadas (texto exato ou regex). */
   allowConsole: (...patterns: (string | RegExp)[]) => void;
+  /**
+   * Coloca um contexto criado pelo teste (`browser.newContext`) sob a mesma vigia do contexto padrão: CSP,
+   * `console.error`, erro não tratado e resposta 5xx entram na mesma lista de problemas. `openAs` e `signedIn`
+   * já chamam isto; quem abrir um contexto à mão precisa chamar antes de abrir a primeira página.
+   */
+  watchContext: (context: BrowserContext) => Promise<void>;
 };
 
 type Fixtures = {
@@ -29,17 +35,7 @@ export const test = base.extend<Fixtures>({
       const allowedStatuses = new Set<number>();
       const allowedConsole: (string | RegExp)[] = [];
 
-      await context.exposeFunction(CSP_BINDING, (info: string) => {
-        problems.push(`violação de CSP: ${info}`);
-      });
-      await context.addInitScript((binding) => {
-        document.addEventListener('securitypolicyviolation', (event) => {
-          const report = (window as unknown as Record<string, (info: string) => void>)[binding];
-          report?.(`${event.violatedDirective} bloqueou ${event.blockedURI || 'inline'}`);
-        });
-      }, CSP_BINDING);
-
-      const watch = (page: Page) => {
+      const watchPage = (page: Page) => {
         page.on('console', (message) => {
           if (message.type() !== 'error') return;
           const text = message.text();
@@ -54,12 +50,27 @@ export const test = base.extend<Fixtures>({
             problems.push(`resposta ${response.status()}: ${new URL(response.url()).pathname}`);
         });
       };
-      for (const page of context.pages()) watch(page);
-      context.on('page', watch);
+
+      const watchContext = async (target: BrowserContext) => {
+        await target.exposeFunction(CSP_BINDING, (info: string) => {
+          problems.push(`violação de CSP: ${info}`);
+        });
+        await target.addInitScript((binding) => {
+          document.addEventListener('securitypolicyviolation', (event) => {
+            const report = (window as unknown as Record<string, (info: string) => void>)[binding];
+            report?.(`${event.violatedDirective} bloqueou ${event.blockedURI || 'inline'}`);
+          });
+        }, CSP_BINDING);
+        for (const page of target.pages()) watchPage(page);
+        target.on('page', watchPage);
+      };
+
+      await watchContext(context);
 
       await use({
         allowStatus: (...statuses) => statuses.forEach((s) => allowedStatuses.add(s)),
         allowConsole: (...patterns) => allowedConsole.push(...patterns),
+        watchContext,
       });
 
       expect(problems, 'CSP, console e respostas 5xx').toEqual([]);
@@ -68,11 +79,12 @@ export const test = base.extend<Fixtures>({
   ],
 
   openAs: async ({ browser, contextOptions, guard }, use) => {
-    void guard;
     const opened: BrowserContext[] = [];
     await use(async (user) => {
       const context = await browser.newContext(contextOptions);
       opened.push(context);
+      // Sem isto o contexto novo ficava fora da vigia (CSP, console, 5xx) e `allowStatus` não valia nele.
+      await guard.watchContext(context);
       await signIn(context, user);
       return { context, page: await context.newPage() };
     });
