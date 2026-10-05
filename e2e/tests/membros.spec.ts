@@ -793,7 +793,10 @@ test.describe('perfil', () => {
 
   test('excluir a conta: contagens reais, EXCLUIR digitado e a cascata inteira', async ({
     openAs,
+    guard,
   }) => {
+    // No fim o teste abre o perfil de quem foi excluído e espera o 404.
+    guard.allowStatus(404);
     const { slug } = claimPoolSlot();
     const name = unique('Sai');
     const target = await createUser({ name });
