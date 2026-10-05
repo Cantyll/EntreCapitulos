@@ -16,6 +16,8 @@ que impede alargar permissões sem querer está em `supabase/tests/database/12_s
 | `books` | sim | não |
 | `comment_flags` | sim | não |
 | `comments` | sim | não |
+| `member_audit` | sim | não |
+| `member_suspensions` | sim | não |
 | `profiles` | sim | não |
 | `reading_progress` | sim | não |
 | `reading_sessions` | sim | não |
@@ -40,6 +42,8 @@ Inclui as políticas de `storage.objects` (bucket das capas). `USING` filtra o q
 | `public.comments` | `comments_insert_own` | INSERT | authenticated |  | `((author_id = ( SELECT auth.uid() AS uid)) AND (( SELECT (auth.jwt() ->> 'is_anonymous'::text)) IS DISTINCT FROM 'true'::text))` |
 | `public.comments` | `comments_select` | SELECT | anon, authenticated | `(((status = 'approved'::text) AND (EXISTS ( SELECT 1 FROM reading_sessions s WHERE (s.id = comments.session_id)))) OR (author_id = ( SELECT auth.uid() AS uid)) OR ( SELECT is_staff() AS is_staff))` |  |
 | `public.comments` | `comments_update_staff` | UPDATE | authenticated | `( SELECT is_staff() AS is_staff)` | `( SELECT is_staff() AS is_staff)` |
+| `public.member_audit` | `member_audit_select_admin` | SELECT | authenticated | `( SELECT is_admin() AS is_admin)` |  |
+| `public.member_suspensions` | `member_suspensions_select` | SELECT | authenticated | `((user_id = ( SELECT auth.uid() AS uid)) OR ( SELECT is_admin() AS is_admin))` |  |
 | `public.profiles` | `profiles_select_public` | SELECT | anon, authenticated | `true` |  |
 | `public.profiles` | `profiles_update_own` | UPDATE | authenticated | `(id = ( SELECT auth.uid() AS uid))` | `(id = ( SELECT auth.uid() AS uid))` |
 | `public.reading_progress` | `reading_progress_insert_own` | INSERT | authenticated |  | `(user_id = ( SELECT auth.uid() AS uid))` |
@@ -73,6 +77,8 @@ Permissão na tabela inteira. O RLS ainda se aplica a cada uma delas.
 | `comment_flags` | authenticated | DELETE, SELECT |
 | `comments` | anon | SELECT |
 | `comments` | authenticated | SELECT |
+| `member_audit` | authenticated | SELECT |
+| `member_suspensions` | authenticated | SELECT |
 | `profiles` | anon | SELECT |
 | `profiles` | authenticated | SELECT |
 | `reading_progress` | authenticated | SELECT |
@@ -104,10 +110,16 @@ colunas "anon", "authenticated" e "PUBLIC" dizem quem pode executar pela API.
 
 | Função | Trigger | security definer | search_path | anon | authenticated | PUBLIC |
 | --- | --- | --- | --- | --- | --- | --- |
+| `admin_delete_member(p_user_id uuid)` | não | sim | `"" (vazio)` | não | sim | não |
+| `admin_find_member_by_email(p_email text)` | não | sim | `"" (vazio)` | não | sim | não |
+| `admin_masked_emails(p_user_ids uuid[])` | não | sim | `"" (vazio)` | não | sim | não |
+| `admin_member_contact(p_user_id uuid)` | não | sim | `"" (vazio)` | não | sim | não |
+| `admin_member_export(p_user_id uuid)` | não | sim | `"" (vazio)` | não | sim | não |
 | `comments_before_insert()` | sim | sim | `"" (vazio)` | não | não | não |
 | `comments_flag_links()` | sim | sim | `"" (vazio)` | não | não | não |
 | `comments_rate_limit()` | sim | sim | `"" (vazio)` | não | não | não |
 | `comments_sync_approved_count()` | sim | sim | `"" (vazio)` | não | não | não |
+| `delete_account_cascade(p_user_id uuid)` | não | não | `"" (vazio)` | não | não | não |
 | `delete_my_account()` | não | sim | `"" (vazio)` | não | sim | não |
 | `derive_avatar_url(meta jsonb)` | não | não | `"" (vazio)` | não | não | não |
 | `derive_display_name(meta jsonb)` | não | não | `"" (vazio)` | não | não | não |
@@ -115,9 +127,12 @@ colunas "anon", "authenticated" e "PUBLIC" dizem quem pode executar pela API.
 | `handle_new_user()` | sim | sim | `"" (vazio)` | não | não | não |
 | `is_admin()` | não | sim | `"" (vazio)` | sim | sim | não |
 | `is_staff()` | não | sim | `"" (vazio)` | sim | sim | não |
+| `mask_email(p_email text)` | não | não | `"" (vazio)` | não | não | não |
 | `publish_session(p_session_id uuid)` | não | não | `"" (vazio)` | não | sim | não |
 | `reading_sessions_set_published_at()` | sim | não | `"" (vazio)` | não | não | não |
 | `retract_comment(p_comment_id uuid)` | não | sim | `"" (vazio)` | não | sim | não |
+| `set_member_role(p_user_id uuid, p_role text, p_expected_role text)` | não | sim | `"" (vazio)` | não | sim | não |
+| `set_member_suspension(p_user_id uuid, p_suspended boolean)` | não | sim | `"" (vazio)` | não | sim | não |
 | `set_updated_at()` | sim | não | `"" (vazio)` | não | não | não |
 | `start_book(p_book_id uuid)` | não | não | `"" (vazio)` | não | sim | não |
 | `unpublish_session(p_session_id uuid)` | não | não | `"" (vazio)` | não | sim | não |
