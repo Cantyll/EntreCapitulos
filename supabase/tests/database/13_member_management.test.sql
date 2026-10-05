@@ -29,6 +29,52 @@ exception when others then
 end;
 $$;
 
+-- Helper: like t_refused, but for CHECK constraints: 'ok' only when the CHECK that fired is the named one.
+create function public.t_check_violation(p_sql text, p_constraint text)
+returns text
+language plpgsql
+as $$
+declare
+  v_state text;
+  v_constraint text;
+begin
+  execute p_sql;
+  return 'no error';
+exception when others then
+  get stacked diagnostics v_state = returned_sqlstate, v_constraint = constraint_name;
+  if v_state = '23514' and v_constraint = p_constraint then
+    return 'ok';
+  end if;
+  return format('expected 23514 on %s but got %s on %s', p_constraint, v_state, coalesce(v_constraint, '-'));
+end;
+$$;
+
+-- Helper: how many locks of the member-management advisory key does THIS backend hold right after the call?
+-- The call runs, the count is read, and a raise rolls the whole call back (it releases the lock and undoes
+-- any change). Call it BEFORE anything else in the transaction took the lock (a held lock stays held).
+create function public.t_lock_held(p_sql text)
+returns text
+language plpgsql
+as $$
+declare
+  v_key bigint := hashtextextended('entre-capitulos:member-management', 0);
+  v_count integer;
+  v_message text;
+begin
+  begin
+    execute p_sql;
+    select count(*) into v_count
+      from pg_locks
+     where locktype = 'advisory' and pid = pg_backend_pid() and granted and objsubid = 1
+       and ((classid::bigint << 32) | objid::bigint) = v_key;
+    raise exception 'locks=%', v_count using errcode = 'P0099';
+  exception when sqlstate 'P0099' then
+    get stacked diagnostics v_message = message_text;
+    return v_message;
+  end;
+end;
+$$;
+
 delete from public.comments;
 delete from public.reading_sessions;
 delete from public.books;
@@ -43,7 +89,13 @@ insert into auth.users (id, email, raw_app_meta_data, last_sign_in_at) values
   ('00000000-0000-4000-8000-0000000000b2', 'b2@t.test', '{"provider":"email","providers":["email"]}', null),
   ('00000000-0000-4000-8000-0000000000b3', 'b3@t.test', '{"provider":"email","providers":["email"]}', null),
   ('00000000-0000-4000-8000-0000000000b4', 'b4@t.test', '{"provider":"email","providers":["email"]}', null),
-  ('00000000-0000-4000-8000-0000000000b5', 'b5@t.test', '{"provider":"email","providers":["email"]}', null);
+  ('00000000-0000-4000-8000-0000000000b5', 'b5@t.test', '{"provider":"email","providers":["email"]}', null),
+  -- c1/c2: provider fallbacks (a single "provider" string, and no provider at all). c4: a mixed-case address.
+  ('00000000-0000-4000-8000-0000000000c1', 'only-provider@t.test', '{"provider":"google"}', null),
+  ('00000000-0000-4000-8000-0000000000c2', 'no-provider@t.test', '{}', null),
+  ('00000000-0000-4000-8000-0000000000c4', 'Maria.Mista@Exemplo.com', '{"provider":"email","providers":["email"]}', null);
+-- c3: an anonymous sign-in (no e-mail, is_anonymous = true).
+insert into auth.users (id, email, is_anonymous) values ('00000000-0000-4000-8000-0000000000c3', null, true);
 update public.profiles set role = 'admin' where id in ('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000a2');
 update public.profiles set role = 'moderator' where id = '00000000-0000-4000-8000-0000000000a3';
 update public.profiles set display_name_confirmed_at = now();
@@ -65,7 +117,9 @@ insert into public.comment_flags (comment_id, reason) values ('30000000-0000-400
 insert into public.reading_progress (user_id, book_id, chapter) values
   ('00000000-0000-4000-8000-0000000000b1', '10000000-0000-4000-8000-000000000001', 9),
   ('00000000-0000-4000-8000-0000000000b2', '10000000-0000-4000-8000-000000000001', 5),
-  ('00000000-0000-4000-8000-0000000000b3', '10000000-0000-4000-8000-000000000001', 7);
+  ('00000000-0000-4000-8000-0000000000b3', '10000000-0000-4000-8000-000000000001', 7),
+  -- b4 keeps a row through the whole file, so an export of someone else can never pass by luck.
+  ('00000000-0000-4000-8000-0000000000b4', '10000000-0000-4000-8000-000000000001', 11);
 
 -- =============================================================================================
 -- 1. Shape: security definer, empty search_path, VOLATILE (POST only through PostgREST), privileges.
@@ -100,28 +154,57 @@ select is(
 select is((select prosecdef from pg_proc where oid = 'public.delete_account_cascade(uuid)'::regprocedure), false,
   'delete_account_cascade is security invoker (only the definer functions can reach it)');
 
--- The lock order of the three functions that share it: quick is_admin(), the lock, is_admin() again (exactly
--- two checks, one on each side of the lock). The behaviour (a non-administrator never waits) is proved with
--- real connections in scripts/db/member-role-race.sh.
+-- The lock preamble of the three functions that share it, read on comment-stripped, whitespace-collapsed
+-- source: quick is_admin(), the READ COMMITTED guard, THE lock (same key and seed, written once), is_admin()
+-- again, and no row lock before the lock. The source text can be fooled by dead code, so the behaviour is
+-- proved twice more: the next block (the lock is really taken, in one connection) and
+-- scripts/db/member-role-race.sh (two real connections: waiting, refusing after the wait, isolation).
+with src as (
+  select regexp_replace(regexp_replace(p.prosrc, '--[^\n]*', '', 'g'), '\s+', ' ', 'g') as s
+    from pg_proc p
+   where p.oid in ('public.set_member_role(uuid, text, text)'::regprocedure,
+                   'public.set_member_suspension(uuid, boolean)'::regprocedure,
+                   'public.admin_delete_member(uuid)'::regprocedure)
+)
 select is(
-  (select count(*)::int
-     from pg_proc p
-    where p.oid in ('public.set_member_role(uuid, text, text)'::regprocedure,
-                    'public.set_member_suspension(uuid, boolean)'::regprocedure,
-                    'public.admin_delete_member(uuid)'::regprocedure)
-      and position('pg_advisory_xact_lock' in p.prosrc) > 0
-      and position('public.is_admin()' in substr(p.prosrc, 1, position('pg_advisory_xact_lock' in p.prosrc))) > 0
-      and position('public.is_admin()' in substr(p.prosrc, position('pg_advisory_xact_lock' in p.prosrc))) > 0
-      and (select count(*) from regexp_matches(p.prosrc, 'public\.is_admin\(\)', 'g')) = 2
-      and position('transaction_isolation' in p.prosrc) > 0),
-  3, 'set_member_role, set_member_suspension and admin_delete_member: is_admin(), the lock, is_admin() again, READ COMMITTED required');
+  (select count(*)::int from src
+    where s ~ 'if not \(select public\.is_admin\(\)\) then raise exception ''not_admin:[^'']*'' using errcode = ''42501''; end if; if current_setting\(''transaction_isolation''\) <> ''read committed'' then raise exception ''unsupported_isolation:[^'']*'' using errcode = ''25000''; end if; perform pg_advisory_xact_lock\(hashtextextended\(''entre-capitulos:member-management'', 0\)\); if not \(select public\.is_admin\(\)\) then raise exception ''not_admin:'
+      and (select count(*) from regexp_matches(s, 'advisory', 'g')) = 1
+      and (select count(*) from regexp_matches(s, 'public\.is_admin\(\)', 'g')) = 2
+      and position('for update' in s) > position('pg_advisory_xact_lock' in s)),
+  3, 'lock preamble of set_member_role, set_member_suspension and admin_delete_member: is_admin(), READ COMMITTED, the one lock (same key and seed), is_admin() again, no row lock before it');
+
+-- The lock is really TAKEN (a commented-out or never-reached lock would still pass the text test above). Each
+-- call is rolled back by the helper. This must run before anything else in this transaction takes the lock.
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a1", "role": "authenticated"}', true);
+select is(public.t_lock_held($$select public.set_member_role('00000000-0000-4000-8000-0000000000b5', 'member')$$), 'locks=1',
+  'set_member_role takes the lock (even in a call that changes nothing)');
+select is(public.t_lock_held($$select public.set_member_suspension('00000000-0000-4000-8000-0000000000b5', false)$$), 'locks=1',
+  'set_member_suspension takes the lock');
+select is(public.t_lock_held($$select public.admin_delete_member('00000000-0000-4000-8000-0000000000b5')$$), 'locks=1',
+  'admin_delete_member takes the lock');
+reset role;
+select is((select count(*)::int from auth.users where id = '00000000-0000-4000-8000-0000000000b5'), 1,
+  'and the helper rolled the deletion back');
+
+-- e-mail readers and the audit order, pinned on the source: the audit row is written only AFTER the auth.users
+-- read, so a refused read can never leave a trace of a view that did not happen. (A behavioural test cannot
+-- show this: a refused call is rolled back whatever it wrote.)
 select is(
-  (select count(distinct substring(p.prosrc from 'hashtextextended\(''([^'']+)'''))::int
-     from pg_proc p
-    where p.oid in ('public.set_member_role(uuid, text, text)'::regprocedure,
-                    'public.set_member_suspension(uuid, boolean)'::regprocedure,
-                    'public.admin_delete_member(uuid)'::regprocedure)),
-  1, 'the three functions use the very same lock key');
+  (select count(*)::int from pg_proc p
+    where p.oid in ('public.admin_member_contact(uuid)'::regprocedure, 'public.admin_member_export(uuid)'::regprocedure)
+      and position('from auth.users' in p.prosrc) > 0
+      and position('insert into public.member_audit' in p.prosrc) > position('from auth.users' in p.prosrc)),
+  2, 'view_contact and export_data are audited only after the auth.users read');
+
+-- One place deletes an account: both entry points call the shared helper and neither deletes by itself.
+select is(
+  (select count(*)::int from pg_proc p
+    where p.oid in ('public.delete_my_account()'::regprocedure, 'public.admin_delete_member(uuid)'::regprocedure)
+      and position('delete_account_cascade' in p.prosrc) > 0
+      and position('delete from auth.users' in p.prosrc) = 0),
+  2, 'delete_my_account and admin_delete_member delete only through delete_account_cascade');
 
 -- =============================================================================================
 -- 2. Who can call what: visitor, anonymous sign-in, member and moderator are refused by every function.
@@ -147,7 +230,7 @@ select is(public.t_refused(sql, '42501', 'not_admin:'), 'ok', 'member: ' || labe
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a3", "role": "authenticated"}', true);
 select is(public.t_refused(sql, '42501', 'not_admin:'), 'ok', 'moderator: ' || label) from public.t_fn_calls;
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000b4", "role": "authenticated", "is_anonymous": true}', true);
-select is(public.t_refused(sql, '42501', 'not_admin:'), 'ok', 'anonymous sign-in: ' || label) from public.t_fn_calls;
+select is(public.t_refused(sql, '42501', 'not_admin:'), 'ok', 'member whose token is flagged anonymous: ' || label) from public.t_fn_calls;
 reset role;
 
 select is((select count(*)::int from public.member_audit), 0, 'the refused calls wrote no audit row');
@@ -192,6 +275,20 @@ select is(public.t_refused($$select public.set_member_role('00000000-0000-4000-8
 -- Promote to admin, then take it back.
 select is(public.set_member_role('00000000-0000-4000-8000-0000000000b5', 'admin'), 'member', 'promote to administrator');
 select is(public.set_member_role('00000000-0000-4000-8000-0000000000b5', 'member', 'admin'), 'admin', 'and demote again');
+
+-- A staff role never goes to an anonymous sign-in (c3). No-ops and demotions stay possible, so a mistake can be undone.
+select is(public.t_refused($$select public.set_member_role('00000000-0000-4000-8000-0000000000c3', 'moderator')$$, 'P0001', 'target_anonymous:'), 'ok',
+  'an anonymous sign-in cannot become a moderator');
+select is(public.t_refused($$select public.set_member_role('00000000-0000-4000-8000-0000000000c3', 'admin')$$, 'P0001', 'target_anonymous:'), 'ok',
+  'nor an administrator');
+select is((select role from public.profiles where id = '00000000-0000-4000-8000-0000000000c3'), 'member', 'and the profile is unchanged');
+select is(public.set_member_role('00000000-0000-4000-8000-0000000000c3', 'member'), 'member', 'a no-op on an anonymous sign-in is fine');
+reset role;
+update public.profiles set role = 'moderator' where id = '00000000-0000-4000-8000-0000000000c3';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a1", "role": "authenticated"}', true);
+select is(public.set_member_role('00000000-0000-4000-8000-0000000000c3', 'member', 'moderator'), 'moderator',
+  'an anonymous account that somehow became staff can still be demoted');
 
 -- Moderator demoted to member.
 select is(public.set_member_role('00000000-0000-4000-8000-0000000000a3', 'member'), 'moderator', 'a moderator can lose the role');
@@ -248,6 +345,20 @@ select is((select count(*)::int from public.member_audit where target_id = '0000
 select set_member_suspension('00000000-0000-4000-8000-0000000000b4', true);
 select is(public.t_refused($$select public.set_member_role('00000000-0000-4000-8000-0000000000b4', 'moderator')$$, 'P0001', 'member_suspended:'), 'ok',
   'giving a staff role to a suspended member is refused until they are reactivated');
+select is(public.t_refused($$select public.set_member_role('00000000-0000-4000-8000-0000000000b4', 'admin')$$, 'P0001', 'member_suspended:'), 'ok',
+  'a suspended member cannot become an administrator either');
+select is((select role from public.profiles where id = '00000000-0000-4000-8000-0000000000b4'), 'member', 'and stays a member');
+-- The documented order of the refusals, pinned two at a time (b4 is a suspended member, a1 is an administrator).
+select is(public.t_refused($$select public.set_member_role('00000000-0000-4000-8000-0000000000b4', 'member', 'moderator')$$, 'P0001', 'role_conflict:'), 'ok',
+  'role_conflict comes before the no-op shortcut');
+select is(public.t_refused($$select public.set_member_role('00000000-0000-4000-8000-0000000000a1', 'admin', 'member')$$, 'P0001', 'self_change:'), 'ok',
+  'self_change comes before role_conflict');
+select is(public.t_refused($$select public.set_member_role('00000000-0000-4000-8000-0000000000b4', 'moderator', 'admin')$$, 'P0001', 'role_conflict:'), 'ok',
+  'role_conflict comes before member_suspended');
+select is(public.t_refused($$select public.set_member_role('00000000-0000-4000-8000-0000000000ff', 'root')$$, '22023', 'invalid_role:'), 'ok',
+  'invalid_role comes before target_not_found');
+select is(public.t_refused($$select public.set_member_suspension('00000000-0000-4000-8000-0000000000ff', null)$$, '22023', 'invalid_input:'), 'ok',
+  'invalid_input comes before target_not_found');
 select is(public.set_member_role('00000000-0000-4000-8000-0000000000b4', 'member'), 'member', 'a no-op role call is still fine for a suspended member');
 select is(public.set_member_suspension('00000000-0000-4000-8000-0000000000b4', false), true, 'reactivate');
 select is((select count(*)::int from public.member_suspensions where user_id = '00000000-0000-4000-8000-0000000000b4'), 0, 'row removed');
@@ -283,6 +394,15 @@ select lives_ok($$insert into public.comments (session_id, author_id, body)
   'a moderator with a (stray) suspension row can still comment');
 reset role;
 delete from public.member_suspensions where user_id = '00000000-0000-4000-8000-0000000000a3';
+-- ... and so is an administrator with a stray row (the trigger exempts both staff roles, not only the moderator).
+insert into public.member_suspensions (user_id) values ('00000000-0000-4000-8000-0000000000a2');
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a2", "role": "authenticated"}', true);
+select lives_ok($$insert into public.comments (session_id, author_id, body)
+  values ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000a2', 'administração comenta')$$,
+  'an administrator with a (stray) suspension row can still comment');
+reset role;
+delete from public.member_suspensions where user_id = '00000000-0000-4000-8000-0000000000a2';
 
 -- Reactivation restores commenting.
 set local role authenticated;
@@ -306,13 +426,13 @@ select is((select count(*)::int from public.member_suspensions), 0, 'another mem
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a3", "role": "authenticated"}', true);
 select is((select count(*)::int from public.member_suspensions), 0, 'a moderator sees nothing either');
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a1", "role": "authenticated"}', true);
-select is(public.t_refused($$insert into public.member_suspensions (user_id) values ('00000000-0000-4000-8000-0000000000b5')$$, '42501', 'permission denied'),
+select is(public.t_refused($$insert into public.member_suspensions (user_id) values ('00000000-0000-4000-8000-0000000000b5')$$, '42501', 'permission denied for table member_suspensions'),
   'ok', 'no insert by clients, not even the administration');
-select is(public.t_refused($$delete from public.member_suspensions$$, '42501', 'permission denied'), 'ok', 'no delete by clients');
-select is(public.t_refused($$update public.member_suspensions set suspended_at = now()$$, '42501', 'permission denied'), 'ok', 'no update by clients');
+select is(public.t_refused($$delete from public.member_suspensions$$, '42501', 'permission denied for table member_suspensions'), 'ok', 'no delete by clients');
+select is(public.t_refused($$update public.member_suspensions set suspended_at = now()$$, '42501', 'permission denied for table member_suspensions'), 'ok', 'no update by clients');
 reset role;
 set local role anon;
-select is(public.t_refused($$select * from public.member_suspensions$$, '42501', 'permission denied'), 'ok', 'a visitor cannot read the table at all');
+select is(public.t_refused($$select * from public.member_suspensions$$, '42501', 'permission denied for table member_suspensions'), 'ok', 'a visitor cannot read the table at all');
 reset role;
 select is((select count(*)::int from information_schema.column_privileges
             where table_schema = 'public' and table_name = 'profiles' and column_name = 'role'
@@ -332,7 +452,7 @@ select is(public.t_refused($$select public.admin_delete_member('00000000-0000-40
 select is(public.t_refused($$select public.admin_delete_member('00000000-0000-4000-8000-0000000000ff')$$, 'P0002', 'target_not_found:'), 'ok', 'unknown target');
 select is(public.t_refused($$select public.admin_delete_member(null)$$, 'P0002', 'target_not_found:'), 'ok', 'null target');
 reset role;
-select is((select count(*)::int from auth.users), 8, 'nothing was deleted by the refused calls');
+select is((select count(*)::int from auth.users), 12, 'nothing was deleted by the refused calls');
 select is((select count(*)::int from public.member_audit where action = 'delete_account'), 0, 'and no delete audit row was written');
 
 set local role authenticated;
@@ -348,6 +468,12 @@ select is((select count(*)::int from public.reading_progress where user_id = '00
 select is((select count(*)::int from public.member_suspensions where user_id = '00000000-0000-4000-8000-0000000000b2'), 0, 'their suspension row is gone');
 select is((select count(*)::int from public.comments where id = '30000000-0000-4000-8000-000000000003'), 1, 'other people''s own comments remain');
 select is((select count(*)::int from public.reading_progress where user_id = '00000000-0000-4000-8000-0000000000b3'), 1, 'other people''s progress remains');
+-- The cascade also removed b3's reply under b2's comment: b3's approved counter goes down with it (it was 2).
+select is((select approved_comment_count from public.profiles where id = '00000000-0000-4000-8000-0000000000b3'), 1,
+  'the approved counter of a person whose reply was cascaded away goes down');
+select is((select count(*)::int from public.profiles p
+            where p.approved_comment_count <> (select count(*) from public.comments c where c.author_id = p.id and c.status = 'approved')), 0,
+  'every approved counter still equals the number of approved comments');
 select is((select count(*)::int from public.member_audit where action = 'delete_account'
              and actor_id = '00000000-0000-4000-8000-0000000000a1' and target_id = '00000000-0000-4000-8000-0000000000b2' and details = '{}'), 1,
   'one audit row, which survives the deletion (no foreign key) and has empty details');
@@ -390,6 +516,22 @@ select is((select count(*)::int from public.member_audit where action = 'export_
   'every export is audited (three calls so far)');
 select is(public.t_refused($$select public.admin_member_export('00000000-0000-4000-8000-0000000000ff')$$, 'P0002', 'target_not_found:'), 'ok', 'export of an unknown target');
 select is((select count(*)::int from public.member_audit where action = 'export_data'), 3, 'a refused export writes no audit row');
+
+-- The export carries ONLY that person's data (b4 has a progress row of their own: an export that lost its
+-- filter would return two rows for b1).
+select is((public.admin_member_export('00000000-0000-4000-8000-0000000000b1') -> 'progress' -> 0) ->> 'chapter', '9', 'b1''s export has b1''s chapter, not b4''s');
+select is((public.admin_member_export('00000000-0000-4000-8000-0000000000b4') -> 'progress' -> 0) ->> 'chapter', '11', 'b4''s export has b4''s chapter');
+select is(jsonb_array_length(public.admin_member_export('00000000-0000-4000-8000-0000000000b4') -> 'progress'), 1, 'and only that one');
+select is(public.admin_member_export('00000000-0000-4000-8000-0000000000b5') -> 'progress', '[]'::jsonb, 'no progress gives an empty list, not null');
+select is((public.admin_member_export('00000000-0000-4000-8000-0000000000b4') -> 'account') ->> 'email', 'b4@t.test', 'the account part is that person too');
+
+-- Provider fallbacks: a single "provider" string, and no provider at all.
+select results_eq($$select providers from public.admin_member_contact('00000000-0000-4000-8000-0000000000c1')$$,
+  $$values (array['google']::text[])$$, 'contact: a single "provider" string is the fallback');
+select results_eq($$select providers from public.admin_member_contact('00000000-0000-4000-8000-0000000000c2')$$,
+  $$values ('{}'::text[])$$, 'contact: no provider gives an empty list');
+select is(public.admin_member_export('00000000-0000-4000-8000-0000000000c1') -> 'account' -> 'providers', '["google"]'::jsonb, 'export: the same fallback');
+select is(public.admin_member_export('00000000-0000-4000-8000-0000000000c2') -> 'account' -> 'providers', '[]'::jsonb, 'export: no provider');
 reset role;
 
 -- The auth read is refused (a role without privilege on auth.users owns the function): contact_unavailable, nothing written.
@@ -400,6 +542,8 @@ grant authenticated to t_noauth;
 grant create on schema public to t_noauth;
 alter function public.admin_member_contact(uuid) owner to t_noauth;
 alter function public.admin_member_export(uuid) owner to t_noauth;
+alter function public.admin_find_member_by_email(text) owner to t_noauth;
+alter function public.admin_masked_emails(uuid[]) owner to t_noauth;
 select set_config('t.audit_count', count(*)::text, false) from public.member_audit;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a1", "role": "authenticated"}', true);
@@ -407,10 +551,17 @@ select is(public.t_refused($$select * from public.admin_member_contact('00000000
   'contact: the auth read refused for lack of privilege gives contact_unavailable');
 select is(public.t_refused($$select public.admin_member_export('00000000-0000-4000-8000-0000000000b1')$$, 'P0001', 'contact_unavailable:'), 'ok',
   'export: same');
+select is(public.t_refused($$select public.admin_find_member_by_email('joao.silva@exemplo.com')$$, 'P0001', 'contact_unavailable:'), 'ok',
+  'the e-mail search: same');
+select is(public.t_refused($$select * from public.admin_masked_emails(array['00000000-0000-4000-8000-0000000000b1']::uuid[])$$, 'P0001', 'contact_unavailable:'), 'ok',
+  'the masked list: same');
 reset role;
-select is((select count(*)::text from public.member_audit), current_setting('t.audit_count'), 'and neither wrote an audit row');
+-- (The audit order itself is pinned on the source above: a refused call is rolled back, so this count alone cannot show it.)
+select is((select count(*)::text from public.member_audit), current_setting('t.audit_count'), 'no audit row survives a refused read');
 alter function public.admin_member_contact(uuid) owner to postgres;
 alter function public.admin_member_export(uuid) owner to postgres;
+alter function public.admin_find_member_by_email(text) owner to postgres;
+alter function public.admin_masked_emails(uuid[]) owner to postgres;
 revoke create on schema public from t_noauth;
 revoke authenticated from t_noauth;
 drop role t_noauth;
@@ -429,6 +580,10 @@ select is(public.admin_find_member_by_email('_oao.silva@exemplo.com'), null, '_ 
 select is(public.admin_find_member_by_email(null), null, 'null finds nobody');
 select is(public.admin_find_member_by_email('   '), null, 'blank finds nobody');
 select is(public.admin_find_member_by_email(repeat('a', 400) || '@x.com'), null, 'a huge value finds nobody');
+select is(public.admin_find_member_by_email('maria.mista@exemplo.com'), '00000000-0000-4000-8000-0000000000c4'::uuid,
+  'an address stored with capital letters is found by its lower-case form');
+select is(public.admin_find_member_by_email(E'\tjoao.silva@exemplo.com\r\n'), '00000000-0000-4000-8000-0000000000b1'::uuid,
+  'tabs and line breaks around the address are ignored (a pasted address)');
 
 select is((select count(*)::int from public.admin_masked_emails(array['00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000a1']::uuid[])), 2,
   'masked e-mails for the ids asked');
@@ -459,24 +614,30 @@ select is(public.t_refused($$select public.delete_account_cascade('00000000-0000
 reset role;
 select is((select count(*)::int from auth.users where id = '00000000-0000-4000-8000-0000000000b1'), 1, 'and nothing was deleted by that attempt');
 
+-- Every audit row the functions wrote above names the caller (the only administration caller in this file is a1)
+-- as the actor, and all six actions were produced by the functions themselves.
+select is((select count(*)::int from public.member_audit where actor_id <> '00000000-0000-4000-8000-0000000000a1'), 0,
+  'every audit row written by a function names the caller as the actor');
+select is((select count(distinct action)::int from public.member_audit), 6, 'all six audit actions were produced by the functions');
+
 -- =============================================================================================
 -- 8. The audit table
 -- =============================================================================================
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a1", "role": "authenticated"}', true);
 select cmp_ok((select count(*)::int from public.member_audit), '>', 0, 'the administration reads the audit');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action) values (gen_random_uuid(), gen_random_uuid(), 'suspend')$$, '42501', 'permission denied'),
+select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action) values (gen_random_uuid(), gen_random_uuid(), 'suspend')$$, '42501', 'permission denied for table member_audit'),
   'ok', 'no insert through the API, not even by an administrator');
-select is(public.t_refused($$update public.member_audit set action = 'suspend'$$, '42501', 'permission denied'), 'ok', 'no update');
-select is(public.t_refused($$delete from public.member_audit$$, '42501', 'permission denied'), 'ok', 'no delete');
-select is(public.t_refused($$truncate public.member_audit$$, '42501', 'permission denied'), 'ok', 'no truncate');
+select is(public.t_refused($$update public.member_audit set action = 'suspend'$$, '42501', 'permission denied for table member_audit'), 'ok', 'no update');
+select is(public.t_refused($$delete from public.member_audit$$, '42501', 'permission denied for table member_audit'), 'ok', 'no delete');
+select is(public.t_refused($$truncate public.member_audit$$, '42501', 'permission denied for table member_audit'), 'ok', 'no truncate');
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a3", "role": "authenticated"}', true);
 select is((select count(*)::int from public.member_audit), 0, 'a moderator reads nothing');
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000b1", "role": "authenticated"}', true);
 select is((select count(*)::int from public.member_audit), 0, 'a member reads nothing (not even rows about themselves)');
 reset role;
 set local role anon;
-select is(public.t_refused($$select * from public.member_audit$$, '42501', 'permission denied'), 'ok', 'a visitor cannot read the table at all');
+select is(public.t_refused($$select * from public.member_audit$$, '42501', 'permission denied for table member_audit'), 'ok', 'a visitor cannot read the table at all');
 reset role;
 select is((select count(*)::int from pg_constraint where conrelid = 'public.member_audit'::regclass and contype = 'f'), 0,
   'no foreign keys: the audit outlives the people in it');
@@ -485,32 +646,42 @@ select is((select count(*)::int from information_schema.role_table_grants
               and privilege_type <> 'SELECT'), 0, 'the only API privilege on member_audit is SELECT');
 
 -- The CHECK: details can only hold the previous and the new role.
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'sudo', '{}')$$, '23514', 'new row'),
-  'ok', 'unknown action');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{}')$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'sudo', '{}')$$, 'member_audit_action_check'),
+  'ok', 'unknown action (the action CHECK, not the details one)');
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{}')$$, 'member_audit_details_shape'),
   'ok', 'role_change without from and to');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"member"}')$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"member"}')$$, 'member_audit_details_shape'),
   'ok', 'role_change without to');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"to":"admin"}')$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"to":"admin"}')$$, 'member_audit_details_shape'),
   'ok', 'role_change without from');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"member","to":"admin","email":"a@b.c"}')$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"member","to":"admin","email":"a@b.c"}')$$, 'member_audit_details_shape'),
   'ok', 'an extra key (an e-mail) is refused');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"member","to":"member"}')$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"member","to":"member"}')$$, 'member_audit_details_shape'),
   'ok', 'from equal to to is refused');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"member","to":"Maria"}')$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"member","to":"Maria"}')$$, 'member_audit_details_shape'),
   'ok', 'a value that is not a role (a name) is refused');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":1,"to":"admin"}')$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":1,"to":"admin"}')$$, 'member_audit_details_shape'),
   'ok', 'a number is refused');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":null,"to":"admin"}')$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":null,"to":"admin"}')$$, 'member_audit_details_shape'),
   'ok', 'a JSON null is refused');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'suspend', '{"from":"member","to":"admin"}')$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'suspend', '{"from":"member","to":"admin"}')$$, 'member_audit_details_shape'),
   'ok', 'details of another action must be empty');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'delete_account', '{"nome":"Maria"}')$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'delete_account', '{"nome":"Maria"}')$$, 'member_audit_details_shape'),
   'ok', 'free text is refused');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'suspend', '[]')$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'suspend', '[]')$$, 'member_audit_details_shape'),
   'ok', 'an array is refused');
-select is(public.t_refused($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'suspend', 'null'::jsonb)$$, '23514', 'new row'),
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'suspend', 'null'::jsonb)$$, 'member_audit_details_shape'),
   'ok', 'a JSON null document is refused');
+-- The "from" side needs its own cases: a number or a JSON null already fail the typeof test, so only a
+-- string that is not a role proves the whitelist of "from" (and a case variant proves it is case sensitive).
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"Maria","to":"admin"}')$$, 'member_audit_details_shape'),
+  'ok', 'a name in "from" is refused');
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"joao@exemplo.com","to":"admin"}')$$, 'member_audit_details_shape'),
+  'ok', 'an e-mail in "from" is refused');
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"Member","to":"admin"}')$$, 'member_audit_details_shape'),
+  'ok', 'role names are case sensitive in "from"');
+select is(public.t_check_violation($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"member","to":"Admin"}')$$, 'member_audit_details_shape'),
+  'ok', 'and in "to"');
 select lives_ok($$insert into public.member_audit (actor_id, target_id, action, details) values (gen_random_uuid(), gen_random_uuid(), 'role_change', '{"from":"member","to":"admin"}')$$,
   'a well-formed role change is accepted');
 select lives_ok($$insert into public.member_audit (actor_id, target_id, action) values (gen_random_uuid(), gen_random_uuid(), 'view_contact')$$,
