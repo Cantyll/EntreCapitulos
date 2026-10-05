@@ -36,6 +36,18 @@ export function formatDayMonth(value: DateInput): string {
   return date ? format(date, { day: 'numeric', month: 'long' }, SITE_TIME_ZONE) : '';
 }
 
+/** "5 de outubro de 2026, 14:30" (horário de Brasília), para a auditoria. */
+export function formatDateTime(value: DateInput): string {
+  const date = toDate(value);
+  return date
+    ? format(
+        date,
+        { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' },
+        SITE_TIME_ZONE,
+      )
+    : '';
+}
+
 /** "27 de setembro de 2026". */
 export function formatFullDate(value: DateInput): string {
   const date = toDate(value);

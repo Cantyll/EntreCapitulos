@@ -73,6 +73,10 @@ export const MEMBER_NOTICES = {
     tone: 'error',
     message: 'Não foi possível gerar o arquivo agora. Tente de novo em instantes.',
   },
+  'atualizacao-pendente': {
+    tone: 'error',
+    message: 'Falta aplicar a atualização do banco (Database deploy).',
+  },
 } as const;
 
 export type MemberNotice = keyof typeof MEMBER_NOTICES;
