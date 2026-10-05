@@ -54,6 +54,13 @@ jobs:
       - name: Run pgTAP tests
         run: supabase test db
 
+      # Corrida entre administradores (etapa 8f): duas conexões reais ao banco local provam que dois administradores
+      # se rebaixando ao mesmo tempo terminam com exatamente um (com um controle sem a trava que prova que o teste
+      # enxerga o erro) e que quem não é administrador nunca espera a trava. O pgTAP roda numa transação só e não
+      # consegue provar isso. O script só roda contra o banco local, não usa segredo e restaura tudo ao sair.
+      - name: Race test (two administrators changing roles at the same time)
+        run: bash scripts/db/member-role-race.sh
+
       # docs/seguranca.md é gerado do banco: falha se uma migration mudou permissões e o documento não.
       # Regenerar: UPDATE_SECURITY_DOC=1 (ver o cabeçalho do próprio documento).
       - name: Security inventory matches docs/seguranca.md
