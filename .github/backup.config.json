@@ -45,7 +45,9 @@
       "public.session_questions",
       "public.comments",
       "public.comment_flags",
-      "public.reading_progress"
+      "public.reading_progress",
+      "public.member_audit",
+      "public.member_suspensions"
     ]
   }
 }
