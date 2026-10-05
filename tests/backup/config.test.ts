@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
@@ -45,6 +45,22 @@ describe('configuração do backup (.github/backup.config.json)', () => {
     for (const table of requiredTables) expect(allowedTables).toContain(table);
     for (const table of excludeTables) expect(allowedTables).not.toContain(table);
     expect(schemas).toEqual(['public', 'auth']);
+  });
+
+  it('toda tabela que uma migration cria em `public` está em allowedTables ou excludeTables (senão o backup diário falha)', () => {
+    const dir = 'supabase/migrations';
+    const created = new Set<string>();
+    for (const file of readdirSync(dir).filter((name) => name.endsWith('.sql'))) {
+      const sql = readFileSync(`${dir}/${file}`, 'utf8').replace(/--[^\n]*/g, '');
+      for (const match of sql.matchAll(
+        /create\s+table\s+(?:if\s+not\s+exists\s+)?public\.([a-z_][a-z0-9_]*)/gi,
+      )) {
+        created.add(`public.${match[1]!.toLowerCase()}`);
+      }
+    }
+    expect(created.size).toBeGreaterThan(8);
+    const known = new Set([...config.dump.allowedTables, ...config.dump.excludeTables]);
+    expect([...created].filter((table) => !known.has(table))).toEqual([]);
   });
 
   it('as tabelas da gestão de membros (etapa 8f) entram no backup: sem elas o backup diário falharia', () => {

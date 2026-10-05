@@ -71,10 +71,9 @@ describe('checkTables', () => {
     const counts = { ...all };
     delete counts['public.member_audit'];
     delete counts['public.member_suspensions'];
-    expect(checkTables(counts, config).absent).toEqual([
-      'public.member_audit',
-      'public.member_suspensions',
-    ]);
+    expect(new Set(checkTables(counts, config).absent)).toEqual(
+      new Set(['public.member_audit', 'public.member_suspensions']),
+    );
   });
 
   it('não confunde tabela vazia com tabela ausente', () => {
