@@ -55,6 +55,9 @@ export const MEMBER_MESSAGES = {
   empty_search: 'Digite um nome ou um e-mail para buscar.',
   email_not_found: 'Nenhuma pessoa com esse e-mail.',
   generic: 'Não foi possível concluir agora. Tente de novo em instantes.',
+  // A chamada ao servidor foi cortada (sem rede, aplicativo em segundo plano): não dá para saber se chegou.
+  network:
+    'Sem conexão com o servidor. A ação pode ou não ter sido feita: atualize a página para conferir antes de tentar de novo.',
 } as const;
 
 export type MemberErrorKey = keyof typeof MEMBER_MESSAGES;

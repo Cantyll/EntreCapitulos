@@ -7,13 +7,9 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DELETE_CONFIRMATION } from '@/lib/account/messages';
 import { isDeleteConfirmed } from '@/lib/members/confirm';
+import { commentsLine, repliesLine } from '@/lib/members/deletion-text';
 
 import styles from './members.module.css';
-
-function count(value: number | null, one: string, many: string) {
-  if (value === null) return 'uma quantidade que não foi possível contar agora';
-  return value === 1 ? `1 ${one}` : `${value.toLocaleString('pt-BR')} ${many}`;
-}
 
 type Props = {
   memberId: string;
@@ -79,6 +75,7 @@ export function DeleteControl({ memberId, name, impact, isStaff }: Props) {
         busyLabel="Excluindo…"
         busy={pending}
         danger
+        initialFocus="cancel"
         disabled={!isDeleteConfirmed(typed)}
         error={error}
         onConfirm={confirm}
@@ -90,14 +87,8 @@ export function DeleteControl({ memberId, name, impact, isStaff }: Props) {
           </p>
           <ul>
             <li>o perfil, o e-mail e o progresso de leitura saem do site;</li>
-            <li>
-              {count(impact.comments, 'comentário', 'comentários')} da pessoa (em todos os estados)
-              {impact.comments === null ? '' : ' serão apagados'};
-            </li>
-            <li>
-              {count(impact.replies, 'resposta', 'respostas')} de outras pessoas a esses comentários{' '}
-              {impact.replies === null ? '' : impact.replies === 1 ? 'some' : 'somem'} junto.
-            </li>
+            <li>{commentsLine(impact.comments)}</li>
+            <li>{repliesLine(impact.replies)}</li>
           </ul>
           <p>
             As cópias de segurança podem guardar esses dados até cada cópia expirar. Antes de

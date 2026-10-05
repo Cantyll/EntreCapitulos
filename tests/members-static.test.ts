@@ -206,7 +206,14 @@ describe('o e-mail nunca vaza', () => {
     expect(reveal).toMatch(/useState<State>/);
     expect(reveal).toMatch(/addEventListener\('pagehide'/);
     expect(reveal).toMatch(/addEventListener\('pageshow'/);
-    expect(reveal).not.toMatch(/useRef|createContext|useContext|window\.name|history\./);
+    expect(reveal).not.toMatch(/createContext|useContext|window\.name|history\./);
+    // `useRef` só para nós do DOM (foco) e para o marcador de foco: nunca para guardar o contato.
+    for (const ref of reveal.matchAll(/useRef<([^>]*(?:>[^(]*)?)>\(/g)) {
+      expect(ref[1], 'tipo do useRef').toMatch(/^HTML\w*Element$|^'revealed' \| 'show' \| null$/);
+    }
+    for (const write of reveal.matchAll(/(\w+)\.current = /g)) {
+      expect(write[1], 'único valor escrito em ref').toBe('focusAfterChange');
+    }
   });
 
   it('a lista nunca usa o e-mail completo: só o mascarado vem do banco', () => {
@@ -290,5 +297,38 @@ describe('estilos dos diálogos, da auditoria e dos links em frase (achados da r
     const comments = read('src/components/comments/comments.module.css');
     expect(comments).toMatch(/\.guest p a\s*\{[^}]*text-decoration:\s*underline/);
     expect(css).toMatch(/\.searching a\s*\{[^}]*text-decoration:\s*underline/);
+  });
+});
+
+describe('controles de membros: foco, rede cortada e log (achados da revisão)', () => {
+  const component = (name: string) => strip(read(`src/components/membros/${name}.tsx`));
+
+  it('cargo, suspensão e e-mail pegam a chamada cortada e mostram a mensagem fixa, sem dado', () => {
+    for (const name of ['RoleControl', 'SuspensionControl', 'ContactReveal']) {
+      const code = component(name);
+      expect(code, name).toMatch(
+        /catch \(failure\) \{[\s\S]*logFailure\('membros: [^']+', failure\);/,
+      );
+      expect(code, name).toContain('MEMBER_MESSAGES.network');
+    }
+    // A exclusão depende do redirecionamento da action: nada de catch que o engula.
+    expect(component('DeleteControl')).not.toMatch(/\bcatch\b/);
+  });
+
+  it('"Mostrar e-mail" move o foco para os dados e "Ocultar" devolve o foco ao botão', () => {
+    const code = component('ContactReveal');
+    expect(code).toMatch(/focusAfterChange\.current = 'revealed'/);
+    expect(code).toMatch(/focusAfterChange\.current = 'show'/);
+    expect(code).toMatch(/revealedRef\.current\?\.focus\(\)/);
+    expect(code).toMatch(/showRef\.current\?\.focus\(\)/);
+    expect(code).toMatch(/role="group"/);
+    expect(code).toMatch(/aria-label="Dados de contato da pessoa"/);
+    expect(code).toMatch(/tabIndex=\{-1\}/);
+  });
+
+  it('a exportação refaz a auditoria ao fechar e depois do tempo de uma resposta lenta', () => {
+    const code = component('ExportControl');
+    expect(code.match(/router\.refresh\(\)/g)).toHaveLength(2);
+    expect(code).toMatch(/disabled=\{cooling\}/);
   });
 });

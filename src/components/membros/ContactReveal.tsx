@@ -1,11 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 
 import { showMemberContact } from '@/app/painel/membros/actions';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
+import { logFailure } from '@/lib/auth/log';
+import { MEMBER_MESSAGES } from '@/lib/members/errors';
 import { formatDateTime } from '@/lib/site';
 
 import styles from './members.module.css';
@@ -31,11 +33,25 @@ function providerLabel(provider: string): string {
  * quando a página vai para o histórico (`pagehide`) ou volta dele (`pageshow`), para a cópia restaurada pelo
  * navegador não trazer o e-mail de volta. Cada vez que o e-mail é mostrado é uma consulta nova: ela é registrada
  * na auditoria (esconder e mostrar de novo registra de novo, de propósito).
+ *
+ * Foco: o botão que a pessoa acionou sai da tela quando o estado muda, e o foco cairia no `<body>`. Depois de
+ * mostrar, o foco vai para o bloco com os dados (que tem nome acessível, então o leitor de tela o lê); depois de
+ * ocultar, volta para "Mostrar e-mail".
  */
 export function ContactReveal({ memberId }: { memberId: string }) {
   const router = useRouter();
   const [state, setState] = useState<State>({ status: 'hidden' });
   const [pending, startTransition] = useTransition();
+  const revealedRef = useRef<HTMLDivElement>(null);
+  const showRef = useRef<HTMLButtonElement>(null);
+  const focusAfterChange = useRef<'revealed' | 'show' | null>(null);
+
+  useEffect(() => {
+    const target = focusAfterChange.current;
+    focusAfterChange.current = null;
+    if (target === 'revealed') revealedRef.current?.focus();
+    if (target === 'show') showRef.current?.focus();
+  }, [state.status]);
 
   useEffect(() => {
     const hide = () =>
@@ -53,28 +69,46 @@ export function ContactReveal({ memberId }: { memberId: string }) {
 
   function reveal() {
     startTransition(async () => {
-      const result = await showMemberContact(memberId);
-      if (result.ok) {
-        setState({
-          status: 'shown',
-          contact: {
-            email: result.email,
-            lastSignInAt: result.lastSignInAt,
-            providers: result.providers,
-          },
-        });
-        // A consulta entrou na auditoria: atualiza a lista da página (o e-mail não faz parte dela).
-        router.refresh();
-      } else {
-        setState({ status: 'error', message: result.message });
+      try {
+        const result = await showMemberContact(memberId);
+        if (result.ok) {
+          focusAfterChange.current = 'revealed';
+          setState({
+            status: 'shown',
+            contact: {
+              email: result.email,
+              lastSignInAt: result.lastSignInAt,
+              providers: result.providers,
+            },
+          });
+          // A consulta entrou na auditoria: atualiza a lista da página (o e-mail não faz parte dela).
+          router.refresh();
+        } else {
+          setState({ status: 'error', message: result.message });
+        }
+      } catch (failure) {
+        // Chamada cortada (sem rede): aviso no lugar, em vez de a página ir para a tela de erro.
+        logFailure('membros: mostrar e-mail', failure);
+        setState({ status: 'error', message: MEMBER_MESSAGES.network });
       }
     });
+  }
+
+  function hideAgain() {
+    focusAfterChange.current = 'show';
+    setState({ status: 'hidden' });
   }
 
   return (
     <div data-tour="member-show-email">
       {state.status === 'shown' ? (
-        <div className={styles.revealed}>
+        <div
+          ref={revealedRef}
+          className={styles.revealed}
+          role="group"
+          aria-label="Dados de contato da pessoa"
+          tabIndex={-1}
+        >
           <dl>
             <dt>E-mail</dt>
             <dd>{state.contact.email ?? 'sem e-mail'}</dd>
@@ -92,7 +126,7 @@ export function ContactReveal({ memberId }: { memberId: string }) {
             </dd>
           </dl>
           <div>
-            <Button variant="ghost" size="sm" onClick={() => setState({ status: 'hidden' })}>
+            <Button variant="ghost" size="sm" onClick={hideAgain}>
               <Icon name="eyeOff" size="sm" />
               Ocultar e-mail
             </Button>
@@ -101,6 +135,7 @@ export function ContactReveal({ memberId }: { memberId: string }) {
       ) : (
         <div className={styles.fieldRow}>
           <Button
+            ref={showRef}
             variant="soft"
             size="sm"
             disabled={pending}

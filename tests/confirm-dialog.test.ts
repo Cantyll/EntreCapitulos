@@ -93,6 +93,31 @@ describe('ConfirmDialog (folha inferior no toque)', () => {
     expect(css).toMatch(/\.body h2\s*\{[^}]*overflow-wrap:\s*anywhere/);
   });
 
+  it('o foco inicial no "Cancelar" é opt-in: os usos antigos seguem com o primeiro elemento focável', () => {
+    const code = read('src/components/ui/ConfirmDialog.tsx').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(code).toMatch(/initialFocus === 'cancel'/);
+    expect(code).not.toMatch(/if \(danger\) cancelRef/);
+    for (const file of [
+      'src/components/sessoes/SessionEditor.tsx',
+      'src/components/sessoes/SessionRowActions.tsx',
+    ]) {
+      expect(read(file), file).not.toContain('initialFocus');
+    }
+    for (const file of [
+      'src/components/membros/DeleteControl.tsx',
+      'src/components/membros/SuspensionControl.tsx',
+    ]) {
+      expect(read(file), file).toMatch(/initialFocus=/);
+    }
+  });
+
+  it('Esc duas vezes durante a ação reabre o diálogo (o Chromium fecha o segundo mesmo cancelado)', () => {
+    const code = read('src/components/ui/ConfirmDialog.tsx').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(code).toMatch(
+      /if \(busy && open && dialog && !dialog\.open\) \{\s*dialog\.showModal\(\);\s*return;/,
+    );
+  });
+
   it('o componente não usa confirm() do navegador e devolve o foco a quem abriu', () => {
     const code = read('src/components/ui/ConfirmDialog.tsx').replace(/\/\*[\s\S]*?\*\//g, '');
     expect(code).not.toMatch(/\bconfirm\(/);
