@@ -1,0 +1,418 @@
+/* Painel Membros (etapa 8f). Só tokens do tema. */
+.stack {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 22px;
+  align-items: start;
+  width: 100%;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+/* Avisos (resultado de uma ação, atualização do banco pendente) */
+.noticeOk,
+.noticeError,
+.noticeInfo {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+}
+
+.noticeOk {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.noticeError {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.noticeInfo {
+  background: var(--soft);
+  color: var(--ink-2);
+}
+
+/* Os quatro números do topo */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.stat {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.stat dt {
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+
+.stat dd {
+  margin: 0;
+  color: var(--rose-deep);
+  font-family: var(--serif);
+  font-size: 30px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Busca e filtros */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+}
+
+.search {
+  display: flex;
+  flex: 1 1 280px;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 460px;
+}
+
+.search label {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.search input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.hint {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--soft);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  color: var(--ink-2);
+  font-size: 13.5px;
+  touch-action: manipulation;
+}
+
+.tab[aria-current='page'] {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(126, 51, 80, 0.12);
+}
+
+.tabCount {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.searching {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 12px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+/*
+ * Dois desenhos da mesma lista: tabela no desktop, cartões no celular. O que fica escondido usa display:none
+ * (não só "invisível"): leitor de tela e teclado nunca percorrem os links duplicados.
+ */
+.tableView {
+  overflow-x: auto;
+}
+
+.cardsView {
+  display: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th,
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table thead th {
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child th,
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tbody th {
+  font-weight: 400;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.name {
+  color: var(--ink);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--ink-2);
+}
+
+.masked {
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.role,
+.status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.roleAdmin {
+  background: var(--rose-tint);
+  color: var(--rose-deep);
+}
+
+.roleModerator {
+  background: var(--soft);
+  color: var(--ink-2);
+}
+
+.roleMember {
+  padding-inline: 0;
+  color: var(--ink-2);
+}
+
+.statusOk {
+  padding-inline: 0;
+  color: var(--ink-2);
+}
+
+.statusSuspended {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.statusUnknown {
+  padding-inline: 0;
+  color: var(--ink-3);
+}
+
+.cardItem {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.facts dt {
+  color: var(--ink-3);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 36px 16px;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+.empty b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: 14px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+
+/* Cartão "Cargos e permissões" */
+.roles {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+}
+
+.roles h2 {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.roles dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.roles dt {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.roles dd {
+  margin: 2px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.roles p {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+@media (hover: hover) {
+  .tab:hover:not([aria-current='page']) {
+    color: var(--ink);
+  }
+
+  .name:hover {
+    color: var(--rose-deep);
+  }
+}
+
+@media (pointer: coarse) {
+  .tab,
+  .search input,
+  .pager a {
+    min-height: var(--tap);
+  }
+
+  .pager a {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .name {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+  }
+}
+
+@media (max-width: 1020px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tableView {
+    display: none;
+  }
+
+  .cardsView {
+    display: grid;
+  }
+
+  .search {
+    max-width: none;
+  }
+}

@@ -80,8 +80,14 @@ describe('painel', () => {
 
   // O que muda livro ou sessão precisa expirar o cache de dados públicos (`updateTag`), senão a home
   // e as páginas de sessão continuam mostrando o dado velho até o prazo de segurança de 5 minutos.
-  // Não há exceção: até o autosave chama o helper (que só expira quando a sessão está no ar).
-  const NO_PUBLIC_CACHE = new Set<string>();
+  // Exceções (cada uma com o motivo): ações da gestão de membros que não mudam nada público. A busca só
+  // redireciona; "Mostrar e-mail" só lê; suspender comentários só afeta o composer de quem foi suspenso e o painel.
+  // As outras ações de membros (cargo, exclusão) mudam o selo e os comentários públicos e expiram o cache.
+  const NO_PUBLIC_CACHE = new Set<string>([
+    'searchMembers',
+    'showMemberContact',
+    'setMemberSuspension',
+  ]);
 
   it.each(actionFiles.map((f) => [f.slice(PAINEL.length)]))(
     '%s: cada action que muda dados expira o cache público',
