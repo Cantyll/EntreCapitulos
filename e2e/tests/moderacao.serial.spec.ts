@@ -8,7 +8,7 @@ import { WORLD, poolSlug } from '../support/world';
  * sobre a página visível, então estes testes rodam em série e começam esvaziando a fila por SQL.
  */
 test.describe.serial('moderação', () => {
-  test('a moderadora só acessa Comentários (403 no resto)', async ({ openAs, guard }) => {
+  test('a moderação só acessa Comentários (403 no resto)', async ({ openAs, guard }) => {
     guard.allowStatus(403);
     const { page } = await openAs(await createModerator());
 
@@ -65,7 +65,7 @@ test.describe.serial('moderação', () => {
     expect(
       sql(`select count(*) from public.comments where id in (${inList}) and status = 'approved';`),
     ).toBe('19');
-    // O que tem alerta continua para a moderadora decidir, e o que não estava na página nem foi tocado.
+    // O que tem alerta continua para a moderação decidir, e o que não estava na página nem foi tocado.
     expect(
       sql(
         `select count(*) from public.comments where author_id = ${lit(author.id)} and status = 'pending';`,

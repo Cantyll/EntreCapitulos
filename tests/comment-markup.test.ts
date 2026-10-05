@@ -130,15 +130,16 @@ const thread = (comment: Partial<DisplayComment>, canReply = true) =>
   );
 
 describe('a conversa', () => {
-  it('cabeçalho: nome, selo de Autora e de Moderadora, chip "leu até", tempo e âncora', () => {
+  it('cabeçalho: nome, selo de Administração e de Moderação, chip "leu até", tempo e âncora', () => {
     const html = thread({ authorRole: 'admin', id: 'abc' });
     expect(html).toContain('Ana Souza');
-    expect(html).toContain('Autora');
+    expect(html).toContain('Administração');
     expect(html).toContain('leu até o cap. 12');
     expect(html).toContain('há 2 dias');
     expect(html).toContain('id="comentario-abc"');
-    expect(thread({ authorRole: 'moderator' })).toContain('Moderadora');
-    expect(thread({ authorRole: 'member' })).not.toContain('Moderadora');
+    expect(thread({ authorRole: 'moderator' })).toContain('Moderação');
+    expect(thread({ authorRole: 'member' })).not.toContain('Moderação');
+    expect(html).not.toContain('Autora');
   });
 
   it('sem "leu até" quando não se sabe', () => {

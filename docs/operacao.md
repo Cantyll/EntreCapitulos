@@ -68,9 +68,9 @@ Troque uma chave sempre que ela vazar, aparecer em algum lugar público ou quand
 
 Chaves públicas (`NEXT_PUBLIC_*`) aparecem no código que vai para o navegador: trocá-las não é urgência de vazamento, só higiene.
 
-## 7. Promover e rebaixar administradora e moderadora
+## 7. Promover e rebaixar administração e moderação
 
-Ninguém vira administradora ao se cadastrar. O papel muda **só** pelo **SQL Editor** do Supabase (a pessoa precisa já ter entrado no site uma vez, para o perfil existir).
+Ninguém vira administração ao se cadastrar. O papel muda **só** pelo **SQL Editor** do Supabase (a pessoa precisa já ter entrado no site uma vez, para o perfil existir).
 
 Promover (troque o papel por `'admin'` ou `'moderator'` e o e-mail pelo da pessoa):
 
@@ -97,7 +97,7 @@ join auth.users u on u.id = p.id
 where p.role <> 'member';
 ```
 
-A moderadora só abre **Comentários**. O papel vem do banco a cada requisição; a pessoa não precisa sair e entrar de novo.
+A moderação só abre **Comentários**. O papel vem do banco a cada requisição; a pessoa não precisa sair e entrar de novo.
 
 ## 8. Pedidos da LGPD (cópia e exclusão dos dados)
 

@@ -600,7 +600,7 @@ test.describe('cartão de instalação: Safari do iPhone @mobile', () => {
   });
 
   // ---- painel ---------------------------------------------------------------------------------------------
-  test('administradora: cartão na Visão geral desde o 1º acesso; dispensar vale ao recarregar', async ({
+  test('administração: cartão na Visão geral desde o 1º acesso; dispensar vale ao recarregar', async ({
     openAs,
   }) => {
     const { page, context } = await openAs(await createAdmin());
@@ -619,7 +619,7 @@ test.describe('cartão de instalação: Safari do iPhone @mobile', () => {
     await expect(anyInstallCard(page)).toHaveCount(0);
   });
 
-  test('moderadora: cartão no topo de Comentários, acima das abas', async ({ openAs }) => {
+  test('moderação: cartão no topo de Comentários, acima das abas', async ({ openAs }) => {
     const { page, context } = await openAs(await createModerator());
     await trackInstall(context);
     // `/painel` manda a moderadora para Comentários.
@@ -1268,7 +1268,7 @@ test.describe('cartão de instalação: computador', () => {
     await expect(page.getByRole('heading', { name: 'Instalar no iPhone' })).toHaveCount(0);
   });
 
-  test('o painel nunca mostra o cartão no computador (administradora e moderadora)', async ({
+  test('o painel nunca mostra o cartão no computador (administração e moderação)', async ({
     openAs,
   }) => {
     const admin = await openAs(await createAdmin());

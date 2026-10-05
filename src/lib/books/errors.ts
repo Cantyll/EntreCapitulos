@@ -10,7 +10,7 @@ export const BOOK_MESSAGES = {
   book_not_queued: 'Só um livro da fila pode começar a ser lido.',
   book_not_reading: 'Só o livro que está em leitura pode ser marcado como terminado.',
   invalid_rating: 'A nota vai de 0 a 5, de meio em meio ponto.',
-  not_admin: 'Só a administradora pode fazer isso.',
+  not_admin: 'Só a administração pode fazer isso.',
   book_not_found: 'Livro não encontrado. Atualize a página.',
   slug_taken: 'Já existe um livro com esse título. Mude um pouco o título.',
   chapters: 'O capítulo atual não pode passar do total de capítulos.',

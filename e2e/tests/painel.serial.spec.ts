@@ -23,7 +23,7 @@ const saved = (page: Page) =>
  * estes testes rodam em série, num só projeto, depois de todos os outros (ver playwright.config.ts).
  * Cada passo depende do anterior.
  */
-test.describe.serial('painel da administradora', () => {
+test.describe.serial('painel da administração', () => {
   let admin: TestUser;
   const stamp = Date.now().toString(36);
   const bookTitle = `Livro do Painel ${stamp}`;
@@ -202,7 +202,7 @@ test.describe.serial('painel da administradora', () => {
   });
 
   test('voltar para rascunho é recusado quando a sessão já tem comentários', async ({ openAs }) => {
-    // A administradora abre a sessão ANTES do primeiro comentário: a tela ainda oferece o botão, e é o
+    // A administração abre a sessão ANTES do primeiro comentário: a tela ainda oferece o botão, e é o
     // servidor que recusa (a tela só esconde o botão quando já sabe dos comentários).
     const { page } = await openAs(admin);
     await page.goto(editUrl);

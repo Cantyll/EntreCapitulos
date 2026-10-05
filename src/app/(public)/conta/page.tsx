@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/site/PageHeader';
 import { ButtonAnchor } from '@/components/ui/Button';
 import { Container } from '@/components/ui/Container';
 import { logFailure } from '@/lib/auth/log';
+import { ROLE_LABELS } from '@/lib/auth/roles';
 import { requireUser } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 
@@ -78,9 +79,9 @@ export default async function AccountPage() {
           <h2 id="conta-excluir-titulo">Excluir minha conta</h2>
           {isStaff ? (
             <p>
-              Esta conta tem papel de equipe (autora ou moderadora), e contas da equipe não podem
-              ser excluídas por aqui. Para excluir, a conta precisa perder o papel de equipe antes:
-              peça isso a quem administra o site.
+              Esta conta tem papel de equipe ({ROLE_LABELS.admin} ou {ROLE_LABELS.moderator}), e
+              contas da equipe não podem ser excluídas por aqui. Para excluir, a conta precisa
+              perder o papel de equipe antes: peça isso à {ROLE_LABELS.admin.toLowerCase()} do site.
             </p>
           ) : (
             <>

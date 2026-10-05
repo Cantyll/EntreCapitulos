@@ -1,3 +1,4 @@
+import { ROLE_LABELS } from '../../lib/auth/roles';
 import { INSTALL_RULES } from '../install';
 import { PROPOSAL_FIELDS, pendingFields, type LegalData } from '../legal-config';
 import { LOCAL_STORAGE_ITEMS, SITE_COOKIES } from './cookies';
@@ -97,12 +98,12 @@ export const DATA_MAP: readonly DataRow[] = [
     only: 'google',
   },
   {
-    data: 'Papel (membro, moderadora ou administradora)',
+    data: `Papel (${ROLE_LABELS.member.toLowerCase()}, ${ROLE_LABELS.moderator.toLowerCase()} ou ${ROLE_LABELS.admin.toLowerCase()})`,
     where: 'Supabase (`profiles.role`)',
     purpose: 'Distinguir a equipe e liberar a moderação',
     basis: 3,
     retention: 1,
-    sees: 'Qualquer visitante (aparece como selo "Autora" ou "Moderadora").',
+    sees: `Qualquer visitante (aparece como selo "${ROLE_LABELS.admin}" ou "${ROLE_LABELS.moderator}").`,
     source: 'codigo',
   },
   {

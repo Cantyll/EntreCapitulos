@@ -37,7 +37,7 @@ async function post(
 }
 
 test.describe('comentários', () => {
-  test('membro novo fica "Em análise", o visitante não vê e a moderadora aprova @mobile', async ({
+  test('membro novo fica "Em análise", o visitante não vê e a moderação aprova @mobile', async ({
     signedIn,
     page: visitor,
     openAs,
