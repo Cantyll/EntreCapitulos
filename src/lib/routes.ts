@@ -43,6 +43,13 @@ export function adminSessionsNoticeHref(notice: SessionNotice, number?: number):
   return `/painel/sessoes${query}` as Route;
 }
 
+/** Painel: lista de membros e o perfil de uma pessoa (etapa 8f). */
+export const ADMIN_MEMBERS_HREF: Route = '/painel/membros';
+
+export function adminMemberHref(id: string): Route {
+  return `/painel/membros/${id}` as Route;
+}
+
 /** A numeração das sessões reinicia a cada livro, por isso o livro faz parte da URL. */
 export function sessionHref(bookSlug: string, number: number | string): Route {
   return `/livros/${bookSlug}/sessoes/${number}` as Route;
