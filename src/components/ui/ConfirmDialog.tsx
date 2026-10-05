@@ -11,8 +11,9 @@ import styles from './ConfirmDialog.module.css';
  * Confirmação em <dialog> nativo: foco preso, Esc fecha (bloqueado enquanto `busy`), foco devolvido a quem
  * abriu. No desktop é uma caixa centralizada; em tela de toque (`pointer: coarse`) vira folha inferior, com
  * safe areas, altura em `dvh` e rolagem interna, e sobe acima do teclado do iPhone (`visualViewport`) quando
- * há um campo de texto dentro dela. `error` aparece dentro, sem fechar. Em diálogo de perigo o foco inicial
- * vai para "Cancelar", nunca para o botão que destrói.
+ * há um campo de texto dentro dela. `error` aparece dentro, sem fechar. O foco inicial é o do navegador (o
+ * primeiro elemento focável); com `initialFocus="cancel"` vai para "Cancelar", para os diálogos que destroem
+ * algo ou que têm um campo de texto (no iPhone, focar o campo abriria o teclado sem a pessoa pedir).
  */
 export function ConfirmDialog({
   open,
@@ -21,6 +22,7 @@ export function ConfirmDialog({
   busyLabel,
   busy,
   danger,
+  initialFocus,
   disabled,
   error,
   onConfirm,
@@ -33,6 +35,8 @@ export function ConfirmDialog({
   busyLabel: string;
   busy: boolean;
   danger?: boolean;
+  /** `'cancel'`: o foco abre em "Cancelar". Sem a opção vale o primeiro elemento focável (como sempre foi). */
+  initialFocus?: 'cancel';
   /** Impede confirmar (ex.: o conteúdo ainda tem problema que bloqueia, ou o texto digitado não confere). */
   disabled?: boolean;
   error?: ReactNode;
@@ -53,12 +57,20 @@ export function ConfirmDialog({
       opener.current =
         document.activeElement instanceof HTMLElement ? document.activeElement : null;
       dialog.showModal();
-      if (danger) cancelRef.current?.focus();
+      if (initialFocus === 'cancel') cancelRef.current?.focus();
     }
     if (!open && dialog.open) dialog.close();
-  }, [open, danger]);
+  }, [open, initialFocus]);
 
   function handleClose() {
+    const dialog = ref.current;
+    // Esc duas vezes durante a ação: o primeiro é cancelado (`onCancel`), mas no Chromium o segundo, sem nova
+    // interação, fecha o <dialog> mesmo assim. Enquanto a ação roda ele precisa continuar aberto: é nele que o
+    // resultado ou o erro aparecem, e o estado `open` do pai continua verdadeiro.
+    if (busy && open && dialog && !dialog.open) {
+      dialog.showModal();
+      return;
+    }
     // O foco volta ao botão que abriu o diálogo (o navegador também tenta; aqui fica garantido).
     const target = opener.current;
     opener.current = null;

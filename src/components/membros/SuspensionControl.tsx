@@ -5,6 +5,8 @@ import { useState, useTransition } from 'react';
 import { setMemberSuspension } from '@/app/painel/membros/actions';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { logFailure } from '@/lib/auth/log';
+import { MEMBER_MESSAGES } from '@/lib/members/errors';
 
 import styles from './members.module.css';
 import { ResultNotice } from './ResultNotice';
@@ -34,13 +36,19 @@ export function SuspensionControl({ memberId, name, suspended, isStaff }: Props)
 
   function confirm() {
     startTransition(async () => {
-      const result = await setMemberSuspension(memberId, suspended !== true);
-      if (result.ok) {
-        setOpen(false);
-        setError(null);
-        setNotice(result);
-      } else {
-        setError(result.message);
+      try {
+        const result = await setMemberSuspension(memberId, suspended !== true);
+        if (result.ok) {
+          setOpen(false);
+          setError(null);
+          setNotice(result);
+        } else {
+          setError(result.message);
+        }
+      } catch (failure) {
+        // Chamada cortada (sem rede): o diálogo fica aberto com o aviso, em vez de a página ir para a tela de erro.
+        logFailure('membros: suspensão', failure);
+        setError(MEMBER_MESSAGES.network);
       }
     });
   }
@@ -87,6 +95,7 @@ export function SuspensionControl({ memberId, name, suspended, isStaff }: Props)
         busyLabel={suspended ? 'Reativando…' : 'Suspendendo…'}
         busy={pending}
         danger={!suspended}
+        initialFocus={suspended ? undefined : 'cancel'}
         error={error}
         onConfirm={confirm}
         onClose={close}

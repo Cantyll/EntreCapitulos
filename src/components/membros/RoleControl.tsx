@@ -6,9 +6,10 @@ import { useId, useState, useTransition } from 'react';
 import { changeMemberRole } from '@/app/painel/membros/actions';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { logFailure } from '@/lib/auth/log';
 import { ROLE_LABELS, type Role } from '@/lib/auth/roles';
 import { isNameConfirmed } from '@/lib/members/confirm';
-import type { MemberErrorKey } from '@/lib/members/errors';
+import { MEMBER_MESSAGES, type MemberErrorKey } from '@/lib/members/errors';
 
 import styles from './members.module.css';
 import { RoleBadge } from './RoleBadge';
@@ -68,14 +69,21 @@ export function RoleControl({ memberId, name, role, suspended }: Props) {
 
   function confirm() {
     startTransition(async () => {
-      const result = await changeMemberRole(memberId, selected, role, typed);
-      if (result.ok) {
-        setOpen(false);
-        setTyped('');
-        setError(null);
-        setNotice(result);
-      } else {
-        setError({ message: result.message, code: result.code });
+      try {
+        const result = await changeMemberRole(memberId, selected, role, typed);
+        if (result.ok) {
+          setOpen(false);
+          setTyped('');
+          setError(null);
+          setNotice(result);
+        } else {
+          setError({ message: result.message, code: result.code });
+        }
+      } catch (failure) {
+        // A chamada foi cortada (sem rede): sem este catch o React levaria a página inteira para a tela de erro e
+        // o diálogo, o nome digitado e o aviso se perderiam.
+        logFailure('membros: alterar cargo', failure);
+        setError({ message: MEMBER_MESSAGES.network, code: 'network' });
       }
     });
   }

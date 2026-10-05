@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -12,20 +13,43 @@ import styles from './members.module.css';
  * Baixar os dados da pessoa. O arquivo vem de um POST (um `<form>` comum, sem JavaScript no meio): quem confirma
  * no diálogo envia o formulário, e o navegador baixa o anexo sem sair da página. Se o servidor não puder gerar o
  * arquivo, ele volta para este perfil com um aviso. A ação fica registrada na auditoria.
+ *
+ * O download de um anexo não avisa quando começa, e a página não sai do lugar. Por isso o diálogo fecha pouco
+ * depois do envio e a lista de auditoria é refeita duas vezes (a linha entra antes de o arquivo sair; a segunda
+ * leitura cobre uma resposta lenta). Enquanto isso o botão que abre o diálogo fica desabilitado, para um segundo
+ * clique não gerar outro arquivo (e outra linha na auditoria) sem querer.
  */
+const CLOSE_AFTER_MS = 1200;
+const COOLDOWN_MS = 5000;
+
 export function ExportControl({ memberId }: { memberId: string }) {
+  const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const timers = useRef<number[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [cooling, setCooling] = useState(false);
+
+  useEffect(() => {
+    const pending = timers.current;
+    return () => pending.forEach((id) => window.clearTimeout(id));
+  }, []);
 
   function confirm() {
     setBusy(true);
+    setCooling(true);
     formRef.current?.requestSubmit();
-    // O download não avisa quando começa: fecha o diálogo logo depois do envio.
-    window.setTimeout(() => {
-      setBusy(false);
-      setOpen(false);
-    }, 1200);
+    timers.current.push(
+      window.setTimeout(() => {
+        setBusy(false);
+        setOpen(false);
+        router.refresh();
+      }, CLOSE_AFTER_MS),
+      window.setTimeout(() => {
+        setCooling(false);
+        router.refresh();
+      }, COOLDOWN_MS),
+    );
   }
 
   return (
@@ -41,8 +65,8 @@ export function ExportControl({ memberId }: { memberId: string }) {
       </p>
       <form ref={formRef} method="post" action={`${adminMemberHref(memberId)}/dados`} hidden />
       <div className={styles.fieldRow}>
-        <Button variant="soft" onClick={() => setOpen(true)}>
-          Baixar dados da pessoa…
+        <Button variant="soft" disabled={cooling} onClick={() => setOpen(true)}>
+          {cooling ? 'Preparando o arquivo…' : 'Baixar dados da pessoa…'}
         </Button>
       </div>
 
