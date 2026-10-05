@@ -51,6 +51,9 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
     'Comentários e respostas: o texto, a data, o estado de moderação (em análise, publicado ou removido), o aviso de spoiler, se houver, e até que capítulo você tinha lido quando comentou. Nome, texto e esse capítulo são públicos.',
     'Alertas de moderação: quando um comentário tem um link, a equipe vê um alerta interno ("Contém link"). Só a equipe vê.',
     'Progresso de leitura: até que capítulo você leu em cada livro. Com conta, fica guardado no banco de dados; sem conta, fica num cookie do seu navegador.',
+    'Consulta de contato pela administração: a administração do clube pode ver o seu e-mail, a data do seu último acesso e como você entra (código por e-mail ou Google), só para dar suporte e atender pedidos sobre os seus dados. Cada consulta fica registrada.',
+    'Situação dos comentários: a administração pode suspender a publicação de comentários de uma conta. Essa informação só a própria pessoa e a administração veem.',
+    'Registro das ações da administração (auditoria): quando a administração muda um cargo, suspende ou reativa comentários, consulta o e-mail, baixa os dados ou exclui uma conta, fica registrado quem fez, em qual conta, o quê e quando. O registro não guarda nome, e-mail nem texto: só os identificadores internos das contas e, na mudança de cargo, o cargo de antes e o de depois. Só a administração o vê.',
     'Registros técnicos: os provedores de hospedagem e de banco de dados podem registrar dados técnicos de acesso, como endereço IP, data e hora, tipo de navegador e páginas acessadas, para operar e proteger o serviço. O site não usa ferramentas de análise de audiência nem de publicidade.',
     ...(features.turnstile
       ? [
@@ -65,6 +68,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
     'Publicar, moderar e exibir comentários e respostas.',
     'Guardar até onde você leu, para a próxima visita.',
     'Proteger o site contra abuso e spam (limite de comentários por minuto e por hora, análise de comentários com link e, quando ativa, a verificação anti-robô no envio do código).',
+    'Dar suporte, atender os pedidos sobre os dados e proteger a comunidade: a administração pode ver o e-mail de uma conta, suspender os comentários dela ou excluí-la, e registra essas ações.',
     'Cumprir obrigações legais e exercer direitos em eventual disputa.',
   ];
 
@@ -203,6 +207,16 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           type: 'p',
           text: 'Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe. Peça pelo e-mail de contato.',
         },
+        {
+          type: 'p',
+          text: 'O registro das ações da administração guarda só os identificadores internos das contas. Quando uma conta é excluída, as linhas sobre ela (e as em que ela era a autora da ação) continuam, ligadas só a esse identificador, que já não corresponde a nenhum perfil, sem nome, e-mail nem texto.',
+        },
+        ...describeField(
+          config,
+          'Por quanto tempo guardamos o registro das ações da administração',
+          config.audit.retention,
+          'Este ponto depende de análise jurídica.',
+        ),
       ],
     },
     {
@@ -221,6 +235,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
             'Baixar uma cópia dos seus dados: em Minha conta, "Baixar meus dados" (um arquivo com o seu perfil, e-mail, todos os seus comentários e o seu progresso).',
             'Excluir um comentário que esteja visível ou em análise: "Excluir meu comentário", embaixo dele. Para um comentário removido pela moderação, peça pelo e-mail de contato.',
             'Excluir a sua conta: em Minha conta, "Excluir minha conta". Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe. Peça pelo e-mail de contato.',
+            'Pedir uma cópia dos seus dados ou a exclusão da conta pelo e-mail de contato: a administração confirma que o pedido vem do e-mail cadastrado na conta e atende pelo painel, com a mesma cópia e a mesma exclusão de "Minha conta". Cada uma dessas ações fica registrada.',
             `Qualquer outro pedido (por exemplo, confirmar o tratamento, corrigir algo que você não consegue editar ou pedir informações): escreva para ${config.privacyContactEmail}, a partir do e-mail cadastrado na conta.`,
           ],
         },

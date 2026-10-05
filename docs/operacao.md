@@ -70,13 +70,21 @@ Chaves públicas (`NEXT_PUBLIC_*`) aparecem no código que vai para o navegador:
 
 ## 7. Promover e rebaixar administração e moderação
 
-Ninguém vira administração ao se cadastrar. O papel muda **só** pelo **SQL Editor** do Supabase (a pessoa precisa já ter entrado no site uma vez, para o perfil existir).
+Ninguém vira administração ao se cadastrar. **O dia a dia é no painel:** **Painel → Membros** (só a administração), abra a pessoa (ela precisa já ter entrado no site uma vez, para o perfil existir), em **Cargo** escolha **Administração**, **Moderação** ou **Membro** e confirme. Para dar **Administração** é preciso digitar o nome da pessoa. O painel registra cada mudança na **auditoria** da pessoa (quem mudou, de qual cargo para qual, quando), e o banco não deixa mudar o próprio cargo, tirar o cargo da última Administração nem dar cargo de equipe a quem está com os comentários suspensos. Detalhes: README, "Membros e cargos".
+
+- **O cargo vale na próxima página ou ação da pessoa** (vem do banco a cada requisição; ela não precisa sair e entrar de novo). A moderação só abre **Comentários** e **Minha conta**.
+- **Antes de lançar, tenha pelo menos duas contas de administração:** com uma só, perder o acesso ao e-mail dela deixa o site sem ninguém no comando (`docs/lancamento.md`).
+- A **primeira** conta de administração é a única que precisa do SQL (README, "Promover a primeira conta de administração").
+
+### Emergência: pelo SQL Editor
+
+**Só quando nenhuma pessoa da administração consegue entrar no painel** (por exemplo, a única conta perdeu o acesso ao e-mail). O SQL Editor roda com poderes totais e **contorna a auditoria e as travas do banco** (inclusive a que impede tirar a última Administração): o que for feito aqui **não deixa registro em `member_audit`**. Depois, **anote fora do repositório público** o que foi feito e quando (sem dados pessoais) e entre no painel para conferir o resultado.
 
 Promover (troque o papel por `'admin'` ou `'moderator'` e o e-mail pelo da pessoa):
 
 ```sql
 update public.profiles
-set role = 'moderator'
+set role = 'admin'
 where id = (select id from auth.users where email = 'email-da-pessoa@exemplo.com');
 ```
 
@@ -97,61 +105,28 @@ join auth.users u on u.id = p.id
 where p.role <> 'member';
 ```
 
-A moderação só abre **Comentários**. O papel vem do banco a cada requisição; a pessoa não precisa sair e entrar de novo.
-
 ## 8. Pedidos da LGPD (cópia e exclusão dos dados)
 
-O e-mail de contato é o de `src/content/legal-config.ts` (`privacyContactEmail`). O prazo de resposta (`requestDeadline`) é uma **proposta a validar com advogado**: confirme antes de prometer.
+O e-mail de contato é o de `src/content/legal-config.ts` (`privacyContactEmail`). O prazo de resposta (`requestDeadline`) é uma **proposta a validar com advogado**: confirme antes de prometer. Tudo se faz em **Painel → Membros**; o SQL Editor não é mais o caminho (só a emergência da seção 7 e o caso do passo 7 abaixo).
 
-1. **Confirme quem pede.** Responda **para o e-mail cadastrado na conta** e peça que a pessoa confirme o pedido a partir dele. Nunca envie dados para outro endereço.
-2. **Ache a conta** (troque o e-mail; deve voltar **uma** linha) no **SQL Editor**:
-
-   ```sql
-   select u.id, u.email, u.created_at, p.display_name, p.role
-   from auth.users u join public.profiles p on p.id = u.id
-   where u.email = 'email-da-pessoa@exemplo.com';
-   ```
-
-3. **Cópia dos dados.** Troque `ID` pelo `id` do passo 2 e exporte o resultado de cada consulta (botão de exportar CSV ou JSON; **não verificado**: o nome do botão). Junte num arquivo enviado só ao e-mail confirmado. Não inclua comentários de outras pessoas nem as sinalizações da equipe.
-
-   ```sql
-   select * from public.profiles where id = 'ID';
-   select c.id, c.status, c.body, c.parent_id, c.session_id, c.read_up_to, c.spoiler_up_to, c.created_at
-   from public.comments c where c.author_id = 'ID' order by c.created_at;
-   select rp.chapter, rp.updated_at, b.title from public.reading_progress rp
-   join public.books b on b.id = rp.book_id where rp.user_id = 'ID';
-   ```
-
-4. **Exclusão da conta.** Se o papel (passo 2) for `admin` ou `moderator`, só siga se a pessoa realmente deixará a equipe, e retire o papel antes:
-
-   ```sql
-   update public.profiles set role = 'member' where id = 'ID';
-   ```
-
-5. **Exporte antes de apagar** (regra da seção 10): faça o passo 3 e guarde o arquivo num lugar **privado** (nunca no repositório).
-6. **Confira o que será apagado** (um só usuário e quantos comentários vão junto):
-
-   ```sql
-   select (select count(*) from auth.users where id = 'ID') as usuarios,
-          (select count(*) from public.comments where author_id = 'ID') as comentarios;
-   ```
-
-7. **Exclua** (definitivo; apaga em cascata o perfil, os comentários da pessoa, as respostas de outras pessoas a eles, as sinalizações e o progresso):
-
-   ```sql
-   delete from auth.users where id = 'ID';
-   ```
-
-   Repita a consulta do passo 6: `usuarios` deve voltar `0`. Nas páginas, os comentários apagados podem aparecer por **até 5 minutos** (cache público); para sumir na hora, faça **Redeploy** na Vercel.
-8. **Comentário removido pela moderação** (o autor não tem botão para ele): confirme o autor, e troque o texto:
+1. **Verifique a identidade de quem pede.**
+   - Responda **sempre para o e-mail cadastrado na conta**, mesmo que o pedido tenha chegado de outro endereço, e peça que a pessoa **confirme o pedido a partir dele**.
+   - **Cópia dos dados:** confirme com a pessoa antes de enviar e envie o arquivo **somente para o e-mail cadastrado da própria conta**, nunca a outro endereço.
+   - **Exclusão:** oriente a pessoa a excluir a conta ela mesma, em **Minha conta** (quem pede já está logada: é o caminho mais seguro). Se ela **não conseguir** entrar, **confirme a identidade respondendo ao e-mail cadastrado antes de excluir** pelo painel.
+2. **Ache a conta:** **Painel → Membros**; na caixa de busca digite o **e-mail exato** (abre direto o perfil; o e-mail não vai para a URL) ou o nome. Confira que é a pessoa certa (nome, data de entrada, comentários aprovados). Se o painel avisar que o banco **não consegue ler os dados da conta**, veja `docs/lancamento.md`, seção 5.
+3. **Cópia dos dados:** no perfil, **Baixar dados da pessoa…** gera `dados-<8 primeiros caracteres do id>-<data>.json` (perfil, e-mail, comentários em **todos** os estados, progresso de leitura e situação da suspensão; nada de outras pessoas nem as sinalizações da equipe). A ação fica na auditoria. Guarde o arquivo num lugar **privado** (**nunca no repositório**), envie-o como no passo 1 e apague a cópia local depois.
+4. **Exclusão da conta.** Se o cargo da pessoa for Administração ou Moderação, só siga se ela realmente deixará a equipe, e primeiro mude o cargo para **Membro** (perfil → Cargo). **Faça um backup manual antes de excluir uma conta** (**Actions → Backup do banco → Run workflow**, e espere o resumo dizer OK; seção 15). Depois, no perfil, **Excluir conta…**: o diálogo mostra quantos comentários e quantas respostas de outras pessoas somem junto; digite `EXCLUIR`. É **definitivo** (cascata: perfil, comentários, respostas a eles, sinalizações e progresso). O painel já atualiza as páginas públicas; se uma página aberta ainda mostrar o comentário, atualize-a. Excluir **não impede** a pessoa de criar outra conta: para abuso use **Suspender comentários**.
+5. **Registre o pedido** com a **data e o resultado**, **sem dados pessoais** (nada de nome, e-mail nem conteúdo; por exemplo, "2026-10-05, cópia dos dados, atendido"), num lugar **fora do repositório público** (uma planilha privada ou a própria caixa de e-mail de contato). Isso serve para comprovar o atendimento dentro do prazo.
+6. **Responda por e-mail** dizendo o que foi feito. As cópias de segurança podem reter os dados por um tempo: **o que dizer sobre isso depende da retenção definida com o advogado (A DEFINIR)**; não afirme prazos que você não conferiu.
+7. **Comentário removido pela moderação** (o autor não tem botão para ele, e o painel não tem tela para isso): confirme o autor (passo 1) e troque o texto pelo SQL abaixo, no **SQL Editor** (leia antes de executar):
 
    ```sql
    update public.comments
    set body = '[comentário removido pelo autor]'
-   where id = 'ID-DO-COMENTARIO' and author_id = 'ID' and status = 'removed';
+   where id = 'ID-DO-COMENTARIO' and author_id = 'ID-DA-PESSOA' and status = 'removed';
    ```
 
-9. **Responda por e-mail** dizendo o que foi feito. As cópias de segurança do provedor podem reter os dados por um tempo: **o que dizer sobre isso depende do plano e de análise jurídica (A DEFINIR)**.
+   Confira que voltou **uma** linha.
 
 ## 9. O código de login parou de chegar
 
@@ -289,7 +264,7 @@ Os segredos de R2 e a frase-senha existem em **dois** Environments (`backup` e `
 
 ### Rotina: backup manual antes de mexer no banco
 
-**Rode um backup manual (Actions → Backup do banco → Run workflow) antes de cada Database deploy relevante e antes de qualquer SQL que apague dados**, e espere o resumo dizer OK. Isso complementa a "regra de ouro" da seção 10 (exportar a tabela).
+**Rode um backup manual (Actions → Backup do banco → Run workflow) antes de cada Database deploy relevante, antes de qualquer SQL que apague dados e antes de excluir uma conta pelo painel**, e espere o resumo dizer OK. Isso complementa a "regra de ouro" da seção 10 (exportar a tabela).
 
 ### Workflows agendados podem ser desligados
 
