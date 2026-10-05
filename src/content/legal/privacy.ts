@@ -41,7 +41,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
   const { regions } = config;
 
   const dataItems = [
-    `E-mail: o endereço que você informa para entrar${features.google ? ' (ou que o Google informa, se você entrar com ele)' : ''}. Usamos para enviar o código de acesso por e-mail e responder aos pedidos que você nos fizer. Ele não aparece para outras pessoas.`,
+    `E-mail: o endereço que você informa para entrar${features.google ? ' (ou que o Google informa, se você entrar com ele)' : ''}. Usamos para enviar o código de acesso por e-mail e responder aos pedidos que você nos fizer. Ele não é público: só você e, para dar suporte e atender pedidos sobre os seus dados, a administração do clube o veem (veja "Consulta de contato pela administração", mais abaixo).`,
     'Nome de exibição: o nome que você escolhe no primeiro acesso e pode trocar em Minha conta. É público.',
     ...(features.google
       ? [
@@ -51,7 +51,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
     'Comentários e respostas: o texto, a data, o estado de moderação (em análise, publicado ou removido), o aviso de spoiler, se houver, e até que capítulo você tinha lido quando comentou. Nome, texto e esse capítulo são públicos.',
     'Alertas de moderação: quando um comentário tem um link, a equipe vê um alerta interno ("Contém link"). Só a equipe vê.',
     'Progresso de leitura: até que capítulo você leu em cada livro. Com conta, fica guardado no banco de dados; sem conta, fica num cookie do seu navegador.',
-    'Consulta de contato pela administração: a administração do clube pode ver o seu e-mail, a data do seu último acesso e como você entra (código por e-mail ou Google), só para dar suporte e atender pedidos sobre os seus dados. Cada consulta fica registrada.',
+    `Consulta de contato pela administração: a administração do clube pode ver o seu e-mail, a data do seu último acesso e como você entra (código por e-mail${features.google ? ' ou Google' : ''}), só para dar suporte e atender pedidos sobre os seus dados. Cada vez que o e-mail completo, o último acesso e o provedor são mostrados, a consulta fica registrada. A lista de membros mostra só um e-mail parcial (a primeira letra e o domínio) e a busca por um e-mail exato diz se existe uma conta com ele; esses dois usos não ficam registrados.`,
     'Situação dos comentários: a administração pode suspender a publicação de comentários de uma conta. Essa informação só a própria pessoa e a administração veem.',
     'Registro das ações da administração (auditoria): quando a administração muda um cargo, suspende ou reativa comentários, consulta o e-mail, baixa os dados ou exclui uma conta, fica registrado quem fez, em qual conta, o quê e quando. O registro não guarda nome, e-mail nem texto: só os identificadores internos das contas e, na mudança de cargo, o cargo de antes e o de depois. Só a administração o vê.',
     'Registros técnicos: os provedores de hospedagem e de banco de dados podem registrar dados técnicos de acesso, como endereço IP, data e hora, tipo de navegador e páginas acessadas, para operar e proteger o serviço. O site não usa ferramentas de análise de audiência nem de publicidade.',
@@ -209,7 +209,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
         },
         {
           type: 'p',
-          text: 'O registro das ações da administração guarda só os identificadores internos das contas. Quando uma conta é excluída, as linhas sobre ela (e as em que ela era a autora da ação) continuam, ligadas só a esse identificador, que já não corresponde a nenhum perfil, sem nome, e-mail nem texto.',
+          text: 'O registro das ações da administração guarda só os identificadores internos das contas. Quando uma conta é excluída, as linhas sobre ela (e as em que ela foi quem fez a ação) continuam, ligadas só a esse identificador, que já não corresponde a nenhum perfil, sem nome, e-mail nem texto.',
         },
         ...describeField(
           config,

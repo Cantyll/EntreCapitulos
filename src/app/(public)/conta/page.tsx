@@ -48,7 +48,9 @@ export default async function AccountPage() {
               <span className={styles.email}>{email}</span>
             </p>
             <p className={styles.hint}>
-              Usamos o e-mail só para você entrar. Ele não aparece para outras pessoas.
+              Usamos o e-mail para você entrar e para responder aos seus pedidos. Ele não é público:
+              a administração do clube só o vê para dar suporte e atender pedidos sobre os seus
+              dados.
             </p>
           </section>
         )}

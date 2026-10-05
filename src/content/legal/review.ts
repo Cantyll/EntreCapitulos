@@ -75,7 +75,7 @@ export const DATA_MAP: readonly DataRow[] = [
     purpose: 'Entrar na conta, enviar o código de acesso e responder pedidos',
     basis: 1,
     retention: 1,
-    sees: 'A própria pessoa e quem administra o Supabase. Não é público.',
+    sees: 'A própria pessoa, quem administra o Supabase e, sob demanda e com registro, a administração do clube (ver a linha da consulta de e-mail, abaixo). Não é público.',
     source: 'codigo',
   },
   {
@@ -166,7 +166,7 @@ export const DATA_MAP: readonly DataRow[] = [
     purpose: 'Dar suporte e atender pedidos sobre os dados (LGPD)',
     basis: 3,
     retention: 1,
-    sees: 'Só a administração, depois de um clique; cada consulta fica na auditoria. Na lista de membros só aparece o e-mail mascarado.',
+    sees: 'Só a administração. O e-mail completo, o último acesso e o provedor só aparecem depois de um clique no perfil, e cada vez que aparecem fica na auditoria. A lista de membros mostra só o e-mail mascarado (primeira letra e domínio) e a busca por e-mail exato confirma se existe uma conta com ele: esses dois usos NÃO ficam na auditoria.',
     source: 'codigo',
   },
   {
@@ -311,8 +311,8 @@ export const LAWYER_QUESTIONS: readonly string[] = [
  */
 export const SECOND_ROUND_QUESTIONS: readonly string[] = [
   'Retenção da auditoria: por quanto tempo guardar as linhas de auditoria das ações da administração sobre pessoas (`audit.retention`, hoje "A DEFINIR")? O que justifica o prazo e como ele se concilia com a eliminação de dados quando a conta é excluída?',
-  'Identificadores de quem agiu e de quem sofreu a ação depois da exclusão: as linhas de auditoria sobre uma conta excluída (e as em que ela era a autora da ação) continuam ligadas só ao identificador interno (uuid), sem nome, e-mail nem texto. Esse identificador ainda é dado pessoal? Ele também aparece nas cópias de segurança, nos registros da Vercel (`/painel/membros/<uuid>`) e nos 8 primeiros caracteres do nome do arquivo de dados. Precisa ser tratado na política e nos prazos?',
-  'A administração vendo e-mail e último acesso: a administração vê o e-mail, o último acesso e o provedor de login de qualquer pessoa, para suporte e pedidos da LGPD, depois de um clique e com registro de cada consulta. Qual a base legal adequada, o texto da política basta, e é preciso limitar quem tem o cargo de administração ou registrar a finalidade de cada consulta?',
+  'Identificadores de quem agiu e de quem sofreu a ação depois da exclusão: as linhas de auditoria sobre uma conta excluída (e as em que ela foi quem fez a ação) continuam ligadas só ao identificador interno (uuid), sem nome, e-mail nem texto. Esse identificador ainda é dado pessoal? Ele também aparece nas cópias de segurança, nos registros da Vercel (`/painel/membros/<uuid>`) e nos 8 primeiros caracteres do nome do arquivo de dados. Precisa ser tratado na política e nos prazos?',
+  'A administração vendo e-mail e último acesso: a administração vê o e-mail completo, o último acesso e o provedor de login de qualquer pessoa, para suporte e pedidos da LGPD, depois de um clique e com registro de cada vez que são mostrados. Já a lista de membros mostra o e-mail mascarado (primeira letra e domínio) e a busca por e-mail exato confirma se existe uma conta com ele, e esses dois usos NÃO são registrados. Qual a base legal adequada, o texto da política basta, esses dois usos sem registro são aceitáveis ou devem ser auditados, e é preciso limitar quem tem o cargo de administração ou registrar a finalidade de cada consulta?',
   'Suspensão de comentários: a administração pode suspender os comentários de uma conta, sem motivo, prazo nem aviso além da mensagem no campo de comentário. Isso é uma sanção que exige aviso prévio, motivo, prazo ou canal de contestação? Precisa constar nos Termos de Uso?',
   'Leitura de e-mail por função do projeto gerenciado: o e-mail é lido da tabela de contas do Supabase (provedor gerenciado) por funções do banco, executadas com o papel dono das funções, e o uso é registrado só pelo nosso próprio registro. Isso muda o papel do Supabase como operador, ou exige alguma cláusula ou aviso? E como descrever o caso em que o projeto gerenciado não permite essa leitura?',
   'As linhas de auditoria sobre a pessoa (mudança de cargo, suspensão, consulta ao e-mail pela administração) fazem parte do direito de acesso? Devem constar na exportação dela, com ou sem o nome de quem agiu?',

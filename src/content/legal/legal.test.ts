@@ -338,10 +338,37 @@ describe('gestão de membros pela administração (etapa 8f)', () => {
     for (const piece of [
       'a administração do clube pode ver o seu e-mail, a data do seu último acesso',
       'só para dar suporte e atender pedidos sobre os seus dados',
-      'Cada consulta fica registrada',
+      'a consulta fica registrada',
     ]) {
       expect(section('dados'), piece).toContain(piece);
     }
+  });
+
+  it('não promete registro onde não há: a lista parcial e a busca por e-mail exato não são registradas', () => {
+    const data = section('dados');
+    expect(data).toContain('A lista de membros mostra só um e-mail parcial');
+    expect(data).toContain('esses dois usos não ficam registrados');
+    // O e-mail do primeiro item não diz mais que "não aparece para outras pessoas": a administração o vê.
+    expect(data).not.toContain('Ele não aparece para outras pessoas');
+    expect(data).toContain('a administração do clube o veem');
+  });
+
+  it('o Google só entra no texto da consulta de contato quando o login com Google está ativo', () => {
+    const off = allText({
+      title: '',
+      lead: '',
+      sections: buildPrivacy(legalConfig, OFF).sections.filter((s) => s.id === 'dados'),
+    });
+    const on = allText({
+      title: '',
+      lead: '',
+      sections: buildPrivacy(legalConfig, { ...OFF, google: true }).sections.filter(
+        (s) => s.id === 'dados',
+      ),
+    });
+    expect(off).toContain('(código por e-mail), só para dar suporte');
+    expect(off).not.toMatch(/Google/);
+    expect(on).toContain('(código por e-mail ou Google), só para dar suporte');
   });
 
   it('diz que a administração pode suspender comentários e excluir contas', () => {
@@ -370,7 +397,7 @@ describe('gestão de membros pela administração (etapa 8f)', () => {
 
   it('o selo público é "administração ou moderação", nunca "autora"', () => {
     expect(section('publico')).toContain('da administração ou da moderação');
-    expect(privacy).not.toMatch(/autora|administradora|moderadora/i);
+    expect(privacy).not.toMatch(/\bautora\b|administradora|moderadora/i);
   });
 
   it('não promete nada que o código não faça (sem convite, mensagem, lote nem banimento com prazo)', () => {
