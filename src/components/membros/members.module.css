@@ -161,6 +161,14 @@
   font-size: 14px;
 }
 
+.searching a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--rose-2);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 /*
  * Dois desenhos da mesma lista: tabela no desktop, cartões no celular. O que fica escondido usa display:none
  * (não só "invisível"): leitor de tela e teclado nunca percorrem os links duplicados.
@@ -501,11 +509,17 @@
   color: var(--ink);
 }
 
+/*
+ * `minmax(0, 1fr)` e `overflow-wrap: anywhere`: o nome de exibição (até 60 caracteres, sem espaço se a pessoa
+ * quiser) entra nos títulos e nos rótulos dos diálogos e não pode alargar a coluna além da folha.
+ */
 .dialogField {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   color: var(--ink-2);
   font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .dialogField input {
@@ -514,9 +528,11 @@
 
 .dialogText {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   color: var(--ink-2);
   font-size: 14.5px;
+  overflow-wrap: anywhere;
 }
 
 .dialogText p,
@@ -580,10 +596,12 @@
 
 .audit li {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px;
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
   font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .audit li:last-child {
@@ -613,7 +631,14 @@
     font-size: 16px;
   }
 
-  .inlineButton {
+  .inlineButton,
+  .searching a {
     min-height: var(--tap);
+  }
+
+  /* Folha inferior: o texto dos diálogos de membros também tem pelo menos 16px (como o campo e o erro). */
+  .dialogText,
+  .dialogField {
+    font-size: 16px;
   }
 }

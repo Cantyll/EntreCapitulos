@@ -105,6 +105,13 @@
   font-size: 14.5px;
 }
 
+/* Link dentro da frase: só a cor não basta (WCAG 1.4.1), então vai sublinhado como o `.formLink`. */
+.guest p a {
+  color: var(--rose-2);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 .composer {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr);

@@ -269,3 +269,26 @@ describe('a lista em dois desenhos', () => {
     expect(list).not.toMatch(/<(button|Button)\b/);
   });
 });
+
+describe('estilos dos diálogos, da auditoria e dos links em frase (achados da revisão)', () => {
+  const css = read('src/components/membros/members.module.css');
+  const touch = css.slice(css.lastIndexOf('@media (pointer: coarse)'));
+
+  it('o texto dos diálogos tem 16px na folha inferior (senão vence a herança do ConfirmDialog)', () => {
+    expect(touch).toMatch(/\.dialogText,\s*\.dialogField\s*\{[^}]*font-size:\s*16px/);
+  });
+
+  it('nome longo sem espaço não alarga as grades dos diálogos nem da auditoria', () => {
+    for (const selector of ['.dialogField', '.dialogText', '.audit li']) {
+      const rule = new RegExp(`${selector.replace('.', '\\.')}\\s*\\{([^}]*)\\}`).exec(css)?.[1];
+      expect(rule, selector).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/);
+      expect(rule, selector).toMatch(/overflow-wrap:\s*anywhere/);
+    }
+  });
+
+  it('o link em frase se distingue pelo sublinhado, não só pela cor (WCAG 1.4.1)', () => {
+    const comments = read('src/components/comments/comments.module.css');
+    expect(comments).toMatch(/\.guest p a\s*\{[^}]*text-decoration:\s*underline/);
+    expect(css).toMatch(/\.searching a\s*\{[^}]*text-decoration:\s*underline/);
+  });
+});
