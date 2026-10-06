@@ -11,8 +11,8 @@ import {
   pendingItems,
   type LegalData,
 } from '../legal-config';
-import { SOBRE } from '../sobre';
 import { ageSentence } from './age';
+import { COMMUNITY_RULES } from './community-rules';
 import { LOCAL_STORAGE_ITEMS, SITE_COOKIES } from './cookies';
 import { buildPrivacy } from './privacy';
 import { buildTerms } from './terms';
@@ -260,8 +260,9 @@ describe('termos de uso', () => {
     expect(text).toContain(`${legalConfig.minimumAge} anos`);
   });
 
-  it('reaproveita os combinados da página Sobre', () => {
-    for (const rule of SOBRE.rules) {
+  it('lista os combinados da comunidade (a constante de código, a mesma que /sobre mostra)', () => {
+    expect(COMMUNITY_RULES).toHaveLength(5);
+    for (const rule of COMMUNITY_RULES) {
       expect(text).toContain(rule.title);
       expect(text).toContain(rule.text);
     }
