@@ -331,7 +331,7 @@ describe('nome do arquivo e data de Brasília', () => {
   });
 });
 
-describe('arquivo de dados da pessoa (versão 2)', () => {
+describe('arquivo de dados da pessoa (versão 3)', () => {
   const payload = {
     account: {
       id: ID,
@@ -348,6 +348,11 @@ describe('arquivo de dados da pessoa (versão 2)', () => {
         book_title: 'O Livro',
       },
     ],
+    terms: {
+      version: '2026-10-06',
+      accepted_at: '2026-10-07T12:00:00Z',
+      first_accepted_at: '2026-10-06T09:30:00Z',
+    },
   };
 
   it('lê a função do banco campo a campo e recusa conta de outra pessoa ou formato estranho', () => {
@@ -366,13 +371,30 @@ describe('arquivo de dados da pessoa (versão 2)', () => {
         books: { slug: 'o-livro', title: 'O Livro' },
       },
     ]);
+    expect(parsed?.terms).toEqual({
+      version: '2026-10-06',
+      accepted_at: '2026-10-07T12:00:00Z',
+      first_accepted_at: '2026-10-06T09:30:00Z',
+    });
     expect(parseAdminExportPayload(payload, 'bbbbbbbb-1111-4222-8333-444444444444')).toBeNull();
     expect(parseAdminExportPayload(null, ID)).toBeNull();
     expect(parseAdminExportPayload({ account: {}, progress: [] }, ID)).toBeNull();
     expect(parseAdminExportPayload({ ...payload, progress: [{ chapter: 'x' }] }, ID)).toBeNull();
   });
 
-  it('é o formato de "Baixar meus dados" v2, só com dados dela', () => {
+  it('o aceite: ausente (função de antes da migration) ou null = nunca aceitou; formato estranho invalida o arquivo', () => {
+    const { terms: _terms, ...older } = payload;
+    void _terms;
+    expect(parseAdminExportPayload(older, ID)?.terms).toBeNull();
+    expect(parseAdminExportPayload({ ...payload, terms: null }, ID)?.terms).toBeNull();
+    expect(parseAdminExportPayload({ ...payload, terms: 'x' }, ID)).toBeNull();
+    expect(parseAdminExportPayload({ ...payload, terms: { version: 3 } }, ID)).toBeNull();
+    expect(
+      parseAdminExportPayload({ ...payload, terms: { ...payload.terms, accepted_at: null } }, ID),
+    ).toBeNull();
+  });
+
+  it('é o formato de "Baixar meus dados" v3, só com dados dela', () => {
     const parsed = parseAdminExportPayload(payload, ID)!;
     const file = buildMemberExport({
       generatedAt: new Date('2026-10-05T15:00:00Z'),
@@ -404,7 +426,12 @@ describe('arquivo de dados da pessoa (versão 2)', () => {
       ],
       commentsSuspended: true,
     });
-    expect(file.exportVersion).toBe(2);
+    expect(file.exportVersion).toBe(3);
+    expect(file.termsAcceptance).toEqual({
+      version: '2026-10-06',
+      acceptedAt: '2026-10-07T12:00:00Z',
+      firstAcceptedAt: '2026-10-06T09:30:00Z',
+    });
     expect(file.profile?.commentsSuspended).toBe(true);
     expect(file.account.email).toBe('ela@exemplo.com');
     expect(file.comments).toHaveLength(1);
@@ -416,6 +443,7 @@ describe('arquivo de dados da pessoa (versão 2)', () => {
       'generatedAt',
       'profile',
       'readingProgress',
+      'termsAcceptance',
     ]);
   });
 });

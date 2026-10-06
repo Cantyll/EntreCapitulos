@@ -18,6 +18,8 @@ const { state, eqs, logFailure } = vi.hoisted(() => ({
     failComments: false,
     suspended: false,
     suspensionError: null as { code: string } | null,
+    terms: null as { version: string; accepted_at: string; first_accepted_at: string } | null,
+    termsError: null as { code: string } | null,
   },
   eqs: [] as string[],
   logFailure: vi.fn(),
@@ -40,6 +42,11 @@ vi.mock('@/lib/supabase/server', () => ({
           return state.suspensionError
             ? { data: null, error: state.suspensionError }
             : { data: state.suspended ? { user_id: ME } : null, error: null };
+        }
+        if (table === 'terms_acceptances') {
+          return state.termsError
+            ? { data: null, error: state.termsError }
+            : { data: state.terms, error: null };
         }
         if (table === 'profiles') {
           return {
@@ -118,8 +125,8 @@ describe('buildAccountExport', () => {
 
   it('traz perfil, e-mail, comentários de QUALQUER status e progresso', () => {
     const out = buildAccountExport(base);
-    expect(out.exportVersion).toBe(2);
-    expect(EXPORT_VERSION).toBe(2);
+    expect(out.exportVersion).toBe(3);
+    expect(EXPORT_VERSION).toBe(3);
     expect(out.profile?.commentsSuspended).toBe(false);
     expect(out.generatedAt).toBe('2026-10-02T15:00:00.000Z');
     expect(out.account.email).toBe('eu@exemplo.com');
@@ -167,6 +174,26 @@ describe('buildAccountExport', () => {
     ).toBe(true);
   });
 
+  it('o aceite dos Termos vai no arquivo com a versão e as duas datas (versão 3), ou null se nunca aceitou', () => {
+    expect(buildAccountExport(base).termsAcceptance).toBeNull();
+    expect(buildAccountExport({ ...base, terms: null }).termsAcceptance).toBeNull();
+    expect(
+      buildAccountExport({
+        ...base,
+        terms: {
+          version: '2026-10-06',
+          accepted_at: '2026-10-07T12:00:00.5+00',
+          first_accepted_at: '2026-10-06T09:30:00+00',
+          extra: 'não entra',
+        } as never,
+      }).termsAcceptance,
+    ).toEqual({
+      version: '2026-10-06',
+      acceptedAt: '2026-10-07T12:00:00.5+00',
+      firstAcceptedAt: '2026-10-06T09:30:00+00',
+    });
+  });
+
   it('sem perfil, sem comentários e sem progresso continua válido', () => {
     const out = buildAccountExport({ ...base, profile: null, comments: [], progress: [] });
     expect(out.profile).toBeNull();
@@ -201,6 +228,8 @@ describe('GET /conta/dados', () => {
     state.failComments = false;
     state.suspended = false;
     state.suspensionError = null;
+    state.terms = null;
+    state.termsError = null;
     eqs.length = 0;
     logFailure.mockClear();
   });
@@ -243,6 +272,7 @@ describe('GET /conta/dados', () => {
       `member_suspensions.user_id=${ME}`,
       `profiles.id=${ME}`,
       `reading_progress.user_id=${ME}`,
+      `terms_acceptances.user_id=${ME}`,
     ]);
     const body = await res.json();
     expect(body.account.email).toBe('eu@exemplo.com');
@@ -255,8 +285,35 @@ describe('GET /conta/dados', () => {
     expect((await (await GET()).json()).profile.commentsSuspended).toBe(false);
     state.suspended = true;
     const body = await (await GET()).json();
-    expect(body.exportVersion).toBe(2);
+    expect(body.exportVersion).toBe(3);
     expect(body.profile.commentsSuspended).toBe(true);
+  });
+
+  it('versão 3: o aceite dos Termos da PRÓPRIA pessoa (versão, data e primeira data), ou null', async () => {
+    const { GET } = await import('@/app/(public)/conta/dados/route');
+    expect((await (await GET()).json()).termsAcceptance).toBeNull();
+    state.terms = {
+      version: '2026-10-06',
+      accepted_at: '2026-10-07T12:00:00+00',
+      first_accepted_at: '2026-10-06T09:30:00+00',
+    };
+    const body = await (await GET()).json();
+    expect(body.termsAcceptance).toEqual({
+      version: '2026-10-06',
+      acceptedAt: '2026-10-07T12:00:00+00',
+      firstAcceptedAt: '2026-10-06T09:30:00+00',
+    });
+  });
+
+  it('sem a tabela do aceite (migration não aplicada) o campo é null; qualquer outro erro derruba o arquivo', async () => {
+    const { GET } = await import('@/app/(public)/conta/dados/route');
+    state.termsError = { code: 'PGRST205' };
+    const missing = await GET();
+    expect(missing.status).toBe(200);
+    expect((await missing.json()).termsAcceptance).toBeNull();
+
+    state.termsError = { code: '08006' };
+    expect((await GET()).status).toBe(500);
   });
 
   it('sem a tabela (migration não aplicada) não há suspensão; qualquer outro erro derruba o arquivo', async () => {

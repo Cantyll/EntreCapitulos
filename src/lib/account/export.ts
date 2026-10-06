@@ -5,11 +5,13 @@
  * de outras pessoas, sinalizações da equipe, tokens nem identificadores de sessão do Auth.
  *
  * Versões: 1 (etapa 7a) e 2 (etapa 8f: `profile.commentsSuspended`, a situação da suspensão de comentários, que
- * a própria pessoa também recebe). O arquivo que a administração baixa de uma pessoa tem o mesmo formato.
+ * a própria pessoa também recebe) e 3 (etapa 8g: `termsAcceptance`, a versão e as datas do aceite dos Termos e da
+ * declaração de ter 18 anos ou mais, ou `null` se a pessoa nunca aceitou). O arquivo que a administração baixa de
+ * uma pessoa tem o mesmo formato.
  */
 import { formatIsoDay } from '@/lib/site';
 
-export const EXPORT_VERSION = 2;
+export const EXPORT_VERSION = 3;
 
 export type ExportAccountInput = {
   id: string;
@@ -40,6 +42,13 @@ export type ExportCommentInput = {
   created_at: string;
   updated_at: string;
   reading_sessions?: { number: number; books?: { slug: string } | null } | null;
+};
+
+/** A linha de `terms_acceptances` (colunas do banco). */
+export type ExportTermsInput = {
+  version: string;
+  accepted_at: string;
+  first_accepted_at: string;
 };
 
 export type ExportProgressInput = {
@@ -76,6 +85,12 @@ export type AccountExport = {
     createdAt: string;
     updatedAt: string;
   }[];
+  /** O último aceite dos Termos e a data do primeiro (versão 3). `null`: nunca aceitou. */
+  termsAcceptance: {
+    version: string;
+    acceptedAt: string;
+    firstAcceptedAt: string;
+  } | null;
   readingProgress: {
     bookSlug: string | null;
     bookTitle: string | null;
@@ -91,6 +106,8 @@ export function buildAccountExport(input: {
   comments: readonly ExportCommentInput[];
   progress: readonly ExportProgressInput[];
   commentsSuspended: boolean;
+  /** `null` ou ausente: a pessoa nunca aceitou (ou a tabela ainda não existe). */
+  terms?: ExportTermsInput | null;
 }): AccountExport {
   const { account, profile } = input;
   return {
@@ -126,6 +143,13 @@ export function buildAccountExport(input: {
       createdAt: comment.created_at,
       updatedAt: comment.updated_at,
     })),
+    termsAcceptance: input.terms
+      ? {
+          version: input.terms.version,
+          acceptedAt: input.terms.accepted_at,
+          firstAcceptedAt: input.terms.first_accepted_at,
+        }
+      : null,
     readingProgress: input.progress.map((row) => ({
       bookSlug: row.books?.slug ?? null,
       bookTitle: row.books?.title ?? null,

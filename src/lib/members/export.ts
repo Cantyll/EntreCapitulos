@@ -1,8 +1,9 @@
 /*
  * Arquivo "dados da pessoa" baixado pela administração (etapa 8f). Tem o MESMO formato de "Baixar meus dados"
- * (`buildAccountExport`, versão 2), só com dados dela: o perfil e os comentários o route handler lê pelo RLS da
- * administração, sempre filtrados pelo id da pessoa; a conta (e-mail, último acesso, provedores) e o progresso de
- * leitura vêm da função `admin_member_export`, que também grava a linha de auditoria `export_data`.
+ * (`buildAccountExport`, versão 3), só com dados dela: o perfil e os comentários o route handler lê pelo RLS da
+ * administração, sempre filtrados pelo id da pessoa; a conta (e-mail, último acesso, provedores), o progresso de
+ * leitura e o aceite dos Termos vêm da função `admin_member_export`, que também grava a linha de auditoria
+ * `export_data`.
  */
 import {
   buildAccountExport,
@@ -11,6 +12,7 @@ import {
   type ExportCommentInput,
   type ExportProfileInput,
   type ExportProgressInput,
+  type ExportTermsInput,
 } from '@/lib/account/export';
 import { isUuid } from '@/lib/comments/rules';
 import { formatIsoDay } from '@/lib/site';
@@ -27,6 +29,8 @@ export function memberExportFileName(id: string, at: Date): string {
 export type AdminExportPayload = {
   account: ExportAccountInput;
   progress: ExportProgressInput[];
+  /** O aceite dos Termos da pessoa (a administração não o lê pelo RLS; vem da função). `null`: nunca aceitou. */
+  terms: ExportTermsInput | null;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -62,7 +66,28 @@ export function parseAdminExportPayload(
     });
   }
 
+  // `terms` só existe depois da migration `legal_compliance`: ausente ou `null` = nunca aceitou. Um objeto fora do
+  // formato invalida o arquivo inteiro (nunca se monta um arquivo com um aceite que não se entende).
+  let terms: ExportTermsInput | null = null;
+  if (raw.terms !== undefined && raw.terms !== null) {
+    const t = raw.terms;
+    if (
+      !isRecord(t) ||
+      typeof t.version !== 'string' ||
+      typeof t.accepted_at !== 'string' ||
+      typeof t.first_accepted_at !== 'string'
+    ) {
+      return null;
+    }
+    terms = {
+      version: t.version,
+      accepted_at: t.accepted_at,
+      first_accepted_at: t.first_accepted_at,
+    };
+  }
+
   return {
+    terms,
     account: {
       id: account.id,
       email: textOrNull(account.email),
@@ -90,5 +115,6 @@ export function buildMemberExport(input: {
     comments: input.comments,
     progress: input.payload.progress,
     commentsSuspended: input.commentsSuspended,
+    terms: input.payload.terms,
   });
 }

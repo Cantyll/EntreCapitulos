@@ -6,6 +6,7 @@ import {
   type ExportProgressInput,
 } from '@/lib/account/export';
 import { classifyMemberError } from '@/lib/members/errors';
+import { isTermsUnavailable } from '@/lib/terms/errors';
 import { createClient } from '@/lib/supabase/server';
 
 /*
@@ -76,10 +77,18 @@ export async function GET() {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const [profile, progress, suspension] = await Promise.all([
+    // O aceite dos Termos (versão 3 do arquivo): a pessoa lê só a PRÓPRIA linha pelo RLS.
+    const termsQuery = supabase
+      .from('terms_acceptances')
+      .select('version, accepted_at, first_accepted_at')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const [profile, progress, suspension, terms] = await Promise.all([
       profileQuery,
       progressQuery,
       suspensionQuery,
+      termsQuery,
     ]);
     if (profile.error) throw profile.error;
     if (progress.error) throw progress.error;
@@ -87,6 +96,10 @@ export async function GET() {
     // arquivo: uma cópia de dados que omite uma informação em silêncio é pior que um erro.
     if (suspension.error && classifyMemberError(suspension.error) !== 'unavailable') {
       throw suspension.error;
+    }
+    // Idem para o aceite: sem a tabela não existe aceite nenhum; outro erro derruba o arquivo.
+    if (terms.error && !isTermsUnavailable(terms.error)) {
+      throw terms.error;
     }
 
     const now = new Date();
@@ -105,6 +118,7 @@ export async function GET() {
       comments,
       progress: progress.data as unknown as ExportProgressInput[],
       commentsSuspended: suspension.data !== null && !suspension.error,
+      terms: terms.error ? null : terms.data,
     });
 
     return json(body, 200, {
