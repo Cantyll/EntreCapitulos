@@ -24,6 +24,9 @@ que impede alargar permissões sem querer está em `supabase/tests/database/12_s
 | `reading_sessions` | sim | não |
 | `session_notes` | sim | não |
 | `session_questions` | sim | não |
+| `site_page_drafts` | sim | não |
+| `site_page_revisions` | sim | não |
+| `site_pages` | sim | não |
 | `terms_acceptances` | sim | não |
 
 ## Políticas de RLS
@@ -63,6 +66,9 @@ Inclui as políticas de `storage.objects` (bucket das capas). `USING` filtra o q
 | `public.session_questions` | `session_questions_insert_admin` | INSERT | authenticated |  | `( SELECT is_admin() AS is_admin)` |
 | `public.session_questions` | `session_questions_select` | SELECT | anon, authenticated | `(EXISTS ( SELECT 1 FROM reading_sessions s WHERE (s.id = session_questions.session_id)))` |  |
 | `public.session_questions` | `session_questions_update_admin` | UPDATE | authenticated | `( SELECT is_admin() AS is_admin)` | `( SELECT is_admin() AS is_admin)` |
+| `public.site_page_drafts` | `site_page_drafts_select_admin` | SELECT | authenticated | `( SELECT is_admin() AS is_admin)` |  |
+| `public.site_page_revisions` | `site_page_revisions_select_admin` | SELECT | authenticated | `( SELECT is_admin() AS is_admin)` |  |
+| `public.site_pages` | `site_pages_select_public` | SELECT | anon, authenticated | `true` |  |
 | `public.terms_acceptances` | `terms_acceptances_select_own` | SELECT | authenticated | `(user_id = ( SELECT auth.uid() AS uid))` |  |
 | `storage.objects` | `covers_delete_admin` | DELETE | authenticated | `((bucket_id = 'covers'::text) AND ( SELECT is_admin() AS is_admin))` |  |
 | `storage.objects` | `covers_insert_admin` | INSERT | authenticated |  | `((bucket_id = 'covers'::text) AND ( SELECT is_admin() AS is_admin))` |
@@ -91,6 +97,10 @@ Permissão na tabela inteira. O RLS ainda se aplica a cada uma delas.
 | `session_notes` | authenticated | DELETE, INSERT, SELECT, UPDATE |
 | `session_questions` | anon | SELECT |
 | `session_questions` | authenticated | DELETE, INSERT, SELECT, UPDATE |
+| `site_page_drafts` | authenticated | SELECT |
+| `site_page_revisions` | authenticated | SELECT |
+| `site_pages` | anon | SELECT |
+| `site_pages` | authenticated | SELECT |
 | `terms_acceptances` | authenticated | SELECT |
 
 ## Permissões por coluna (anon e authenticated)
@@ -134,11 +144,15 @@ colunas "anon", "authenticated" e "PUBLIC" dizem quem pode executar pela API.
 | `is_staff()` | não | sim | `"" (vazio)` | sim | sim | não |
 | `mask_email(p_email text)` | não | não | `"" (vazio)` | não | não | não |
 | `publish_session(p_session_id uuid)` | não | não | `"" (vazio)` | não | sim | não |
+| `publish_site_page(p_slug text, p_expected_updated_at text)` | não | sim | `"" (vazio)` | não | sim | não |
 | `purge_account_deletions()` | não | não | `"" (vazio)` | não | não | não |
 | `reading_sessions_set_published_at()` | sim | não | `"" (vazio)` | não | não | não |
+| `restore_site_page_revision(p_slug text, p_revision_id bigint, p_expected_updated_at text)` | não | sim | `"" (vazio)` | não | sim | não |
 | `retract_comment(p_comment_id uuid)` | não | sim | `"" (vazio)` | não | sim | não |
+| `save_site_page_draft(p_slug text, p_content jsonb, p_expected_updated_at text)` | não | sim | `"" (vazio)` | não | sim | não |
 | `set_member_role(p_user_id uuid, p_role text, p_expected_role text)` | não | sim | `"" (vazio)` | não | sim | não |
 | `set_member_suspension(p_user_id uuid, p_suspended boolean)` | não | sim | `"" (vazio)` | não | sim | não |
 | `set_updated_at()` | sim | não | `"" (vazio)` | não | não | não |
+| `site_page_content_problem(p_slug text, p_content jsonb)` | não | não | `"" (vazio)` | não | não | não |
 | `start_book(p_book_id uuid)` | não | não | `"" (vazio)` | não | sim | não |
 | `unpublish_session(p_session_id uuid)` | não | não | `"" (vazio)` | não | sim | não |
