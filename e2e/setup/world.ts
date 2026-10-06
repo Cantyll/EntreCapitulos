@@ -67,6 +67,13 @@ export default function globalSetup() {
     -- O registro mínimo de exclusões que as rodadas anteriores deixaram (banco local de teste).
     delete from public.account_deletions;
 
+    -- A página Sobre editável (etapa 8j): nada publicado, sem rascunho e sem histórico. O app só lê o publicado
+    -- depois da primeira requisição, então isto precisa rodar antes dela. (As fotos de rodadas anteriores ficam no
+    -- Storage: o banco local não deixa apagar storage.objects por SQL, e uma foto sem referência é inofensiva.)
+    delete from public.site_page_revisions;
+    delete from public.site_page_drafts;
+    delete from public.site_pages;
+
     -- O que o painel (chromium-admin) cria e altera: livros "Livro do Painel …" e o estado do livro atual do seed.
     delete from public.comments where session_id in (select s.id from public.reading_sessions s join public.books b on b.id = s.book_id where b.title like 'Livro do Painel %');
     delete from public.reading_sessions where book_id in (select id from public.books where title like 'Livro do Painel %');
