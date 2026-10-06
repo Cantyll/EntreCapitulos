@@ -12,7 +12,7 @@ Cada fato abaixo vem marcado com a origem: **do código**, **informado pelo dono
 2. Quem entra no clube comenta cada sessão, com controle de spoiler por capítulo; os comentários são moderados (do código).
 3. É um site web (sem aplicativo nativo), hospedado na Vercel, com banco de dados e login no Supabase e e-mail de código enviado pelo Resend (do código e informado pelo dono do site).
 4. Para entrar há login por código de 6 dígitos enviado por e-mail e, se ativado, login com o Google; sem ferramentas de análise ou de publicidade (do código).
-5. **Controlador:** Felipe Almeida e Agatha Montinelli (informado pelo dono do site). Contato para pedidos de privacidade: Felipe.golinus@gmail.com (informado pelo dono do site). Idade mínima proposta: 16 anos, **sem** verificação de idade no cadastro (do código).
+5. **Controlador:** Felipe Almeida e Agatha Montinelli (informado pelo dono do site). Contato para pedidos de privacidade: Felipe.golinus@gmail.com (informado pelo dono do site). Idade mínima proposta: 18 anos, **sem** verificação de idade no cadastro (do código).
 
 ## (b) Mapa de dados
 
@@ -81,7 +81,7 @@ O Entre Capítulos é mantido por Felipe Almeida e Agatha Montinelli, que decide
 
 Para qualquer pedido ou dúvida sobre privacidade, escreva para Felipe.golinus@gmail.com.
 
-O clube é destinado a pessoas com 16 anos ou mais. O site não verifica a idade de quem cria a conta. Se soubermos que alguém abaixo dessa idade criou uma conta, podemos excluí-la.
+O clube é destinado a pessoas com 18 anos ou mais. O site não verifica a idade de quem cria a conta. Se soubermos que alguém abaixo dessa idade criou uma conta, podemos excluí-la.
 
 #### 2. Quais dados tratamos
 
@@ -229,7 +229,7 @@ O Entre Capítulos é um blog e clube de leitura de Agatha Montinelli. Ela lê u
 
 Você pode ler as sessões públicas sem conta. Para comentar, é preciso entrar com um código enviado por e-mail ou, quando disponível, com a conta Google.
 
-O clube é destinado a pessoas com 16 anos ou mais. O site não verifica a idade de quem cria a conta. Se soubermos que alguém abaixo dessa idade criou uma conta, podemos excluí-la.
+O clube é destinado a pessoas com 18 anos ou mais. O site não verifica a idade de quem cria a conta. Se soubermos que alguém abaixo dessa idade criou uma conta, podemos excluí-la.
 
 Você escolhe o nome que aparece nos seus comentários, que é público. Cuide do acesso ao seu e-mail: quem o controla consegue entrar na sua conta. Você pode trocar o nome, baixar os seus dados e excluir a conta em Minha conta.
 

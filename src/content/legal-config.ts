@@ -64,7 +64,8 @@ export const legalConfig = {
   controllerName: 'Felipe Almeida e Agatha Montinelli',
   /** Contato para pedidos de privacidade (acesso, correção, exclusão…). */
   privacyContactEmail: 'Felipe.golinus@gmail.com',
-  minimumAge: 16,
+  /** Idade mínima declarada no aceite dos Termos (18, por causa da ECA Digital, Lei 15.211/2025). */
+  minimumAge: 18,
   /** Data da última atualização dos textos. */
   lastUpdated: '5 de outubro de 2026',
 

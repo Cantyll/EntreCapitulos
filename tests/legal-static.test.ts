@@ -33,7 +33,7 @@ describe('links das páginas legais', () => {
   it('a frase de /entrar é a pedida', () => {
     const html = renderToStaticMarkup(createElement(LegalLinks, { verb: 'entrar' }));
     expect(html.replace(/<[^>]+>/g, '')).toBe(
-      'Ao entrar, você concorda com os Termos e a Política de Privacidade.',
+      'Ao entrar, você concorda com os Termos e a Política de Privacidade e declara ter 18 anos ou mais.',
     );
     expect(html).toContain('href="/termos"');
     expect(html).toContain('href="/privacidade"');

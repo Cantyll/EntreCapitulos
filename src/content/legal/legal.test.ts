@@ -607,17 +607,17 @@ describe('idade mínima vem de legal-config', () => {
   });
 
   it('mudar a idade na configuração muda os dois textos (o número não está escrito no texto)', () => {
-    const other: LegalData = { ...legalConfig, minimumAge: 18 };
-    expect(allText(buildPrivacy(other, ON))).toContain(SENTENCE(18));
-    expect(allText(buildTerms(other))).toContain(SENTENCE(18));
-    expect(allText(buildPrivacy(other, ON))).not.toContain('16 anos');
-    expect(allText(buildTerms(other))).not.toContain('16 anos');
+    const other: LegalData = { ...legalConfig, minimumAge: 21 };
+    expect(allText(buildPrivacy(other, ON))).toContain(SENTENCE(21));
+    expect(allText(buildTerms(other))).toContain(SENTENCE(21));
+    expect(allText(buildPrivacy(other, ON))).not.toContain(`${legalConfig.minimumAge} anos`);
+    expect(allText(buildTerms(other))).not.toContain(`${legalConfig.minimumAge} anos`);
   });
 
   it('os arquivos de conteúdo não têm a idade escrita à mão', () => {
     for (const file of ['privacy.ts', 'terms.ts']) {
       const source = readFileSync(join(process.cwd(), 'src/content/legal', file), 'utf8');
-      expect(source, file).not.toMatch(/\b1[68] anos\b/);
+      expect(source, file).not.toMatch(/\b1[0-9] anos\b/);
     }
   });
 });
