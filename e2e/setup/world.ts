@@ -64,6 +64,8 @@ export default function globalSetup() {
     delete from public.reading_sessions where book_id in (select id from public.books where slug like 'e2e-%');
     delete from public.books where slug like 'e2e-%';
     delete from auth.users where email like '%@teste.example';
+    -- O registro mínimo de exclusões que as rodadas anteriores deixaram (banco local de teste).
+    delete from public.account_deletions;
 
     -- O que o painel (chromium-admin) cria e altera: livros "Livro do Painel …" e o estado do livro atual do seed.
     delete from public.comments where session_id in (select s.id from public.reading_sessions s join public.books b on b.id = s.book_id where b.title like 'Livro do Painel %');

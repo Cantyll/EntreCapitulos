@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 
+import { TERMS_VERSION } from '../../src/content/legal/version';
 import { sql, lit } from '../support/db';
 import { expect, test } from '../support/fixtures';
 import { codeFor } from '../support/mail';
@@ -31,6 +32,8 @@ test.describe('login por código', () => {
       (window as unknown as { __semRecarga: boolean }).__semRecarga = true;
     });
     await page.getByLabel('Como devemos chamar você nos comentários?').fill('Leitora Nova');
+    // Primeiro acesso: a caixa da declaração de idade e do aceite dos Termos é obrigatória (e nunca vem marcada).
+    await page.getByLabel(/Declaro que tenho 18 anos ou mais/).check();
     await page.getByRole('button', { name: 'Continuar' }).click();
 
     await expect(page).toHaveURL(/\/$/);
@@ -46,6 +49,12 @@ test.describe('login por código', () => {
         `select p.display_name from public.profiles p join auth.users u on u.id = p.id where u.email = ${lit(email)};`,
       ),
     ).toBe('Leitora Nova');
+    // E o aceite ficou registrado, com a versão atual (a idade é declarada, nunca verificada).
+    expect(
+      sql(
+        `select t.version from public.terms_acceptances t join auth.users u on u.id = t.user_id where u.email = ${lit(email)};`,
+      ),
+    ).toBe(TERMS_VERSION);
 
     await menu.click();
     await page.getByRole('button', { name: 'Sair' }).click();

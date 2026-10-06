@@ -1,3 +1,4 @@
+import { TERMS_VERSION } from '../../src/content/legal/version';
 import { lit, sql } from '../support/db';
 import { expect, test } from '../support/fixtures';
 import { untilHydrated } from '../support/hydration';
@@ -62,6 +63,12 @@ test.describe('minha conta', () => {
     expect(text).not.toContain(other.id);
     expect(text).not.toMatch(/comment_flags|Contém link/);
     expect(() => JSON.parse(text)).not.toThrow();
+    // Versão 3: o aceite dos Termos da própria pessoa, com a versão e as duas datas.
+    const file = JSON.parse(text);
+    expect(file.exportVersion).toBe(3);
+    expect(file.termsAcceptance.version).toBe(TERMS_VERSION);
+    expect(file.termsAcceptance.acceptedAt).toBeTruthy();
+    expect(file.termsAcceptance.firstAcceptedAt).toBeTruthy();
   });
 
   test('visitante recebe 401 no download dos dados', async ({ request }) => {

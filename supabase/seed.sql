@@ -31,6 +31,10 @@ insert into auth.users (id, email, raw_user_meta_data) values
 update public.profiles set role = 'admin' where id = '00000001-0000-4000-8000-000000000001';
 update public.profiles set role = 'moderator' where id = '00000001-0000-4000-8000-000000000002';
 
+-- Everybody has accepted the Terms (the version is TERMS_VERSION in src/content/legal/version.ts; a test keeps
+-- the two equal). The seed users never sign in, but local sessions that do should not see the notice.
+insert into public.terms_acceptances (user_id, version) select id, '2026-10-06' from public.profiles;
+
 insert into public.books (id, slug, title, author, synopsis, genres, total_chapters, current_chapter, status, rating, started_at, finished_at) values
   ('00000002-0000-4000-8000-000000000001', 'o-livro-de-azrael', 'O Livro de Azrael', 'Amber V. Nicole', 'Há mil anos, Dianna entregou a própria vida a Kaden, um monstro pior que qualquer pesadelo, para salvar a irmã. Desde então ela cumpre as ordens dele, inclusive caçar uma relíquia antiga. Do outro lado está Liam, o rei que um dia foi chamado de Samkiel e que deu as costas à própria coroa. Inimigos mais velhos que o tempo, os dois vão precisar um do outro.', array['Fantasia sombria','Romantasia','Inimigos para amantes']::text[], 52, 12, 'reading', null, '2026-09-02', null),
   ('00000002-0000-4000-8000-000000000002', 'a-ultima-carta-de-lisboa', 'A Última Carta de Lisboa', 'Tomás Reis', null, '{}', 38, 38, 'finished', 4.5, '2026-07-20', '2026-08-30'),

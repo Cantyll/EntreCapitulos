@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
 import { legalConfig } from '@/content/legal-config';
@@ -37,6 +39,16 @@ describe('TERMS_VERSION', () => {
     ];
     const [year, month, day] = TERMS_VERSION.split('-').map(Number) as [number, number, number];
     expect(legalConfig.lastUpdated).toBe(`${day} de ${months[month - 1]} de ${year}`);
+  });
+});
+
+describe('seed local', () => {
+  it('os aceites do seed usam a versão atual (TERMS_VERSION): quem entra no ambiente local não vê o aviso', () => {
+    const seed = readFileSync('supabase/seed.sql', 'utf8');
+    const match = seed.match(
+      /insert into public\.terms_acceptances \(user_id, version\) select id, '([^']+)' from public\.profiles;/,
+    );
+    expect(match?.[1]).toBe(TERMS_VERSION);
   });
 });
 

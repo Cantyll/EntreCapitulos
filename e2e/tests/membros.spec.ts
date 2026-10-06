@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
 
+import { TERMS_VERSION } from '../../src/content/legal/version';
 import { lit, sql, sqlNumber } from '../support/db';
 import { expect, test } from '../support/fixtures';
 import { untilHydrated } from '../support/hydration';
@@ -659,7 +660,11 @@ test.describe('perfil', () => {
       text = await response.text();
     }
     const file = JSON.parse(text);
-    expect(file.exportVersion).toBe(2);
+    expect(file.exportVersion).toBe(3);
+    // O aceite dos Termos (versão 3) vem da função do banco: a administração não lê a linha dos outros pelo RLS.
+    expect(file.termsAcceptance.version).toBe(TERMS_VERSION);
+    expect(file.termsAcceptance.acceptedAt).toBeTruthy();
+    expect(file.termsAcceptance.firstAcceptedAt).toBeTruthy();
     expect(file.account.id).toBe(target.id);
     expect(file.account.email).toBe(target.email);
     expect(file.profile.displayName).toBe(name);
