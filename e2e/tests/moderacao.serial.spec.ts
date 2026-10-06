@@ -21,6 +21,7 @@ test.describe.serial('moderação', () => {
       '/painel/sessoes',
       '/painel/sessoes/nova',
       '/painel/membros',
+      '/painel/sobre',
       '/painel/votacoes',
       '/painel/configuracoes',
     ]) {

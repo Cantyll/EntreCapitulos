@@ -15,7 +15,7 @@ const SOON = [
 ];
 
 test.describe('navegação do painel', () => {
-  test('desktop: a barra lateral só tem Visão geral, Sessões, Livros, Comentários e Membros', async ({
+  test('desktop: a barra lateral só tem Visão geral, Sessões, Livros, Comentários, Membros e Página Sobre', async ({
     openAs,
   }, testInfo) => {
     test.skip(testInfo.project.name === 'webkit-mobile', 'a barra lateral é só das telas largas');
@@ -28,6 +28,7 @@ test.describe('navegação do painel', () => {
       'Livros',
       /^Comentários/,
       'Membros',
+      'Página Sobre',
     ]);
     for (const { title } of SOON) {
       await expect(nav.getByRole('link', { name: title })).toHaveCount(0);
@@ -42,7 +43,7 @@ test.describe('navegação do painel', () => {
     await expect(main.getByText('Em breve')).toBeVisible();
     // Nenhum número de exemplo: o texto da página não tem dígito algum.
     expect(await main.innerText()).not.toMatch(/\d/);
-    for (const name of ['Sessões', 'Livros', 'Comentários', 'Membros']) {
+    for (const name of ['Sessões', 'Livros', 'Comentários', 'Membros', 'Página Sobre']) {
       await expect(main.getByRole('link', { name: new RegExp(`^${name}`) })).toBeVisible();
     }
     await main.getByRole('link', { name: /^Livros/ }).click();
@@ -73,13 +74,13 @@ test.describe('navegação do painel', () => {
     const { page } = await openAs(await createModerator());
     await page.goto('/painel');
     await expect(page).toHaveURL(/\/painel\/comentarios$/);
-    for (const path of ['/painel/membros', ...SOON.map((item) => item.path)]) {
+    for (const path of ['/painel/membros', '/painel/sobre', ...SOON.map((item) => item.path)]) {
       const response = await page.goto(path);
       expect(response?.status()).toBe(403);
     }
   });
 
-  test('iPhone: a barra inferior não leva às áreas "Em breve" e "Mais" só tem Livros e Membros @mobile', async ({
+  test('iPhone: a barra inferior não leva às áreas "Em breve" e "Mais" só tem Livros, Membros e Página Sobre @mobile', async ({
     openAs,
   }, testInfo) => {
     test.skip(testInfo.project.name !== 'webkit-mobile', 'barra inferior é só do celular');
@@ -91,7 +92,12 @@ test.describe('navegação do painel', () => {
     }
     await bar.getByRole('button', { name: 'Mais' }).click();
     const sheet = page.getByRole('dialog', { name: 'Mais' });
-    // Livros, Membros e o atalho "Ver o site" (que não é uma área do painel).
-    await expect(sheet.getByRole('link')).toHaveText(['Livros', 'Membros', 'Ver o site']);
+    // Livros, Membros, Página Sobre e o atalho "Ver o site" (que não é uma área do painel).
+    await expect(sheet.getByRole('link')).toHaveText([
+      'Livros',
+      'Membros',
+      'Página Sobre',
+      'Ver o site',
+    ]);
   });
 });

@@ -78,6 +78,7 @@ test.describe('contraste de cor sob vários temas', () => {
     '/painel/sessoes/nova',
     '/painel/comentarios',
     '/painel/membros',
+    '/painel/sobre',
   ];
 
   for (const theme of THEMES) {
