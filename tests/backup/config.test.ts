@@ -83,6 +83,22 @@ describe('configuração do backup (.github/backup.config.json)', () => {
     expect(config.dump.excludeTables).not.toContain('public.account_deletions');
   });
 
+  it('as tabelas da página Sobre editável (etapa 8j) entram no backup: sem elas o backup diário falharia', () => {
+    // `site_pages` (publicado), `site_page_drafts` (rascunho) e `site_page_revisions` (as 20 últimas versões)
+    // nascem na migration `site_about_page`. O texto e o histórico vão para o backup; a FOTO não (arquivos do
+    // Storage ficam de fora, e a foto se reenvia pelo painel).
+    expect(config.dump.allowedTables).toEqual(
+      expect.arrayContaining([
+        'public.site_pages',
+        'public.site_page_drafts',
+        'public.site_page_revisions',
+      ]),
+    );
+    for (const table of ['site_pages', 'site_page_drafts', 'site_page_revisions']) {
+      expect(config.dump.excludeTables).not.toContain(`public.${table}`);
+    }
+  });
+
   it('o registro mínimo de exclusões é expurgado com a MESMA retenção das cópias semanais (o número do SQL é o da configuração)', () => {
     // Uma linha de `account_deletions` só serve enquanto algum backup ainda guarda a conta: no máximo a retenção
     // semanal (a mais longa). O número vive em `purge_account_deletions()` (migration) e em `retentionDays.weekly`.

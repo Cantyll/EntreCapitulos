@@ -76,12 +76,29 @@ describe('checkTables', () => {
     ).not.toThrow();
   });
 
+  it('aceita o dump com as tabelas da página Sobre editável (etapa 8j), com linhas', () => {
+    expect(() =>
+      checkTables(
+        {
+          ...all,
+          'public.site_pages': 1,
+          'public.site_page_drafts': 1,
+          'public.site_page_revisions': 20,
+        },
+        config,
+      ),
+    ).not.toThrow();
+  });
+
   it('aceita um dump de antes das migrations (sem as tabelas novas): o primeiro backup depois do Database deploy não pode falhar por isso', () => {
     const newer = [
       'public.member_audit',
       'public.member_suspensions',
       'public.terms_acceptances',
       'public.account_deletions',
+      'public.site_pages',
+      'public.site_page_drafts',
+      'public.site_page_revisions',
     ];
     const counts = { ...all };
     for (const table of newer) delete counts[table];
