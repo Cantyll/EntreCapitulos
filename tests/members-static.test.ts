@@ -287,6 +287,10 @@ describe('estilos dos diálogos, da auditoria e dos links em frase (achados da r
     expect(touch).toMatch(/\.dialogText,\s*\.dialogField\s*\{[^}]*font-size:\s*16px/);
   });
 
+  it('os parágrafos do diálogo herdam o tamanho do `.dialogText` (o `.section p` os alcançaria: o diálogo é filho da section)', () => {
+    expect(css).toMatch(/\.dialogText p,\s*\.dialogText ul\s*\{[^}]*font-size:\s*inherit/);
+  });
+
   it('nome longo sem espaço não alarga as grades dos diálogos nem da auditoria', () => {
     for (const selector of ['.dialogField', '.dialogText', '.audit li']) {
       const rule = new RegExp(`${selector.replace('.', '\\.')}\\s*\\{([^}]*)\\}`).exec(css)?.[1];
@@ -321,8 +325,12 @@ describe('controles de membros: foco, rede cortada e log (achados da revisão)',
     const code = component('ContactReveal');
     expect(code).toMatch(/focusAfterChange\.current = 'revealed'/);
     expect(code).toMatch(/focusAfterChange\.current = 'show'/);
-    expect(code).toMatch(/revealedRef\.current\?\.focus\(\)/);
-    expect(code).toMatch(/showRef\.current\?\.focus\(\)/);
+    expect(code).toMatch(/revealedRef\.current\.focus\(\)/);
+    expect(code).toMatch(/showRef\.current\.focus\(\)/);
+    // O botão pode nascer desabilitado (consulta anterior ainda pendente): o efeito reage a `pending` e só
+    // consome o pedido de foco quando o botão aceita foco.
+    expect(code).toMatch(/!showRef\.current\.disabled/);
+    expect(code).toMatch(/\[state\.status, pending\]/);
     expect(code).toMatch(/role="group"/);
     expect(code).toMatch(/aria-label="Dados de contato da pessoa"/);
     expect(code).toMatch(/tabIndex=\{-1\}/);

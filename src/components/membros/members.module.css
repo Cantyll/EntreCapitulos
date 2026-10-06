@@ -535,9 +535,14 @@
   overflow-wrap: anywhere;
 }
 
+/*
+ * O <dialog> é filho da <section class="section">, então `.section p` (14,5px) alcançaria os parágrafos dele e
+ * venceria a herança do `.dialogText` (16px na folha inferior): o texto do diálogo herda sempre de `.dialogText`.
+ */
 .dialogText p,
 .dialogText ul {
   margin: 0;
+  font-size: inherit;
 }
 
 .dialogText ul {
