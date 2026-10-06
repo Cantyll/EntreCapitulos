@@ -136,7 +136,7 @@ describe('/privacidade (etapa 8g)', () => {
 });
 
 describe('o que não pode voltar', () => {
-  it('nenhum arquivo versionado cita a Resolução nº 15/2024 (a de transferência é a nº 19/2024)', () => {
+  it('nenhum arquivo versionado cita número de resolução errado para a transferência (a referência é a nº 19/2024)', () => {
     const wrong = ['15', '2024'].join('/');
     const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
       .split('\n')
