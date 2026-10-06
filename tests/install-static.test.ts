@@ -128,9 +128,13 @@ describe('onde o cartão é montado', () => {
   });
 
   it('as seções de /sobre e de /conta usam os componentes certos', () => {
-    const about = read('src/app/(public)/sobre/page.tsx');
+    // A seção "Leia como aplicativo" é do código (não do conteúdo editável): vive no AboutView, que a página
+    // pública e a pré-visualização do painel usam, e não se oculta (etapa 8j).
+    const about = read('src/components/sobre/AboutView.tsx');
     expect(about).toMatch(/id="app"/);
     expect(about).toContain('<InstallGuide variant="about" />');
+    expect(about).not.toMatch(/content\.[a-zA-Z.]*app\b[^\n]*&&[^\n]*InstallGuide/);
+    expect(read('src/app/(public)/sobre/page.tsx')).toContain('<AboutView');
     const account = read('src/app/(public)/conta/page.tsx');
     expect(account).toContain('<InstallAccountSection />');
     // Só a seção de /conta usa a variante "account" (no cliente, só no Safari do iOS fora do app).
