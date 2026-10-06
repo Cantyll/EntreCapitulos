@@ -49,7 +49,10 @@
       "public.member_audit",
       "public.member_suspensions",
       "public.terms_acceptances",
-      "public.account_deletions"
+      "public.account_deletions",
+      "public.site_pages",
+      "public.site_page_drafts",
+      "public.site_page_revisions"
     ]
   }
 }

@@ -24,6 +24,9 @@ ROUNDTRIP_AUDIT_ACTOR="00000000-0000-4000-8000-0000000b0001"
 # não trouxer nenhum aceite dos Termos, um aceite sintético (a chave estrangeira para `profiles` também precisa
 # sobreviver à restauração).
 ROUNDTRIP_DELETED_ID="00000000-0000-4000-8000-0000000b0002"
+# E nas da página Sobre editável (etapa 8j): uma linha em cada tabela, marcada com {"roundtrip": true}. A de revisões
+# tem a coluna de identidade (`generated always as identity`), que também precisa sobreviver a dump e restauração.
+ROUNDTRIP_SITE_MARK='{"v": 1, "roundtrip": true}'
 suspended_id=""
 terms_inserted=false
 cleanup() {
@@ -31,6 +34,9 @@ cleanup() {
   psql "$RESTORE_DB_URL" -X -q -c "delete from public.member_audit where actor_id = '$ROUNDTRIP_AUDIT_ACTOR';" >/dev/null 2>&1 || true
   [ -z "$suspended_id" ] || psql "$RESTORE_DB_URL" -X -q -c "delete from public.member_suspensions where user_id = '$suspended_id';" >/dev/null 2>&1 || true
   psql "$RESTORE_DB_URL" -X -q -c "delete from public.account_deletions where user_id = '$ROUNDTRIP_DELETED_ID';" >/dev/null 2>&1 || true
+  for table in site_pages site_page_drafts site_page_revisions; do
+    psql "$RESTORE_DB_URL" -X -q -c "delete from public.$table where content ->> 'roundtrip' = 'true';" >/dev/null 2>&1 || true
+  done
   if [ "$terms_inserted" = "true" ] && [ -n "$suspended_id" ]; then
     psql "$RESTORE_DB_URL" -X -q -c "delete from public.terms_acceptances where user_id = '$suspended_id';" >/dev/null 2>&1 || true
   fi
@@ -51,6 +57,9 @@ insert into public.member_audit (actor_id, target_id, action, details)
 values ('$ROUNDTRIP_AUDIT_ACTOR', gen_random_uuid(), 'role_change', '{"from": "member", "to": "moderator"}');
 insert into public.member_suspensions (user_id) values ('$suspended_id');
 insert into public.account_deletions (user_id, deleted_at) values ('$ROUNDTRIP_DELETED_ID', now() - interval '1 day');
+insert into public.site_pages (slug, content) values ('sobre', '$ROUNDTRIP_SITE_MARK');
+insert into public.site_page_drafts (slug, content) values ('sobre', '$ROUNDTRIP_SITE_MARK');
+insert into public.site_page_revisions (slug, content, kind) values ('sobre', '$ROUNDTRIP_SITE_MARK', 'publish');
 SQL
 if [ "$(psql "$RESTORE_DB_URL" -X -q -A -t -c "select count(*) from public.terms_acceptances;")" = "0" ]; then
   psql "$RESTORE_DB_URL" -X -q -v ON_ERROR_STOP=1 -c "insert into public.terms_acceptances (user_id, version) values ('$suspended_id', 'roundtrip');" >/dev/null ||
@@ -67,5 +76,10 @@ key="$(echo "$listing" | jq -r '.[0].key')"
 r2api get-object --bucket "$R2_BUCKET" --key "$key" "$BACKUP_WORKDIR/downloaded.tar.gpg" >/dev/null
 bash scripts/backup/open-backup.sh "$BACKUP_WORKDIR/downloaded.tar.gpg" "$BACKUP_WORKDIR/opened"
 bash scripts/backup/restore-data.sh "$BACKUP_WORKDIR/opened"
+# A página Sobre editável (etapa 8j) voltou inteira: texto publicado, rascunho e uma versão do histórico.
+for table in site_pages site_page_drafts site_page_revisions; do
+  [ "$(psql "$RESTORE_DB_URL" -X -q -A -t -c "select count(*) from public.$table where content ->> 'roundtrip' = 'true';")" = "1" ] ||
+    fail "A tabela $table não voltou com a linha sintética depois da restauração."
+done
 r2api head-object --bucket "$R2_BUCKET" --key "weekly/$(date -u +%F).tar.gpg" >/dev/null || fail "A cópia semanal não existe."
 echo "Ciclo completo OK."
