@@ -6,9 +6,12 @@ import { AdminPage } from '@/components/admin/AdminPage';
 import { ComingSoon } from '@/components/admin/ComingSoon';
 import { GettingStartedSlot } from '@/components/admin/overview/GettingStartedSlot';
 import styles from '@/components/admin/overview/Overview.module.css';
+import { ProvisionalNotice } from '@/components/sobre/ProvisionalNotice';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { hasRole, panelHomeFor } from '@/lib/auth/roles';
 import { requireRole } from '@/lib/auth/session';
+import { isAboutPublished } from '@/lib/about/service';
+import { createClient } from '@/lib/supabase/server';
 
 const SHORTCUTS: { href: Route; icon: IconName; label: string; text: string }[] = [
   {
@@ -35,6 +38,12 @@ const SHORTCUTS: { href: Route; icon: IconName; label: string; text: string }[] 
     label: 'Membros',
     text: 'Ver as pessoas do clube, mudar cargos e suspender comentários.',
   },
+  {
+    href: '/painel/sobre',
+    icon: 'edit',
+    label: 'Página Sobre',
+    text: 'Editar e publicar o texto da página Sobre o clube.',
+  },
 ];
 
 /** Página inicial do painel da administradora. Só traz atalhos para o que existe; o resto é "Em breve". */
@@ -43,11 +52,16 @@ export default async function OverviewPage() {
   // A moderadora só usa Comentários.
   if (!hasRole(user.role, 'admin')) redirect(panelHomeFor(user.role));
 
+  // Aviso só para a administração, enquanto a página Sobre nunca foi publicada. Uma leitura simples: se falhar, ou se
+  // a tabela ainda não existir, `null` e nenhum aviso.
+  const aboutPublished = await isAboutPublished(await createClient());
+
   return (
     <AdminPage>
       <div className={styles.stack}>
         {/* Extensão da etapa 8c: "Comece por aqui". Deve continuar como o primeiro bloco. */}
         <GettingStartedSlot />
+        {aboutPublished === false && <ProvisionalNotice withLink />}
         <p className={styles.intro}>Por onde você quer começar?</p>
         <ul className={styles.shortcuts}>
           {SHORTCUTS.map((item) => (

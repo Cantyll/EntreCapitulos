@@ -70,8 +70,8 @@ export type AdminNavItem = {
 
 /**
  * Menu do painel: só áreas que existem. Votações e Configurações ficam fora até serem construídas (ver
- * `comingSoonPages`). A ordem aqui é a ordem da barra lateral. Membros (etapa 8f) é só da administração e, no
- * celular, fica dentro de "Mais".
+ * `comingSoonPages`). A ordem aqui é a ordem da barra lateral. Membros (etapa 8f) e a Página Sobre (etapa 8j) são só
+ * da administração e, no celular, ficam dentro de "Mais".
  */
 export const adminNav: readonly AdminNavItem[] = [
   {
@@ -111,6 +111,14 @@ export const adminNav: readonly AdminNavItem[] = [
     label: 'Membros',
     href: '/painel/membros',
     icon: 'users',
+    access: 'admin',
+    match: 'prefix',
+    placement: 'more',
+  },
+  {
+    label: 'Página Sobre',
+    href: '/painel/sobre',
+    icon: 'edit',
     access: 'admin',
     match: 'prefix',
     placement: 'more',

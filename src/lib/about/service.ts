@@ -7,6 +7,7 @@ import { stableStringify } from '@/lib/session-editor/snapshot';
 import type { Database, Json } from '@/lib/supabase/database.types';
 
 import { defaultAbout } from './defaults';
+import { contentSignature } from './editor-model';
 import {
   aboutErrorMessage,
   classifyAboutError,
@@ -20,6 +21,23 @@ import {
   type AboutFieldError,
   type AboutIssue,
 } from './schema';
+import type {
+  AboutEditorState,
+  AboutPublishOutcome,
+  AboutRestoreOutcome,
+  AboutSaveOutcome,
+  HistoryItem,
+  ServerDraft,
+} from './outcomes';
+
+export type {
+  AboutEditorState,
+  AboutPublishOutcome,
+  AboutRestoreOutcome,
+  AboutSaveOutcome,
+  HistoryItem,
+  ServerDraft,
+} from './outcomes';
 
 /*
  * Regras do painel da página Sobre. O cliente só manda o CONTEÚDO (validado aqui com o zod e de novo no banco) e o
@@ -41,26 +59,6 @@ export function parseToken(value: unknown): { ok: true; token: string | null } |
   }
   return { ok: false };
 }
-
-export type ServerDraft = { updatedAt: string; content: AboutContent };
-
-export type AboutSaveOutcome =
-  | { kind: 'saved'; updatedAt: string; content: AboutContent }
-  | { kind: 'conflict'; server: ServerDraft | null }
-  | { kind: 'invalid'; issue: AboutIssue; fields: AboutFieldError[]; message: string }
-  | { kind: 'error'; message: string; pending?: boolean };
-
-export type AboutPublishOutcome =
-  | { kind: 'published'; updatedAt: string; content: AboutContent }
-  | { kind: 'conflict'; server: ServerDraft | null }
-  | { kind: 'invalid'; issue: AboutIssue; fields: AboutFieldError[]; message: string }
-  /** `savedUpdatedAt`: o rascunho FOI salvo (e este é o token novo), mas a publicação não aconteceu. */
-  | { kind: 'error'; message: string; pending?: boolean; savedUpdatedAt?: string };
-
-export type AboutRestoreOutcome =
-  | { kind: 'restored'; updatedAt: string; content: AboutContent }
-  | { kind: 'conflict'; server: ServerDraft | null }
-  | { kind: 'error'; message: string; pending?: boolean };
 
 const rpcError = (operation: string, error: unknown): { message: string; pending: boolean } => {
   const db = error as { code?: string | null; message?: string | null };
@@ -216,33 +214,6 @@ export async function restoreAboutRevision(
 // O que o editor mostra ao abrir.
 // ---------------------------------------------------------------------------------------------
 
-export type HistoryItem = {
-  id: number;
-  kind: 'publish' | 'restore';
-  publishedAt: string;
-  /** Nome de exibição de quem publicou (os perfis são públicos); `null` se a conta foi excluída. */
-  byName: string | null;
-  title: string;
-};
-
-export type AboutEditorState =
-  | { available: false }
-  | {
-      available: true;
-      /** De onde vem o conteúdo inicial do editor. */
-      source: 'draft' | 'published' | 'default';
-      content: AboutContent;
-      /** Token do rascunho; `null` enquanto não há rascunho. */
-      draftUpdatedAt: string | null;
-      /** O rascunho tem diferença em relação ao publicado (ou há rascunho e nada publicado). */
-      hasUnpublishedChanges: boolean;
-      /** O que está no ar, ou `null` se nada foi publicado (a página mostra o texto de código). */
-      publishedAt: string | null;
-      /** O texto salvo não passou na validação e foi trocado pelo padrão (nunca deveria acontecer). */
-      contentUnreadable: boolean;
-      history: HistoryItem[];
-    };
-
 /** Carrega o estado do editor sob o RLS da administração. Tabela ausente = `available: false` (migration pendente). */
 export async function loadAboutEditorState(supabase: Client): Promise<AboutEditorState> {
   try {
@@ -319,6 +290,7 @@ export async function loadAboutEditorState(supabase: Client): Promise<AboutEdito
       draftUpdatedAt: draftRow?.updated_at ?? null,
       hasUnpublishedChanges,
       publishedAt: publishedRow?.published_at ?? null,
+      publishedSignature: published?.ok ? contentSignature(published.content) : null,
       contentUnreadable,
       history,
     };
