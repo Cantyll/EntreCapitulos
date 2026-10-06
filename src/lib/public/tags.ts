@@ -17,6 +17,9 @@ export const commentsTag = (sessionId: string) => `comments:${sessionId}`;
 /** Contagens de comentários aprovados por sessão (listas, fatos do livro, estante). */
 export const COMMENT_COUNTS_TAG = 'comment-counts';
 
+/** O conteúdo PUBLICADO da página Sobre (etapa 8j). Expira ao publicar e ao restaurar uma versão. */
+export const SITE_SOBRE_TAG = 'site:sobre';
+
 /** Livro criado, editado, começado, terminado, com capa ou tema novo, ou excluído. */
 export function invalidateBooks(): void {
   updateTag(BOOKS_TAG);
@@ -35,4 +38,9 @@ export function invalidateSession(id?: string): void {
 export function invalidateComments(sessionId?: string): void {
   updateTag(COMMENT_COUNTS_TAG);
   if (sessionId) updateTag(commentsTag(sessionId));
+}
+
+/** A página Sobre foi publicada ou teve uma versão restaurada: o próximo pedido já lê o texto novo. */
+export function invalidateSiteSobre(): void {
+  updateTag(SITE_SOBRE_TAG);
 }

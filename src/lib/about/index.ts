@@ -1,4 +1,6 @@
 export { defaultAbout } from './defaults';
+export { aboutFacts } from './facts';
+export type { AboutFact } from './facts';
 export { ABOUT_CONTENT_VERSION, ABOUT_LIMITS } from './limits';
 export {
   EMPTY_RICH_DOC,

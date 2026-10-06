@@ -36,6 +36,13 @@ describe('combinados da comunidade', () => {
     expect(terms).toContain('COMMUNITY_RULES.map(');
   });
 
+  it('/sobre mostra os combinados pela constante de código (AboutView), sem ler o conteúdo editável', () => {
+    const view = read('src/components/sobre/AboutView.tsx');
+    expect(view).toContain("from '@/content/legal/community-rules'");
+    expect(view).toContain('COMMUNITY_RULES.map(');
+    expect(view).not.toMatch(/content\.rules|SOBRE\.rules/);
+  });
+
   it('o conteúdo padrão da página Sobre (src/content/sobre.ts) não tem combinados', () => {
     expect(read('src/content/sobre.ts')).not.toMatch(/\brules\s*:/);
   });
