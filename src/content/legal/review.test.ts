@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { PROPOSAL_FIELDS, legalConfig } from '../legal-config';
+import { PROPOSAL_FIELDS, VALIDATED_FIELDS, legalConfig } from '../legal-config';
 import { SITE_COOKIES } from './cookies';
 import { buildPrivacy } from './privacy';
 import { PROVIDERS } from './providers';
@@ -13,6 +13,7 @@ import {
   LAWYER_QUESTIONS,
   REVIEW_FEATURES,
   SECOND_ROUND_QUESTIONS,
+  THIRD_ROUND_QUESTIONS,
   buildReviewDocument,
 } from './review';
 import { buildTerms } from './terms';
@@ -34,16 +35,18 @@ describe('docs/revisao-juridica.md (documento temporário para o advogado)', () 
     ).toBe(true);
   });
 
-  it('tem as seções (a) a (h)', () => {
+  it('tem as seções (a) a (j)', () => {
     for (const heading of [
       '## (a) O serviço e o controlador',
       '## (b) Mapa de dados',
       '## (c) Provedores e o papel de cada um',
       '## (d) Cookies e armazenamento local',
       '## (e) Texto integral',
-      '## (f) Campos preenchidos como proposta e campos pendentes',
+      '## (f) Campos validados, campos de proposta e campos pendentes',
       '## (g) Funcionalidades futuras que mudam a política',
       '## (h) Perguntas para o advogado',
+      '## (i) Perguntas da segunda rodada',
+      '## (j) Perguntas da terceira rodada',
     ]) {
       expect(generated).toContain(heading);
     }
@@ -62,15 +65,14 @@ describe('docs/revisao-juridica.md (documento temporário para o advogado)', () 
 
   it('lista cada campo de proposta, os provedores e os cookies, vindos das fontes', () => {
     for (const field of PROPOSAL_FIELDS) expect(generated).toContain(`\`${field}\``);
+    for (const field of VALIDATED_FIELDS) expect(generated).toContain(`\`${field}\``);
     for (const provider of PROVIDERS) expect(generated).toContain(provider.name);
     for (const cookie of SITE_COOKIES)
       expect(generated).toContain(cookie.name.replace(/\|/g, '\\|'));
     for (const [id, region] of Object.entries(legalConfig.regions)) {
       expect(generated, id).toContain(region);
     }
-    expect(generated).toContain(
-      'Ainda "A DEFINIR":** `backups.internationalTransfer`, `backups.retention`, `audit.retention`',
-    );
+    expect(generated).toContain('Ainda "A DEFINIR":** `audit.retention`');
     expect(generated).toContain('(`legalReviewed`):** `false`');
   });
 
@@ -102,31 +104,96 @@ describe('docs/revisao-juridica.md (documento temporário para o advogado)', () 
     expect(retention[3]).toMatch(/^Registros técnicos/);
     expect(retention[4]).toMatch(/^Pedidos de privacidade/);
     expect(retention[5]).toMatch(/^Cópias de segurança/);
+    expect(retention[6]).toMatch(/^Aceite dos Termos/);
+    expect(retention[7]).toMatch(/^Registro mínimo de exclusões/);
     expect(bases[0]).toMatch(/^Criar e manter sua conta/);
     expect(bases[1]).toMatch(/^Exibir seu nome/);
     expect(bases[2]).toMatch(/^Moderar comentários/);
     expect(bases[3]).toMatch(/^Cumprir obrigações legais/);
   });
 
-  it('as perguntas cobrem o que foi pedido', () => {
+  it('as perguntas da primeira rodada: saem só as respondidas e inalteradas (prazo e encarregado) e as que passaram para a terceira rodada', () => {
     const text = LAWYER_QUESTIONS.join('\n').toLowerCase();
     for (const topic of [
       'bases legais',
-      'transferência internacional',
       'registros de acesso',
-      'prazo de resposta',
-      'encarregado (art. 41)',
-      'art. 14',
       'controlador',
       'pequeno porte',
       'foro',
       'removidos pela moderação',
-      'declaração de idade',
     ]) {
       expect(text, topic).toContain(topic);
     }
+    // Respondidas e inalteradas: o prazo de 15 dias e a dispensa do encarregado (validados pelo advogado).
+    expect(text).not.toContain('prazo de resposta');
+    expect(text).not.toContain('encarregado (art. 41)');
+    // Continuam abertas e foram para a terceira rodada: idade, declaração de idade, transferência e registro de exclusões.
+    for (const moved of [
+      'art. 14',
+      'declaração de idade no cadastro',
+      'qual o mecanismo adequado para cada provedor',
+      'registro mínimo de exclusões (proposta adiada',
+    ]) {
+      expect(text, moved).not.toContain(moved);
+    }
     const future = FUTURE_FEATURES.join('\n').toLowerCase();
-    for (const topic of ['e-mail', 'reações', 'analytics', 'push']) expect(future).toContain(topic);
+    for (const topic of [
+      'e-mail',
+      'reações',
+      'analytics',
+      'push',
+      'censura',
+      'verificação de idade',
+    ]) {
+      expect(future).toContain(topic);
+    }
+  });
+
+  it('a seção (j) traz as perguntas da terceira rodada: ECA Digital, verificação de idade, censura, foro, art. 15 e as que passaram da primeira', () => {
+    expect(THIRD_ROUND_QUESTIONS).toHaveLength(9);
+    const section = generated.slice(generated.indexOf('## (j) Perguntas da terceira rodada'));
+    THIRD_ROUND_QUESTIONS.forEach((question, index) => {
+      expect(section).toContain(`${index + 1}. ${question}`);
+    });
+    for (const topic of [
+      'ECA Digital (Lei 15.211/2025)',
+      'Verificação de idade planejada',
+      'Censura de palavras',
+      'Foro e relação de consumo',
+      'Art. 15 do Marco Civil',
+      'confirmar que, sem CNPJ e sem fins econômicos, o art. 15 não se aplica',
+      'Base legal do registro mínimo de exclusões',
+      'Idade mínima de 18 anos',
+      'Declaração de idade',
+      'Transferência internacional',
+    ]) {
+      expect(section, topic).toContain(topic);
+    }
+    // A (h) vem antes da (i) e da (j).
+    expect(generated.indexOf('## (i) Perguntas da segunda rodada')).toBeLessThan(
+      generated.indexOf('## (j) Perguntas da terceira rodada'),
+    );
+  });
+
+  it('cita as resoluções da ANPD só aqui: nº 19/2024 (transferência), nº 2/2022 e nº 18/2024 (encarregado)', () => {
+    expect(generated).toContain('Resolução CD/ANPD nº 19/2024');
+    expect(generated).toContain('Resolução CD/ANPD nº 2/2022');
+    expect(generated).toContain('Resolução CD/ANPD nº 18/2024');
+    // A nº 2/2022 está CONFIRMADA (informado pelo dono do site): sem "a confirmar".
+    expect(generated).not.toMatch(/Resolução CD\/ANPD nº 2\/2022[^.\n]{0,30}a confirmar/);
+    // A seção de provedores traz o mecanismo de transferência a confirmar, com a nº 19/2024.
+    const providers = generated.slice(
+      generated.indexOf('## (c) Provedores'),
+      generated.indexOf('## (d) Cookies'),
+    );
+    expect(providers).toContain(
+      'Transferência internacional: mecanismo a confirmar para cada provedor',
+    );
+    expect(providers).toContain('Resolução CD/ANPD nº 19/2024');
+    // E os textos públicos (privacidade e termos) não citam número de resolução.
+    for (const doc of [buildPrivacy(legalConfig, REVIEW_FEATURES), buildTerms(legalConfig)]) {
+      expect(JSON.stringify(doc)).not.toMatch(/Resolu[çc][ãa]o CD\/ANPD|ANPD n[ºo]/);
+    }
   });
 
   it('não afirma que os dados ficam só no Brasil', () => {

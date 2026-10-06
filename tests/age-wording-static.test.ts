@@ -17,6 +17,13 @@ import { buildTerms } from '@/content/legal/terms';
 const AGE_CLAIM =
   /\bidade\b[^.\n]{0,60}\b(?:verificad|confirmad|comprovad|validad)[ao]s?\b|\b(?:verificad|confirmad|comprovad|validad)[ao]s?\b[^.\n]{0,60}\bidade\b/i;
 
+/**
+ * Fora da varredura: o gerador do documento para o advogado (`docs/revisao-juridica.md`). Ele FALA da verificação
+ * de idade (negando-a no que existe hoje e descrevendo as etapas futuras 8h e 8i, NÃO implementadas): não é texto
+ * do site nem de interface.
+ */
+const LAWYER_DOCUMENT_SOURCE = 'src/content/legal/review.ts';
+
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
@@ -81,6 +88,7 @@ describe('idade declarada, nunca "verificada"', () => {
     const offenders: string[] = [];
     for (const file of walk(join(process.cwd(), 'src'))) {
       if (!/\.(ts|tsx)$/.test(file) || /\.test\.(ts|tsx)$/.test(file)) continue;
+      if (file.endsWith(LAWYER_DOCUMENT_SOURCE)) continue;
       for (const line of codeLines(readFileSync(file, 'utf8'))) {
         if (AGE_CLAIM.test(line))
           offenders.push(`${file.slice(process.cwd().length + 1)}: ${line.trim()}`);

@@ -1,5 +1,6 @@
 import type { LegalData } from '../legal-config';
 import { SOBRE } from '../sobre';
+import { ageSentence } from './age';
 import type { LegalDoc, LegalSection } from './types';
 
 /*
@@ -27,9 +28,10 @@ export function buildTerms(config: LegalData): LegalDoc {
           type: 'p',
           text: 'Você pode ler as sessões públicas sem conta. Para comentar, é preciso entrar com um código enviado por e-mail ou, quando disponível, com a conta Google.',
         },
+        { type: 'p', text: ageSentence(config) },
         {
           type: 'p',
-          text: `O clube é destinado a pessoas com ${config.minimumAge} anos ou mais. O site não verifica a idade de quem cria a conta. Se soubermos que alguém abaixo dessa idade criou uma conta, podemos excluí-la.`,
+          text: 'O aceite (a versão destes Termos e a data) fica registrado enquanto a sua conta existir. Sem o aceite você pode ler as sessões, mas não pode comentar. Se estes Termos mudarem, pedimos um novo aceite.',
         },
         {
           type: 'p',
@@ -67,6 +69,16 @@ export function buildTerms(config: LegalData): LegalDoc {
         {
           type: 'p',
           text: 'Você é responsável pelo que escreve. A moderação pode remover um comentário a qualquer momento.',
+        },
+        {
+          type: 'p',
+          // TEXTO DO ADVOGADO: validar a redação final.
+          text: 'O Entre Capítulos não se responsabiliza pelo conteúdo gerado pelos usuários (comentários), sendo a responsabilidade civil e penal exclusiva de seus autores.',
+        },
+        {
+          type: 'p',
+          // Validar com o advogado: ordem judicial específica (Marco Civil da Internet, art. 19).
+          text: 'O site cumpre ordem judicial específica de remoção de conteúdo.',
         },
         {
           type: 'p',
@@ -121,6 +133,17 @@ export function buildTerms(config: LegalData): LegalDoc {
         {
           type: 'p',
           text: `Dúvidas sobre estes termos: ${config.privacyContactEmail}.`,
+        },
+      ],
+    },
+    {
+      id: 'foro',
+      title: '10. Foro',
+      blocks: [
+        {
+          type: 'p',
+          // TEXTO DO ADVOGADO: validar a redação final (e a cláusula diante de uma relação de consumo).
+          text: 'Fica eleito o foro da Comarca de Sinop/MT para dirimir quaisquer dúvidas ou litígios decorrentes destes Termos, renunciando as partes a qualquer outro, por mais privilegiado que seja.',
         },
       ],
     },
