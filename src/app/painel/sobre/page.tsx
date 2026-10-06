@@ -3,7 +3,9 @@ import type { Metadata } from 'next';
 import { AdminPage } from '@/components/admin/AdminPage';
 import { AboutEditor } from '@/components/sobre/editor/AboutEditor';
 import { requireRole } from '@/lib/auth/session';
+import { aboutFacts } from '@/lib/about';
 import { loadAboutEditorState } from '@/lib/about/service';
+import { loadShelf } from '@/lib/public/loaders';
 import { createClient } from '@/lib/supabase/server';
 import { formatDateTime } from '@/lib/site';
 
@@ -18,7 +20,7 @@ export default async function AboutAdminPage() {
   await requireRole('admin');
 
   const supabase = await createClient();
-  const state = await loadAboutEditorState(supabase);
+  const [state, shelf] = await Promise.all([loadAboutEditorState(supabase), loadShelf()]);
 
   if (!state.available) {
     return (
@@ -32,9 +34,15 @@ export default async function AboutAdminPage() {
     );
   }
 
+  // Os mesmos números da página pública (só os que não são zero), para a pré-visualização.
+  const sessions = [...shelf.counts.values()].reduce((sum, n) => sum + n, 0);
+  const facts = aboutFacts(shelf.finished.length, sessions);
+
   return (
     <AdminPage back={{ href: '/painel', label: 'Voltar para a Visão geral' }}>
       <AboutEditor
+        facts={facts}
+        history={state.history}
         initial={{
           content: state.content,
           draftUpdatedAt: state.draftUpdatedAt,

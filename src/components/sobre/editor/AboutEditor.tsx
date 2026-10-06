@@ -1,9 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
-import { publishAboutAction, saveAboutDraftAction } from '@/app/painel/sobre/actions';
+import {
+  publishAboutAction,
+  restoreAboutRevisionAction,
+  saveAboutDraftAction,
+} from '@/app/painel/sobre/actions';
 import { ProvisionalNotice } from '@/components/sobre/ProvisionalNotice';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -12,9 +17,11 @@ import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
 import {
   ABOUT_LIMITS,
   ABOUT_ISSUE_MESSAGES,
+  normalizeAbout,
   normalizeLinkUrl,
   parseAbout,
   type AboutContent,
+  type AboutFact,
   type AboutPhoto,
 } from '@/lib/about';
 import {
@@ -32,16 +39,21 @@ import {
   toForm,
   type FormContent,
 } from '@/lib/about/editor-model';
-import type { ServerDraft } from '@/lib/about/outcomes';
+import type { HistoryItem, ServerDraft } from '@/lib/about/outcomes';
 import { formatDateTime } from '@/lib/site';
 
 import styles from './aboutEditor.module.css';
+import { AboutPreview } from './AboutPreview';
 import { ItemActions, SwitchField, TextAreaField, TextField } from './fields';
+import { HistoryPanel } from './HistoryPanel';
 import { PhotoField } from './PhotoField';
 import { RichTextField } from './RichTextField';
 
 type Message = { kind: 'ok' | 'error' | 'info'; text: string; link?: boolean } | null;
-type Conflict = { server: ServerDraft | null; retry: 'save' | 'publish' };
+type Conflict = {
+  server: ServerDraft | null;
+  retry: 'save' | 'publish' | { restore: HistoryItem };
+};
 
 export type AboutEditorInitial = {
   content: AboutContent;
@@ -63,8 +75,19 @@ const EMPTY_PARAGRAPH = { type: 'doc' as const, content: [] };
  * administradores). Por isso a tela mostra sempre se há alterações não salvas e o horário do último salvamento, e
  * avisa ao sair. O token de concorrência (`updated_at` do rascunho) é texto opaco, ecoado como veio.
  */
-export function AboutEditor({ initial }: { initial: AboutEditorInitial }) {
+export function AboutEditor({
+  initial,
+  facts,
+  history,
+}: {
+  initial: AboutEditorInitial;
+  /** Os números reais da página (só os que não são zero), para a pré-visualização. */
+  facts: readonly AboutFact[];
+  /** As últimas 20 versões publicadas (a página refaz a lista depois de publicar ou restaurar). */
+  history: readonly HistoryItem[];
+}) {
   const baseId = useId();
+  const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const counter = useRef(0);
   const focusAfterMove = useRef<{ key: string; dir: 'up' | 'down' } | null>(null);
@@ -94,8 +117,13 @@ export function AboutEditor({ initial }: { initial: AboutEditorInitial }) {
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [announce, setAnnounce] = useState('');
+  const [tab, setTab] = useState<'edit' | 'preview'>('edit');
+  const [restoreTarget, setRestoreTarget] = useState<HistoryItem | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
 
   const dirty = useMemo(() => isDirty(form, baseline), [form, baseline]);
+  // O que a pré-visualização mostra: o formulário agora (salvo ou não), com os textos simples normalizados.
+  const previewContent = useMemo(() => normalizeAbout(toContent(form)) as AboutContent, [form]);
   const guard = useUnsavedGuard(dirty);
   // Só se publica o que é novo: com alterações, ou um rascunho salvo diferente do que está no ar (ou nada no ar).
   const hasUnpublished = dirty || baseline !== publishedSignature;
@@ -224,6 +252,41 @@ export function AboutEditor({ initial }: { initial: AboutEditorInitial }) {
     });
   }
 
+  async function restore(item: HistoryItem, expected: string | null = token) {
+    setBusy('publish');
+    setRestoreError(null);
+    try {
+      const outcome = await restoreAboutRevisionAction({
+        revisionId: item.id,
+        expectedUpdatedAt: expected,
+      });
+      if (outcome.kind === 'restored') {
+        setForm(toForm(outcome.content, `rst${generation + 1}`));
+        setGeneration((g) => g + 1);
+        adopt(outcome.content, outcome.updatedAt);
+        setPublishedSignature(contentSignature(outcome.content));
+        setEverPublished(true);
+        setRestoreTarget(null);
+        setMessage({
+          kind: 'ok',
+          text: `Versão de ${formatDateTime(item.publishedAt)} restaurada e publicada.`,
+          link: true,
+        });
+        router.refresh();
+      } else if (outcome.kind === 'conflict') {
+        setRestoreTarget(null);
+        setConflict({ server: outcome.server, retry: { restore: item } });
+        setMessage(null);
+      } else {
+        setRestoreError(outcome.message);
+      }
+    } catch {
+      setRestoreError('Sem conexão: a versão não foi restaurada. Tente de novo.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
   function moveSection(index: number, delta: -1 | 1) {
     const item = form.sections[index];
     if (!item) return;
@@ -310,10 +373,13 @@ export function AboutEditor({ initial }: { initial: AboutEditorInitial }) {
                     setToken(server.updatedAt);
                     setConflict(null);
                     if (conflict.retry === 'publish') void publish(server.updatedAt, false);
-                    else void save(server.updatedAt);
+                    else if (conflict.retry === 'save') void save(server.updatedAt);
+                    else void restore(conflict.retry.restore, server.updatedAt);
                   }}
                 >
-                  Sobrescrever com a minha
+                  {typeof conflict.retry === 'object'
+                    ? 'Restaurar mesmo assim'
+                    : 'Sobrescrever com a minha'}
                 </Button>
               </>
             ) : (
@@ -329,324 +395,375 @@ export function AboutEditor({ initial }: { initial: AboutEditorInitial }) {
         {announce}
       </p>
 
-      <form onSubmit={(event) => event.preventDefault()} noValidate className={styles.root}>
-        <section className={styles.card} aria-labelledby={`${baseId}-apresentacao`}>
-          <h2 id={`${baseId}-apresentacao`}>Apresentação</h2>
-          <TextField
-            id={`${baseId}-titulo`}
-            label="Título da página"
-            value={form.title}
-            max={ABOUT_LIMITS.title}
-            onChange={(title) => update({ title })}
-            error={err('title')}
-            disabled={locked}
-            dataTour="about-title"
-          />
-          <PhotoField
-            photo={form.photo}
-            onChange={(photo: AboutPhoto | null) => update({ photo })}
-            onBusyChange={setUploading}
-            altError={err('photo.alt')}
-            disabled={busy !== null}
-          />
-          <TextAreaField
-            id={`${baseId}-bio`}
-            label="Bio curta da autora"
-            hint="O nome da autora não se edita aqui."
-            value={form.bio}
-            max={ABOUT_LIMITS.bio}
-            rows={3}
-            onChange={(bio) => update({ bio })}
-            error={err('bio')}
-            disabled={locked}
-          />
-        </section>
+      <div className={styles.tabs} data-tour="about-preview">
+        <div className={styles.seg} role="tablist" aria-label="Editar ou pré-visualizar">
+          <button
+            type="button"
+            role="tab"
+            id={`${baseId}-aba-editar`}
+            aria-selected={tab === 'edit'}
+            aria-controls={`${baseId}-painel-editar`}
+            onClick={() => setTab('edit')}
+          >
+            Editar
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id={`${baseId}-aba-previa`}
+            aria-selected={tab === 'preview'}
+            aria-controls={`${baseId}-painel-previa`}
+            onClick={() => setTab('preview')}
+          >
+            Pré-visualizar
+          </button>
+        </div>
+      </div>
 
-        <section className={styles.card} aria-labelledby={`${baseId}-abertura`}>
-          <h2 id={`${baseId}-abertura`}>Texto de abertura</h2>
-          <RichTextField
-            key={`intro-${generation}`}
-            id={`${baseId}-intro`}
-            label="Texto de abertura"
-            placeholder="Escreva a abertura da página…"
-            initial={form.intro}
-            onChange={(intro) => update({ intro })}
-            error={err('intro')}
-            disabled={locked}
-            dataTour="about-intro"
-          />
-        </section>
+      <div
+        id={`${baseId}-painel-previa`}
+        role="tabpanel"
+        aria-labelledby={`${baseId}-aba-previa`}
+        hidden={tab !== 'preview'}
+      >
+        {tab === 'preview' && <AboutPreview content={previewContent} facts={facts} />}
+      </div>
 
-        <section
-          className={styles.card}
-          aria-labelledby={`${baseId}-secoes`}
-          data-tour="about-sections"
-        >
-          <div className={styles.cardHead}>
-            <h2 id={`${baseId}-secoes`}>Seções extras</h2>
-            <Button
-              size="sm"
-              variant="soft"
-              disabled={locked || !canAddSection(form.sections.length)}
-              onClick={() =>
-                update({
-                  sections: [
-                    ...form.sections,
-                    { key: newKey('secao'), title: '', body: EMPTY_PARAGRAPH },
-                  ],
-                })
-              }
-            >
-              <Icon name="plus" size="sm" />
-              Adicionar seção
-            </Button>
-          </div>
-          <p className={styles.hint}>
-            Até {ABOUT_LIMITS.sectionsMax} seções, mostradas depois do texto de abertura, na ordem
-            abaixo.
-          </p>
-          {form.sections.length === 0 ? (
-            <p className={styles.hint}>Nenhuma seção extra.</p>
-          ) : (
-            <ol className={styles.items}>
-              {form.sections.map((section, index) => (
-                <li key={section.key} className={styles.item}>
-                  <div className={styles.itemHead}>
-                    <h3>Seção {index + 1}</h3>
-                    <ItemActions
-                      noun="seção"
-                      index={index}
-                      count={form.sections.length}
-                      itemKey={section.key}
-                      onMove={(delta) => moveSection(index, delta)}
-                      onRemove={() => update({ sections: removeAt(form.sections, index) })}
-                      disabled={locked}
-                    />
-                  </div>
-                  <TextField
-                    id={`${baseId}-secao-${section.key}-titulo`}
-                    label={`Título da seção ${index + 1}`}
-                    value={section.title}
-                    max={ABOUT_LIMITS.sectionTitle}
-                    onChange={(title) => patchSection(index, { title })}
-                    error={err(`sections.${index}.title`)}
-                    disabled={locked}
-                  />
-                  <RichTextField
-                    key={`secao-${section.key}-${generation}`}
-                    id={`${baseId}-secao-${section.key}`}
-                    label={`Texto da seção ${index + 1}`}
-                    placeholder="Escreva o texto da seção…"
-                    initial={section.body}
-                    onChange={(body) => patchSection(index, { body })}
-                    error={err(`sections.${index}.body`)}
-                    disabled={locked}
-                  />
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
+      <div
+        id={`${baseId}-painel-editar`}
+        role="tabpanel"
+        aria-labelledby={`${baseId}-aba-editar`}
+        hidden={tab !== 'edit'}
+        className={styles.root}
+      >
+        <form onSubmit={(event) => event.preventDefault()} noValidate className={styles.root}>
+          <section className={styles.card} aria-labelledby={`${baseId}-apresentacao`}>
+            <h2 id={`${baseId}-apresentacao`}>Apresentação</h2>
+            <TextField
+              id={`${baseId}-titulo`}
+              label="Título da página"
+              value={form.title}
+              max={ABOUT_LIMITS.title}
+              onChange={(title) => update({ title })}
+              error={err('title')}
+              disabled={locked}
+              dataTour="about-title"
+            />
+            <PhotoField
+              photo={form.photo}
+              onChange={(photo: AboutPhoto | null) => update({ photo })}
+              onBusyChange={setUploading}
+              altError={err('photo.alt')}
+              disabled={busy !== null}
+            />
+            <TextAreaField
+              id={`${baseId}-bio`}
+              label="Bio curta da autora"
+              hint="O nome da autora não se edita aqui."
+              value={form.bio}
+              max={ABOUT_LIMITS.bio}
+              rows={3}
+              onChange={(bio) => update({ bio })}
+              error={err('bio')}
+              disabled={locked}
+            />
+          </section>
 
-        <section
-          className={styles.card}
-          aria-labelledby={`${baseId}-links`}
-          data-tour="about-links"
-        >
-          <div className={styles.cardHead}>
-            <h2 id={`${baseId}-links`}>Links</h2>
-            <Button
-              size="sm"
-              variant="soft"
-              disabled={locked || !canAddLink(form.links.length)}
-              onClick={() =>
-                update({ links: [...form.links, { key: newKey('link'), label: '', url: '' }] })
-              }
-            >
-              <Icon name="plus" size="sm" />
-              Adicionar link
-            </Button>
-          </div>
-          <p className={styles.hint}>
-            Até {ABOUT_LIMITS.linksMax} links, no cartão da autora. Só endereços https.
-          </p>
-          {form.links.length === 0 ? (
-            <p className={styles.hint}>Nenhum link.</p>
-          ) : (
-            <ol className={styles.items}>
-              {form.links.map((link, index) => (
-                <li key={link.key} className={styles.item}>
-                  <div className={styles.itemHead}>
-                    <h3>Link {index + 1}</h3>
-                    <ItemActions
-                      noun="link"
-                      index={index}
-                      count={form.links.length}
-                      itemKey={link.key}
-                      onMove={(delta) => moveLink(index, delta)}
-                      onRemove={() => update({ links: removeAt(form.links, index) })}
-                      disabled={locked}
-                    />
-                  </div>
-                  <div className={styles.linkFields}>
-                    <TextField
-                      id={`${baseId}-link-${link.key}-rotulo`}
-                      label={`Texto do link ${index + 1}`}
-                      value={link.label}
-                      max={ABOUT_LIMITS.linkLabel}
-                      onChange={(label) => patchLink(index, { label })}
-                      error={err(`links.${index}.label`)}
-                      disabled={locked}
-                    />
-                    <TextField
-                      id={`${baseId}-link-${link.key}-url`}
-                      label={`Endereço do link ${index + 1}`}
-                      value={link.url}
-                      max={ABOUT_LIMITS.linkUrl}
-                      inputMode="url"
-                      onChange={(url) => patchLink(index, { url })}
-                      onBlur={(url) => patchLink(index, { url: normalizeLinkUrl(url) })}
-                      error={err(`links.${index}.url`)}
-                      disabled={locked}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
+          <section className={styles.card} aria-labelledby={`${baseId}-abertura`}>
+            <h2 id={`${baseId}-abertura`}>Texto de abertura</h2>
+            <RichTextField
+              key={`intro-${generation}`}
+              id={`${baseId}-intro`}
+              label="Texto de abertura"
+              placeholder="Escreva a abertura da página…"
+              initial={form.intro}
+              onChange={(intro) => update({ intro })}
+              error={err('intro')}
+              disabled={locked}
+              dataTour="about-intro"
+            />
+          </section>
 
-        <section
-          className={styles.card}
-          aria-labelledby={`${baseId}-como`}
-          data-tour="about-toggles"
-        >
-          <h2 id={`${baseId}-como`}>Blocos que se mostram ou se ocultam</h2>
-          <SwitchField
-            id={`${baseId}-stats`}
-            label="Estatísticas"
-            description="Quantos livros foram terminados e quantas sessões foram publicadas. Só aparece quando há números."
-            checked={form.stats.visible}
-            onChange={(visible) => update({ stats: { visible } })}
-            disabled={locked}
-          />
-          <SwitchField
-            id={`${baseId}-como-switch`}
-            label="Como funciona"
-            description="Os passos que explicam o clube."
-            checked={form.howItWorks.visible}
-            onChange={(visible) => update({ howItWorks: { ...form.howItWorks, visible } })}
-            disabled={locked}
-          />
-          <div className={styles.group}>
-            {!form.howItWorks.visible && (
-              <p className={styles.hint}>
-                Este bloco está oculto na página. Os passos continuam salvos aqui.
-              </p>
-            )}
-            <ol className={styles.items}>
-              {form.howItWorks.steps.map((step, index) => (
-                <li key={step.key} className={styles.item}>
-                  <div className={styles.itemHead}>
-                    <h3>Passo {index + 1}</h3>
-                    <div className={styles.itemActions}>
-                      <button
-                        type="button"
-                        className={styles.iconBtn}
-                        data-danger=""
-                        aria-label={`Remover passo ${index + 1}`}
-                        disabled={locked || !canRemoveStep(form.howItWorks.steps.length)}
-                        onClick={() =>
-                          update({
-                            howItWorks: {
-                              ...form.howItWorks,
-                              steps: removeAt(form.howItWorks.steps, index),
-                            },
-                          })
-                        }
-                      >
-                        <Icon name="trash" size="sm" />
-                      </button>
-                    </div>
-                  </div>
-                  <TextField
-                    id={`${baseId}-passo-${step.key}-titulo`}
-                    label={`Título do passo ${index + 1}`}
-                    value={step.title}
-                    max={ABOUT_LIMITS.stepTitle}
-                    onChange={(title) => patchStep(index, { title })}
-                    error={err(`howItWorks.steps.${index}.title`)}
-                    disabled={locked}
-                  />
-                  <TextAreaField
-                    id={`${baseId}-passo-${step.key}-texto`}
-                    label={`Texto do passo ${index + 1}`}
-                    value={step.text}
-                    max={ABOUT_LIMITS.stepText}
-                    rows={3}
-                    onChange={(text) => patchStep(index, { text })}
-                    error={err(`howItWorks.steps.${index}.text`)}
-                    disabled={locked}
-                  />
-                </li>
-              ))}
-            </ol>
-            <Button
-              size="sm"
-              variant="soft"
-              disabled={locked || !canAddStep(form.howItWorks.steps.length)}
-              onClick={() =>
-                update({
-                  howItWorks: {
-                    ...form.howItWorks,
-                    steps: [
-                      ...form.howItWorks.steps,
-                      { key: newKey('passo'), title: '', text: '' },
+          <section
+            className={styles.card}
+            aria-labelledby={`${baseId}-secoes`}
+            data-tour="about-sections"
+          >
+            <div className={styles.cardHead}>
+              <h2 id={`${baseId}-secoes`}>Seções extras</h2>
+              <Button
+                size="sm"
+                variant="soft"
+                disabled={locked || !canAddSection(form.sections.length)}
+                onClick={() =>
+                  update({
+                    sections: [
+                      ...form.sections,
+                      { key: newKey('secao'), title: '', body: EMPTY_PARAGRAPH },
                     ],
-                  },
-                })
-              }
-            >
-              <Icon name="plus" size="sm" />
-              Adicionar passo
-            </Button>
-            {err('howItWorks.steps') && (
-              <p className={styles.fieldError}>{err('howItWorks.steps')}</p>
+                  })
+                }
+              >
+                <Icon name="plus" size="sm" />
+                Adicionar seção
+              </Button>
+            </div>
+            <p className={styles.hint}>
+              Até {ABOUT_LIMITS.sectionsMax} seções, mostradas depois do texto de abertura, na ordem
+              abaixo.
+            </p>
+            {form.sections.length === 0 ? (
+              <p className={styles.hint}>Nenhuma seção extra.</p>
+            ) : (
+              <ol className={styles.items}>
+                {form.sections.map((section, index) => (
+                  <li key={section.key} className={styles.item}>
+                    <div className={styles.itemHead}>
+                      <h3>Seção {index + 1}</h3>
+                      <ItemActions
+                        noun="seção"
+                        index={index}
+                        count={form.sections.length}
+                        itemKey={section.key}
+                        onMove={(delta) => moveSection(index, delta)}
+                        onRemove={() => update({ sections: removeAt(form.sections, index) })}
+                        disabled={locked}
+                      />
+                    </div>
+                    <TextField
+                      id={`${baseId}-secao-${section.key}-titulo`}
+                      label={`Título da seção ${index + 1}`}
+                      value={section.title}
+                      max={ABOUT_LIMITS.sectionTitle}
+                      onChange={(title) => patchSection(index, { title })}
+                      error={err(`sections.${index}.title`)}
+                      disabled={locked}
+                    />
+                    <RichTextField
+                      key={`secao-${section.key}-${generation}`}
+                      id={`${baseId}-secao-${section.key}`}
+                      label={`Texto da seção ${index + 1}`}
+                      placeholder="Escreva o texto da seção…"
+                      initial={section.body}
+                      onChange={(body) => patchSection(index, { body })}
+                      error={err(`sections.${index}.body`)}
+                      disabled={locked}
+                    />
+                  </li>
+                ))}
+              </ol>
             )}
-          </div>
-          <SwitchField
-            id={`${baseId}-cta-switch`}
-            label="Chamada final"
-            description="O convite para entrar no clube, no fim da página (só para quem não está logado)."
-            checked={form.cta.visible}
-            onChange={(visible) => update({ cta: { ...form.cta, visible } })}
-            disabled={locked}
-          />
-          <TextAreaField
-            id={`${baseId}-cta`}
-            label="Texto da chamada final"
-            hint="O título e o botão desta chamada são fixos."
-            value={form.cta.text}
-            max={ABOUT_LIMITS.ctaText}
-            rows={2}
-            onChange={(text) => update({ cta: { ...form.cta, text } })}
-            error={err('cta.text')}
-            disabled={locked}
-          />
-        </section>
+          </section>
 
-        <section
-          className={`${styles.card} ${styles.fixedBlocks}`}
-          aria-labelledby={`${baseId}-fixos`}
-        >
-          <h2 id={`${baseId}-fixos`}>Não editáveis aqui</h2>
-          <p>
-            Os <b>Combinados da comunidade</b> fazem parte dos Termos de Uso e a seção{' '}
-            <b>Leia como aplicativo</b> faz parte do site: os dois aparecem sempre e não se editam
-            nem se ocultam aqui. O visual da página segue o tema da capa do livro atual.
-          </p>
-        </section>
-      </form>
+          <section
+            className={styles.card}
+            aria-labelledby={`${baseId}-links`}
+            data-tour="about-links"
+          >
+            <div className={styles.cardHead}>
+              <h2 id={`${baseId}-links`}>Links</h2>
+              <Button
+                size="sm"
+                variant="soft"
+                disabled={locked || !canAddLink(form.links.length)}
+                onClick={() =>
+                  update({ links: [...form.links, { key: newKey('link'), label: '', url: '' }] })
+                }
+              >
+                <Icon name="plus" size="sm" />
+                Adicionar link
+              </Button>
+            </div>
+            <p className={styles.hint}>
+              Até {ABOUT_LIMITS.linksMax} links, no cartão da autora. Só endereços https.
+            </p>
+            {form.links.length === 0 ? (
+              <p className={styles.hint}>Nenhum link.</p>
+            ) : (
+              <ol className={styles.items}>
+                {form.links.map((link, index) => (
+                  <li key={link.key} className={styles.item}>
+                    <div className={styles.itemHead}>
+                      <h3>Link {index + 1}</h3>
+                      <ItemActions
+                        noun="link"
+                        index={index}
+                        count={form.links.length}
+                        itemKey={link.key}
+                        onMove={(delta) => moveLink(index, delta)}
+                        onRemove={() => update({ links: removeAt(form.links, index) })}
+                        disabled={locked}
+                      />
+                    </div>
+                    <div className={styles.linkFields}>
+                      <TextField
+                        id={`${baseId}-link-${link.key}-rotulo`}
+                        label={`Texto do link ${index + 1}`}
+                        value={link.label}
+                        max={ABOUT_LIMITS.linkLabel}
+                        onChange={(label) => patchLink(index, { label })}
+                        error={err(`links.${index}.label`)}
+                        disabled={locked}
+                      />
+                      <TextField
+                        id={`${baseId}-link-${link.key}-url`}
+                        label={`Endereço do link ${index + 1}`}
+                        value={link.url}
+                        max={ABOUT_LIMITS.linkUrl}
+                        inputMode="url"
+                        onChange={(url) => patchLink(index, { url })}
+                        onBlur={(url) => patchLink(index, { url: normalizeLinkUrl(url) })}
+                        error={err(`links.${index}.url`)}
+                        disabled={locked}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+
+          <section
+            className={styles.card}
+            aria-labelledby={`${baseId}-como`}
+            data-tour="about-toggles"
+          >
+            <h2 id={`${baseId}-como`}>Blocos que se mostram ou se ocultam</h2>
+            <SwitchField
+              id={`${baseId}-stats`}
+              label="Estatísticas"
+              description="Quantos livros foram terminados e quantas sessões foram publicadas. Só aparece quando há números."
+              checked={form.stats.visible}
+              onChange={(visible) => update({ stats: { visible } })}
+              disabled={locked}
+            />
+            <SwitchField
+              id={`${baseId}-como-switch`}
+              label="Como funciona"
+              description="Os passos que explicam o clube."
+              checked={form.howItWorks.visible}
+              onChange={(visible) => update({ howItWorks: { ...form.howItWorks, visible } })}
+              disabled={locked}
+            />
+            <div className={styles.group}>
+              {!form.howItWorks.visible && (
+                <p className={styles.hint}>
+                  Este bloco está oculto na página. Os passos continuam salvos aqui.
+                </p>
+              )}
+              <ol className={styles.items}>
+                {form.howItWorks.steps.map((step, index) => (
+                  <li key={step.key} className={styles.item}>
+                    <div className={styles.itemHead}>
+                      <h3>Passo {index + 1}</h3>
+                      <div className={styles.itemActions}>
+                        <button
+                          type="button"
+                          className={styles.iconBtn}
+                          data-danger=""
+                          aria-label={`Remover passo ${index + 1}`}
+                          disabled={locked || !canRemoveStep(form.howItWorks.steps.length)}
+                          onClick={() =>
+                            update({
+                              howItWorks: {
+                                ...form.howItWorks,
+                                steps: removeAt(form.howItWorks.steps, index),
+                              },
+                            })
+                          }
+                        >
+                          <Icon name="trash" size="sm" />
+                        </button>
+                      </div>
+                    </div>
+                    <TextField
+                      id={`${baseId}-passo-${step.key}-titulo`}
+                      label={`Título do passo ${index + 1}`}
+                      value={step.title}
+                      max={ABOUT_LIMITS.stepTitle}
+                      onChange={(title) => patchStep(index, { title })}
+                      error={err(`howItWorks.steps.${index}.title`)}
+                      disabled={locked}
+                    />
+                    <TextAreaField
+                      id={`${baseId}-passo-${step.key}-texto`}
+                      label={`Texto do passo ${index + 1}`}
+                      value={step.text}
+                      max={ABOUT_LIMITS.stepText}
+                      rows={3}
+                      onChange={(text) => patchStep(index, { text })}
+                      error={err(`howItWorks.steps.${index}.text`)}
+                      disabled={locked}
+                    />
+                  </li>
+                ))}
+              </ol>
+              <Button
+                size="sm"
+                variant="soft"
+                disabled={locked || !canAddStep(form.howItWorks.steps.length)}
+                onClick={() =>
+                  update({
+                    howItWorks: {
+                      ...form.howItWorks,
+                      steps: [
+                        ...form.howItWorks.steps,
+                        { key: newKey('passo'), title: '', text: '' },
+                      ],
+                    },
+                  })
+                }
+              >
+                <Icon name="plus" size="sm" />
+                Adicionar passo
+              </Button>
+              {err('howItWorks.steps') && (
+                <p className={styles.fieldError}>{err('howItWorks.steps')}</p>
+              )}
+            </div>
+            <SwitchField
+              id={`${baseId}-cta-switch`}
+              label="Chamada final"
+              description="O convite para entrar no clube, no fim da página (só para quem não está logado)."
+              checked={form.cta.visible}
+              onChange={(visible) => update({ cta: { ...form.cta, visible } })}
+              disabled={locked}
+            />
+            <TextAreaField
+              id={`${baseId}-cta`}
+              label="Texto da chamada final"
+              hint="O título e o botão desta chamada são fixos."
+              value={form.cta.text}
+              max={ABOUT_LIMITS.ctaText}
+              rows={2}
+              onChange={(text) => update({ cta: { ...form.cta, text } })}
+              error={err('cta.text')}
+              disabled={locked}
+            />
+          </section>
+
+          <section
+            className={`${styles.card} ${styles.fixedBlocks}`}
+            aria-labelledby={`${baseId}-fixos`}
+          >
+            <h2 id={`${baseId}-fixos`}>Não editáveis aqui</h2>
+            <p>
+              Os <b>Combinados da comunidade</b> fazem parte dos Termos de Uso e a seção{' '}
+              <b>Leia como aplicativo</b> faz parte do site: os dois aparecem sempre e não se editam
+              nem se ocultam aqui. O visual da página segue o tema da capa do livro atual.
+            </p>
+          </section>
+        </form>
+
+        <HistoryPanel
+          items={history}
+          disabled={locked}
+          onRestore={(item) => {
+            setRestoreError(null);
+            setRestoreTarget(item);
+          }}
+        />
+      </div>
 
       <div className={styles.bar} data-about-bar="">
         <div className={styles.status} role="status" aria-live="polite">
@@ -692,6 +809,26 @@ export function AboutEditor({ initial }: { initial: AboutEditorInitial }) {
         <p>
           O texto atual vai ao ar agora, para qualquer visitante. Se algo ficar errado, dá para
           voltar para uma versão anterior no histórico.
+        </p>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={restoreTarget !== null}
+        title="Restaurar esta versão?"
+        confirmLabel="Restaurar e publicar"
+        busyLabel="Restaurando…"
+        busy={busy === 'publish' && restoreTarget !== null}
+        error={restoreError}
+        onConfirm={() => restoreTarget && void restore(restoreTarget)}
+        onClose={() => {
+          if (busy === null) setRestoreTarget(null);
+        }}
+      >
+        <p>
+          A versão de {restoreTarget ? formatDateTime(restoreTarget.publishedAt) : ''} vai ao ar
+          agora e substitui o seu rascunho atual
+          {dirty ? ' (as alterações que você ainda não salvou se perdem)' : ''}. Dá para voltar para
+          outra versão no histórico.
         </p>
       </ConfirmDialog>
 
