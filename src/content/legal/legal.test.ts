@@ -12,6 +12,7 @@ import {
   type LegalData,
 } from '../legal-config';
 import { SOBRE } from '../sobre';
+import { ageSentence } from './age';
 import { LOCAL_STORAGE_ITEMS, SITE_COOKIES } from './cookies';
 import { buildPrivacy } from './privacy';
 import { buildTerms } from './terms';
@@ -45,6 +46,7 @@ const pending: LegalData = {
   internationalTransfer: A_DEFINIR,
   retention: A_DEFINIR,
   requestDeadline: A_DEFINIR,
+  backups: { internationalTransfer: A_DEFINIR, retention: A_DEFINIR },
 };
 
 const OFF = { google: false, turnstile: false };
@@ -80,17 +82,49 @@ describe('política de privacidade', () => {
     const bases = doc.sections.find((s) => s.id === 'bases-legais')!;
     const retention = doc.sections.find((s) => s.id === 'retencao')!;
     expect(bases.blocks.some((b) => b.type === 'ul' && b.items.length === 4)).toBe(true);
-    expect(retention.blocks.some((b) => b.type === 'ul' && b.items.length === 6)).toBe(true);
+    expect(retention.blocks.some((b) => b.type === 'ul' && b.items.length === 8)).toBe(true);
     expect(text).toContain('execução de contrato (art. 7º, V, da LGPD)');
     expect(text).toContain('legítimo interesse (art. 7º, IX)');
     expect(text).toContain('Respondemos aos pedidos em até 15 dias');
     expect(text).toContain('Cópias de segurança');
   });
 
-  it('enquanto não houver revisão, cada ponto preenchido avisa que precisa de um advogado', () => {
-    expect(text.match(/ainda precisa ser validado por um advogado/g)).toHaveLength(4);
+  it('enquanto não houver revisão, cada ponto de PROPOSTA avisa que precisa de um advogado (e só eles)', () => {
+    // Propostas descritas pela política: a idade, a transferência, a retenção, a transferência das cópias e a base
+    // do registro mínimo de exclusões. (As regiões entram na tabela, sem aviso por ponto.)
+    expect(text.match(/ainda precisa ser validado por um advogado/g)).toHaveLength(5);
     const reviewed = allText(buildPrivacy({ ...legalConfig, legalReviewed: true }, OFF));
     expect(reviewed).not.toContain('validado por um advogado');
+  });
+
+  it('os campos VALIDADOS pelo advogado não repetem o aviso: bases legais, prazo, encarregado e retenção das cópias', () => {
+    const doc = buildPrivacy(legalConfig, OFF);
+    const NOTE = 'Este ponto ainda precisa ser validado por um advogado.';
+    // Bloco logo depois do conteúdo de cada campo validado.
+    const after = (sectionId: string, marker: string): string | undefined => {
+      const blocks = doc.sections.find((s) => s.id === sectionId)!.blocks;
+      const index = blocks.findIndex(
+        (b) => (b.type === 'p' || b.type === 'ul') && JSON.stringify(b).includes(marker),
+      );
+      expect(index, `${sectionId}: ${marker}`).toBeGreaterThanOrEqual(0);
+      const next = blocks[index + 1];
+      return next && next.type === 'p' ? next.text : undefined;
+    };
+    expect(after('bases-legais', 'execução de contrato (art. 7º, V, da LGPD)')).not.toBe(NOTE);
+    expect(after('direitos', 'Respondemos aos pedidos em até 15 dias')).not.toBe(NOTE);
+    expect(after('retencao', 'mantidas por 14 dias')).not.toBe(NOTE);
+    // O encarregado está no texto, sem aviso, com o e-mail de contato como canal.
+    const first = doc.sections.find((s) => s.id === 'quem-controla')!.blocks;
+    const dpo = first.findIndex(
+      (b) => b.type === 'p' && b.text.includes('dispensado de indicar um encarregado'),
+    );
+    expect(dpo).toBeGreaterThanOrEqual(0);
+    expect(JSON.stringify(first[dpo])).toContain(legalConfig.privacyContactEmail);
+    expect(first[dpo + 1]).toBeUndefined();
+    // Controle: uma PROPOSTA (a base do registro de exclusões) leva o aviso logo depois.
+    expect(
+      after('bases-legais', 'Cumprimento de obrigação legal ou regulatória (art. 7º, II, da LGPD)'),
+    ).toBe(NOTE);
   });
 
   it('com a transferência preenchida, não repete o parágrafo genérico', () => {
@@ -168,14 +202,14 @@ describe('política de privacidade', () => {
     for (const name of ['ec_progress', 'sb-…-auth-token']) expect(text).toContain(name);
   });
 
-  it('com a configuração entregue, os únicos "A DEFINIR" do texto são as duas pendências das cópias de segurança e a retenção da auditoria (menos a conferência do Turnstile)', () => {
+  it('com a configuração entregue, o único "A DEFINIR" do texto é a retenção da auditoria (menos a conferência do Turnstile)', () => {
     const delivered = allText(buildPrivacy(legalConfig, { google: true, turnstile: false }));
-    expect(delivered.match(/A DEFINIR/g)).toHaveLength(3);
-    expect(delivered).toContain('Transferência internacional das cópias de segurança: A DEFINIR');
-    expect(delivered).toContain('Por quanto tempo guardamos as cópias de segurança: A DEFINIR');
+    expect(delivered.match(/A DEFINIR/g)).toHaveLength(1);
     expect(delivered).toContain(
       'Por quanto tempo guardamos o registro das ações da administração: A DEFINIR',
     );
+    // As cópias de segurança deixaram de ser pendência (etapa 8g).
+    expect(delivered).not.toContain('cópias de segurança: A DEFINIR');
   });
 
   it('as cópias de segurança podem conter dados já excluídos, e o texto diz isso sem afirmar que ficam no Brasil', () => {
@@ -408,18 +442,9 @@ describe('gestão de membros pela administração (etapa 8f)', () => {
 });
 
 describe('detecção dos pendentes na configuração entregue', () => {
-  it('só as cópias de segurança (transferência e retenção) e a retenção da auditoria ficaram A DEFINIR, além da revisão profissional', () => {
-    expect(pendingFields(legalConfig).sort()).toEqual([
-      'audit.retention',
-      'backups.internationalTransfer',
-      'backups.retention',
-    ]);
-    expect(pendingItems(legalConfig).sort()).toEqual([
-      'audit.retention',
-      'backups.internationalTransfer',
-      'backups.retention',
-      'legalReviewed',
-    ]);
+  it('só a retenção da auditoria ficou A DEFINIR, além da revisão profissional', () => {
+    expect(pendingFields(legalConfig).sort()).toEqual(['audit.retention']);
+    expect(pendingItems(legalConfig).sort()).toEqual(['audit.retention', 'legalReviewed']);
   });
 
   it('a configuração de antes (tudo pendente) é detectada campo a campo', () => {
@@ -598,24 +623,35 @@ describe('finalidades: só o que o site pratica', () => {
 });
 
 describe('idade mínima vem de legal-config', () => {
-  const SENTENCE = (age: number) =>
-    `O clube é destinado a pessoas com ${age} anos ou mais. O site não verifica a idade de quem cria a conta. Se soubermos que alguém abaixo dessa idade criou uma conta, podemos excluí-la.`;
+  const SENTENCE = (age: number) => ageSentence({ minimumAge: age });
 
-  it('política e termos usam a frase pedida com a idade da configuração', () => {
+  it('política e termos usam a mesma frase, com a idade da configuração (18) e a declaração', () => {
+    expect(legalConfig.minimumAge).toBe(18);
     expect(privacyOn()).toContain(SENTENCE(legalConfig.minimumAge));
     expect(terms()).toContain(SENTENCE(legalConfig.minimumAge));
+    expect(SENTENCE(18)).toContain('você declara ter essa idade');
+    expect(SENTENCE(18)).toContain('O site não verifica a idade de quem cria a conta.');
   });
 
   it('mudar a idade na configuração muda os dois textos (o número não está escrito no texto)', () => {
     const other: LegalData = { ...legalConfig, minimumAge: 21 };
     expect(allText(buildPrivacy(other, ON))).toContain(SENTENCE(21));
     expect(allText(buildTerms(other))).toContain(SENTENCE(21));
-    expect(allText(buildPrivacy(other, ON))).not.toContain(`${legalConfig.minimumAge} anos`);
-    expect(allText(buildTerms(other))).not.toContain(`${legalConfig.minimumAge} anos`);
+    expect(allText(buildPrivacy(other, ON))).not.toContain(
+      `${legalConfig.minimumAge} anos ou mais. Ao`,
+    );
+    expect(allText(buildTerms(other))).not.toContain(`${legalConfig.minimumAge} anos ou mais. Ao`);
   });
 
-  it('os arquivos de conteúdo não têm a idade escrita à mão', () => {
-    for (const file of ['privacy.ts', 'terms.ts']) {
+  it('nenhum texto legal fala em 16 anos (o advogado validou 16, o site exige 18)', () => {
+    for (const text of [privacyOn(), terms(), allText(buildPrivacy(legalConfig, OFF))]) {
+      expect(text).not.toMatch(/\b16 anos\b/);
+    }
+    expect(JSON.stringify(legalConfig)).not.toMatch(/\b16 anos\b/);
+  });
+
+  it('os arquivos de conteúdo não têm a idade escrita à mão (só a caixa do aceite, que lê a configuração)', () => {
+    for (const file of ['privacy.ts', 'terms.ts', 'age.ts']) {
       const source = readFileSync(join(process.cwd(), 'src/content/legal', file), 'utf8');
       expect(source, file).not.toMatch(/\b1[0-9] anos\b/);
     }

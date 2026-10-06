@@ -1,5 +1,6 @@
 import { INSTALL_RULES } from '../install';
-import { A_DEFINIR, type LegalData, type LegalText } from '../legal-config';
+import { A_DEFINIR, VALIDATED_FIELDS, type LegalData, type LegalText } from '../legal-config';
+import { ageSentence } from './age';
 import { SITE_COOKIES } from './cookies';
 import { activeProviders, regionOf } from './providers';
 import type { LegalBlock, LegalDoc, LegalFeatures, LegalSection } from './types';
@@ -12,9 +13,14 @@ import type { LegalBlock, LegalDoc, LegalFeatures, LegalSection } from './types'
 
 const isPending = (value: LegalText): boolean => value === A_DEFINIR;
 
-/** Enquanto não houver revisão profissional, todo ponto preenchido é só uma proposta. */
-function proposalNote(config: LegalData): LegalBlock[] {
-  return config.legalReviewed
+/**
+ * Enquanto não houver revisão profissional, todo ponto preenchido é só uma proposta, EXCETO os campos que o advogado
+ * já validou (`VALIDATED_FIELDS`): nesses o aviso por ponto não aparece (o selo "Rascunho em revisão" da página
+ * continua enquanto `legalReviewed` for `false`).
+ */
+function proposalNote(config: LegalData, field?: string): LegalBlock[] {
+  const validated = field !== undefined && (VALIDATED_FIELDS as readonly string[]).includes(field);
+  return config.legalReviewed || validated
     ? []
     : [{ type: 'p', text: 'Este ponto ainda precisa ser validado por um advogado.' }];
 }
@@ -28,13 +34,15 @@ function describeField(
   intro: string,
   value: LegalText,
   pendingTail: string,
+  /** Caminho do campo em `legal-config.ts` (`legalBases`, `backups.retention`…), para saber se já foi validado. */
+  field?: string,
 ): LegalBlock[] {
   if (isPending(value)) {
     return [{ type: 'p', text: `${intro}: ${value as string}. ${pendingTail}` }];
   }
   const content: LegalBlock =
     typeof value === 'string' ? { type: 'p', text: value } : { type: 'ul', items: value };
-  return [{ type: 'p', text: `${intro}:` }, content, ...proposalNote(config)];
+  return [{ type: 'p', text: `${intro}:` }, content, ...proposalNote(config, field)];
 }
 
 export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalDoc {
@@ -54,6 +62,8 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
     `Consulta de contato pela administração: a administração do clube pode ver o seu e-mail, a data do seu último acesso e como você entra (código por e-mail${features.google ? ' ou Google' : ''}), só para dar suporte e atender pedidos sobre os seus dados. Cada vez que o e-mail completo, o último acesso e o provedor são mostrados, a consulta fica registrada. A lista de membros mostra só um e-mail parcial (a primeira letra e o domínio) e a busca por um e-mail exato diz se existe uma conta com ele; esses dois usos não ficam registrados.`,
     'Situação dos comentários: a administração pode suspender a publicação de comentários de uma conta. Essa informação só a própria pessoa e a administração veem.',
     'Registro das ações da administração (auditoria): quando a administração muda um cargo, suspende ou reativa comentários, consulta o e-mail, baixa os dados ou exclui uma conta, fica registrado quem fez, em qual conta, o quê e quando. O registro não guarda nome, e-mail nem texto: só os identificadores internos das contas e, na mudança de cargo, o cargo de antes e o de depois. Só a administração o vê.',
+    `Aceite dos Termos: a versão dos Termos de Uso e da Política de Privacidade que você aceitou, a data do primeiro aceite e a do último. O aceite vale também como a sua declaração de ter ${config.minimumAge} anos ou mais: o site não verifica a idade. Só você e, ao atender um pedido sobre os seus dados, a administração o veem.`,
+    'Registro mínimo de exclusões: quando uma conta é excluída, guardamos por 56 dias apenas um identificador técnico e a data da exclusão, sem nome, e-mail nem texto. Ninguém o vê pelo site.',
     'Registros técnicos: os provedores de hospedagem e de banco de dados podem registrar dados técnicos de acesso, como endereço IP, data e hora, tipo de navegador e páginas acessadas, para operar e proteger o serviço. O site não usa ferramentas de análise de audiência nem de publicidade.',
     ...(features.turnstile
       ? [
@@ -69,6 +79,8 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
     'Guardar até onde você leu, para a próxima visita.',
     'Proteger o site contra abuso e spam (limite de comentários por minuto e por hora, análise de comentários com link e, quando ativa, a verificação anti-robô no envio do código).',
     'Dar suporte, atender os pedidos sobre os dados e proteger a comunidade: a administração pode ver o e-mail de uma conta, suspender os comentários dela ou excluí-la, e registra essas ações.',
+    `Registrar o aceite dos Termos de Uso e da Política de Privacidade e a declaração de ter ${config.minimumAge} anos ou mais.`,
+    'Evitar que contas e dados já excluídos sejam recriados por engano ao restaurar uma cópia de segurança (registro mínimo de exclusões).',
     'Cumprir obrigações legais e exercer direitos em eventual disputa.',
   ];
 
@@ -93,9 +105,11 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           type: 'p',
           text: `Para qualquer pedido ou dúvida sobre privacidade, escreva para ${config.privacyContactEmail}.`,
         },
+        { type: 'p', text: ageSentence(config) },
+        ...proposalNote(config, 'minimumAge'),
         {
           type: 'p',
-          text: `O clube é destinado a pessoas com ${config.minimumAge} anos ou mais. O site não verifica a idade de quem cria a conta. Se soubermos que alguém abaixo dessa idade criou uma conta, podemos excluí-la.`,
+          text: `${config.dataProtectionOfficer} O canal para os titulares falarem com a gente é o e-mail de contato: ${config.privacyContactEmail}.`,
         },
       ],
     },
@@ -128,6 +142,14 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           'As bases legais da LGPD (art. 7º) que justificam cada finalidade',
           config.legalBases,
           'Este ponto depende de análise jurídica.',
+          'legalBases',
+        ),
+        ...describeField(
+          config,
+          'Base legal do registro mínimo de exclusões',
+          config.deletionRegistry.legalBasis,
+          'Este ponto depende de análise jurídica.',
+          'deletionRegistry',
         ),
       ],
     },
@@ -162,6 +184,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           'Transferência internacional de dados',
           config.internationalTransfer,
           'Este ponto depende de análise jurídica.',
+          'internationalTransfer',
         ),
         {
           type: 'p',
@@ -172,6 +195,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           'Transferência internacional das cópias de segurança',
           config.backups.internationalTransfer,
           'Este ponto depende de análise jurídica.',
+          'backups.internationalTransfer',
         ),
       ],
     },
@@ -184,6 +208,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           'Por quanto tempo guardamos cada tipo de dado',
           config.retention,
           'Inclui as cópias de segurança dos provedores. Este ponto depende de análise jurídica.',
+          'retention',
         ),
         {
           type: 'p',
@@ -194,6 +219,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           'Por quanto tempo guardamos as cópias de segurança',
           config.backups.retention,
           'Este ponto depende de análise jurídica.',
+          'backups.retention',
         ),
         {
           type: 'p',
@@ -201,7 +227,12 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
         },
         {
           type: 'p',
-          text: '"Excluir minha conta", em Minha conta, apaga o seu perfil, o seu e-mail, os seus comentários (e as respostas que outras pessoas escreveram a eles) e o seu progresso de leitura. A exclusão da conta não tem volta.',
+          text: '"Excluir minha conta", em Minha conta, apaga o seu perfil, o seu e-mail, os seus comentários (e as respostas que outras pessoas escreveram a eles), o aceite dos Termos e o seu progresso de leitura. A exclusão da conta não tem volta.',
+        },
+        {
+          type: 'p',
+          // Texto fornecido pelo dono do site: validar a redação final com o advogado.
+          text: 'Caso haja a restauração de um backup, mantemos um registro mínimo, seguro e inacessível ao público (apenas um identificador técnico e a data) com o único objetivo de garantir que contas e dados já excluídos por você não sejam recriados acidentalmente. Esse registro é mantido por 56 dias, o mesmo prazo das cópias de segurança semanais, e depois é apagado.',
         },
         {
           type: 'p',
@@ -216,6 +247,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           'Por quanto tempo guardamos o registro das ações da administração',
           config.audit.retention,
           'Este ponto depende de análise jurídica.',
+          'audit.retention',
         ),
       ],
     },
@@ -232,7 +264,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           type: 'ul',
           items: [
             'Editar o seu nome: em Minha conta (menu da conta, no topo do site).',
-            'Baixar uma cópia dos seus dados: em Minha conta, "Baixar meus dados" (um arquivo com o seu perfil, e-mail, todos os seus comentários e o seu progresso).',
+            'Baixar uma cópia dos seus dados: em Minha conta, "Baixar meus dados" (um arquivo com o seu perfil, e-mail, todos os seus comentários, o seu progresso e o seu aceite dos Termos).',
             'Excluir um comentário que esteja visível ou em análise: "Excluir meu comentário", embaixo dele. Para um comentário removido pela moderação, peça pelo e-mail de contato.',
             'Excluir a sua conta: em Minha conta, "Excluir minha conta". Contas da equipe do clube (administração e moderação) têm uma etapa a mais: para excluir, primeiro retiramos o papel de equipe. Peça pelo e-mail de contato.',
             'Pedir uma cópia dos seus dados ou a exclusão da conta pelo e-mail de contato: a administração confirma que o pedido vem do e-mail cadastrado na conta e atende pelo painel, com a mesma cópia e a mesma exclusão de "Minha conta". Cada uma dessas ações fica registrada.',
@@ -244,6 +276,7 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
           'Prazo para responder aos pedidos',
           config.requestDeadline,
           'Este ponto depende de análise jurídica.',
+          'requestDeadline',
         ),
       ],
     },

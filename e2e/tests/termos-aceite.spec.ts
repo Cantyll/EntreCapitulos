@@ -241,6 +241,43 @@ test.describe('aceite dos Termos', () => {
     await expect(notice(pending)).toBeVisible();
   });
 
+  test('/termos, /privacidade e /entrar trazem os textos novos: 18 anos, responsabilidade, foro e registro mínimo @mobile', async ({
+    page,
+  }) => {
+    await quietFavicon(page);
+    await page.goto('/termos');
+    const terms = page.locator('main');
+    await expect(terms).toContainText('O clube é destinado a pessoas com 18 anos ou mais.');
+    await expect(terms).toContainText('você declara ter essa idade');
+    await expect(terms).toContainText(
+      'O Entre Capítulos não se responsabiliza pelo conteúdo gerado pelos usuários (comentários), sendo a responsabilidade civil e penal exclusiva de seus autores.',
+    );
+    await expect(terms).toContainText(
+      'O site cumpre ordem judicial específica de remoção de conteúdo.',
+    );
+    await expect(terms).toContainText(
+      'Fica eleito o foro da Comarca de Sinop/MT para dirimir quaisquer dúvidas ou litígios decorrentes destes Termos, renunciando as partes a qualquer outro, por mais privilegiado que seja.',
+    );
+    await expect(terms).not.toContainText('16 anos');
+
+    await page.goto('/privacidade');
+    const privacy = page.locator('main');
+    await expect(privacy).toContainText('O clube é destinado a pessoas com 18 anos ou mais.');
+    await expect(privacy).toContainText(
+      'Caso haja a restauração de um backup, mantemos um registro mínimo, seguro e inacessível ao público (apenas um identificador técnico e a data) com o único objetivo de garantir que contas e dados já excluídos por você não sejam recriados acidentalmente.',
+    );
+    await expect(privacy).toContainText('fica dispensado de indicar um encarregado');
+    await expect(privacy).not.toContainText('16 anos');
+    await expect(privacy).not.toContainText('Resolução');
+    // Continua rascunho: nada foi dado como revisado (legalReviewed segue false).
+    await expect(page.getByText('Rascunho em revisão').first()).toBeVisible();
+
+    await page.goto('/entrar');
+    await expect(page.locator('main')).toContainText(
+      'Ao entrar, você concorda com os Termos e a Política de Privacidade e declara ter 18 anos ou mais.',
+    );
+  });
+
   test('acessibilidade (axe): a caixa do primeiro acesso, o aviso e o convite', async ({
     signedIn,
   }) => {

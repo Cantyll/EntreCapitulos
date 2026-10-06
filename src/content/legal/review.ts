@@ -1,6 +1,6 @@
 import { ROLE_LABELS } from '../../lib/auth/roles';
 import { INSTALL_RULES } from '../install';
-import { PROPOSAL_FIELDS, pendingFields, type LegalData } from '../legal-config';
+import { PROPOSAL_FIELDS, VALIDATED_FIELDS, pendingFields, type LegalData } from '../legal-config';
 import { LOCAL_STORAGE_ITEMS, SITE_COOKIES } from './cookies';
 import { buildPrivacy } from './privacy';
 import { FACT_SOURCE_LABEL, PROVIDERS, type FactSource } from './providers';
@@ -14,6 +14,20 @@ import type { LegalBlock, LegalDoc, LegalFeatures } from './types';
  *
  * Para regenerar: `UPDATE_LEGAL_REVIEW=1 npx vitest run src/content/legal/review.test.ts`.
  */
+
+/** Resoluções da ANPD citadas SÓ neste documento (os textos públicos não citam número de resolução). */
+export const TRANSFER_RESOLUTION = 'Resolução CD/ANPD nº 19/2024';
+export const SMALL_AGENT_RESOLUTION = 'Resolução CD/ANPD nº 2/2022';
+export const DPO_RESOLUTION = 'Resolução CD/ANPD nº 18/2024';
+
+/** O que cada campo validado cobre (para o advogado reconhecer o que ele validou). */
+const VALIDATED_NOTES: Record<(typeof VALIDATED_FIELDS)[number], string> = {
+  legalBases: ': as bases legais de cada finalidade.',
+  requestDeadline: ': prazo de 15 dias para responder aos pedidos dos titulares.',
+  dataProtectionOfficer: `: a dispensa do encarregado como agente de tratamento de pequeno porte, com o e-mail de contato como canal (referências: ${SMALL_AGENT_RESOLUTION}, sobre os agentes de pequeno porte, e ${DPO_RESOLUTION}, sobre o encarregado).`,
+  'backups.retention':
+    ': retenção das cópias de segurança, 14 dias (diárias) e 56 dias (semanais).',
+};
 
 /** Para o advogado ler tudo: o texto integral é o de quando o Google e o Turnstile estão ativos. */
 export const REVIEW_FEATURES: LegalFeatures = { google: true, turnstile: true };
@@ -189,6 +203,27 @@ export const DATA_MAP: readonly DataRow[] = [
     source: 'codigo',
   },
   {
+    data: 'Aceite dos Termos e declaração de ter 18 anos ou mais (versão, data do primeiro aceite e do último)',
+    where: 'Supabase (tabela `terms_acceptances`; só a função `accept_terms` grava)',
+    purpose:
+      'Registrar o aceite dos Termos e da Política e a declaração de idade (a idade é declarada, nunca verificada)',
+    basis: 4,
+    retention: 7,
+    sees: 'A própria pessoa (em "Baixar meus dados") e a administração (no arquivo de dados da pessoa, ao atender um pedido, com registro na auditoria). Guarda só o último aceite e a data do primeiro, sem histórico.',
+    source: 'codigo',
+  },
+  {
+    data: 'Registro mínimo de exclusões (identificador técnico da conta excluída e data)',
+    where:
+      'Supabase (tabela `account_deletions`; só funções do banco gravam e leem; nenhum acesso pela API, nem da administração)',
+    purpose:
+      'Evitar que contas e dados já excluídos sejam recriados por engano ao restaurar uma cópia de segurança',
+    basis: 4,
+    retention: 8,
+    sees: 'Ninguém pelo site nem pela API: só quem administra o Supabase, no banco. Entra nas cópias de segurança como as outras tabelas. Sem nome, e-mail nem texto.',
+    source: 'codigo',
+  },
+  {
     data: 'Registros técnicos de acesso (IP, data e hora, navegador, páginas)',
     where: 'Registros dos provedores (Vercel, Supabase e outros)',
     purpose: 'Operar e proteger o serviço',
@@ -285,23 +320,19 @@ export const FUTURE_FEATURES: readonly string[] = [
   'Convites por e-mail, mensagens aos membros, ações em lote, banimento com prazo, anotações da administração sobre pessoas e cargos personalizados (a gestão de membros de hoje não faz nada disso): cada um mudaria o que a política diz.',
   'Edição de comentário pelo autor: hoje o banco não deixa mudar o texto.',
   'Busca no site.',
+  'Motor de censura de palavras (etapa 8h, NÃO implementada): ocultaria palavras inadequadas a menores de 18 anos em todo o conteúdo dinâmico para quem não tem a idade verificada, inclusive visitantes.',
+  'Verificação de idade opcional (etapa 8i, NÃO implementada e bloqueada pelo parecer do advogado): CPF e data de nascimento, conferidos à mão só pela administração, criptografados, apagados na decisão e fora das cópias de segurança.',
 ];
 
 /** As perguntas para o advogado. */
 export const LAWYER_QUESTIONS: readonly string[] = [
   'Bases legais: as quatro propostas (execução de contrato, legítimo interesse, obrigação legal e exercício regular de direitos) servem para cada finalidade? O legítimo interesse (moderação, limites de uso e verificação anti-robô) exige registro da avaliação?',
-  'Transferência internacional: qual o mecanismo adequado para cada provedor (Supabase, Vercel, Resend, Cloudflare e Google), e o texto de "buscamos as garantias previstas na LGPD por meio dos contratos desses provedores" é verdadeiro e suficiente?',
   'Retenção e guarda de registros de acesso: quais prazos e quais registros precisamos guardar ou podemos descartar, inclusive os que os provedores mantêm, e o que dizer sobre as cópias de segurança?',
-  'Prazo de resposta: o prazo proposto de 15 dias para os pedidos dos titulares está adequado?',
-  'Encarregado (art. 41): somos obrigados a indicar um encarregado e a publicar a identidade e o contato?',
-  'Idade mínima e crianças e adolescentes (art. 14): a idade proposta e o texto atual bastam? O que muda se uma conta de menor for identificada?',
   'Quem é o controlador: os dois donos do site em conjunto, uma pessoa, ou uma empresa? Isso muda o texto e a responsabilidade?',
   'Regime de agentes de tratamento de pequeno porte: o site se enquadra, e isso dispensa ou simplifica alguma obrigação?',
   'Termos de Uso: responsabilidade pelo conteúdo dos comentários, limitação de responsabilidade e foro.',
   'Retenção de comentários removidos pela moderação: guardar o texto original até a exclusão da conta é adequado, e qual a melhor forma de atender o pedido de apagar antes?',
-  'Declaração de idade no cadastro: é preciso pedir uma declaração (por exemplo, uma caixa de confirmação) ao criar a conta?',
-  'Cópias de segurança (Cloudflare R2): qual a base legal e o mecanismo de transferência internacional para guardar um dump criptografado fora do Brasil, qual prazo de retenção das cópias é adequado (a proposta técnica é 14 dias para as diárias e 56 dias para as semanais) e como conciliar o direito de exclusão com dados que continuam nas cópias até expirarem?',
-  'Registro mínimo de exclusões (proposta adiada, não implementada): guardar só o identificador da conta excluída e a data, pelo mesmo prazo das cópias, para reaplicar as exclusões depois de restaurar um backup, é aceitável e como deve constar na política?',
+  'Cópias de segurança (Cloudflare R2): qual a base legal e o mecanismo de transferência internacional para guardar um dump criptografado fora do Brasil, e como conciliar o direito de exclusão com dados que continuam nas cópias até expirarem? (A retenção de 14 dias para as diárias e 56 dias para as semanais já foi validada.)',
   'Contas da equipe: a exclusão só depois de retirar o papel de equipe, a pedido por e-mail, está de acordo com os direitos do titular?',
 ];
 
@@ -316,6 +347,24 @@ export const SECOND_ROUND_QUESTIONS: readonly string[] = [
   'Suspensão de comentários: a administração pode suspender os comentários de uma conta, sem motivo, prazo nem aviso além da mensagem no campo de comentário. Isso é uma sanção que exige aviso prévio, motivo, prazo ou canal de contestação? Precisa constar nos Termos de Uso?',
   'Leitura de e-mail por função do projeto gerenciado: o e-mail é lido da tabela de contas do Supabase (provedor gerenciado) por funções do banco, executadas com o papel dono das funções, e o uso é registrado só pelo nosso próprio registro. Isso muda o papel do Supabase como operador, ou exige alguma cláusula ou aviso? E como descrever o caso em que o projeto gerenciado não permite essa leitura?',
   'As linhas de auditoria sobre a pessoa (mudança de cargo, suspensão, consulta ao e-mail pela administração) fazem parte do direito de acesso? Devem constar na exportação dela, com ou sem o nome de quem agiu?',
+];
+
+/**
+ * Perguntas da terceira rodada (etapa 8g, adequações legais): idade mínima de 18 anos, declaração de idade no aceite,
+ * registro mínimo de exclusões, foro e as duas funcionalidades planejadas e NÃO implementadas (8h e 8i). Inclui as
+ * perguntas abertas da primeira rodada que mudaram de forma (idade, declaração de idade, transferência
+ * internacional e registro de exclusões).
+ */
+export const THIRD_ROUND_QUESTIONS: readonly string[] = [
+  'ECA Digital (Lei 15.211/2025): a lei se aplica ao clube, que é um blog e clube de leitura com comentários, sem fins econômicos e sem CNPJ? O que ela exige de nós e o que muda se se aplica? A decisão atual do dono do site é exigir 18 anos ou mais.',
+  'Verificação de idade planejada (opcional, NÃO implementada): a pessoa informaria o CPF e a data de nascimento; só a administração (nunca a moderação, e ninguém valida o próprio pedido) os conferiria à mão; os dados seriam criptografados na aplicação, apagados na decisão (aprovar ou recusar), expirariam em 30 dias se pendentes e ficariam fora das cópias de segurança, restando só o resultado da decisão, a data e quem decidiu. Isso atende como mecanismo confiável de verificação? Qual a base legal e a retenção adequadas para o CPF? (Limite conhecido: a conferência manual mostra que o CPF e a data existem e coincidem, não que quem enviou é o titular.)',
+  'Censura de palavras para quem não verificou a idade (NÃO implementada): ocultar palavras inadequadas a menores de 18 anos em todo o conteúdo dinâmico, para qualquer pessoa sem a idade verificada, inclusive visitantes, é uma medida de mitigação aceitável?',
+  'Foro e relação de consumo: a cláusula que elege o foro da Comarca de Sinop/MT vale diante de uma relação de consumo, em que o consumidor pode propor a ação no próprio domicílio? Precisa de ressalva ou de outra redação?',
+  'Art. 15 do Marco Civil da Internet (guarda de registros de acesso por 6 meses): confirmar que, sem CNPJ e sem fins econômicos, o art. 15 não se aplica. Hoje o site não guarda IP por conta própria (só os provedores guardam registros técnicos, no prazo deles). Quando houver CNPJ ou fins econômicos, o ponto será reavaliado com o advogado.',
+  'Base legal do registro mínimo de exclusões e do aceite dos Termos: o registro mínimo (identificador técnico e data, por 56 dias) está descrito como "cumprimento de obrigação legal" (art. 7º, II); essa é a base adequada, ou seria o legítimo interesse (art. 7º, IX)? E o aceite dos Termos, que guarda só a última versão aceita, a data do último aceite e a do primeiro (sem histórico), basta como prova do aceite e da declaração de idade?',
+  'Idade mínima de 18 anos: o advogado validou 16, e a mudança para 18 é decisão do dono do site por causa da ECA Digital. O texto atual basta? O que muda se uma conta de menor for identificada (art. 14 da LGPD)?',
+  'Declaração de idade: a caixa obrigatória no primeiro acesso (e ao aceitar uma nova versão), sem verificação, basta como declaração? Ela precisa de algum registro além da versão e das datas do aceite?',
+  `Transferência internacional: confirmar, para cada provedor (Supabase, Vercel, Resend, Cloudflare, tanto o Turnstile quanto o R2, e Google), se o mecanismo é a ${TRANSFER_RESOLUTION} (cláusulas-padrão contratuais) e se o texto "buscamos as garantias previstas na LGPD por meio dos contratos e dos termos de tratamento de dados dos provedores" é verdadeiro e suficiente depois que o dono do site aceitar o termo de tratamento de dados (DPA) de cada um.`,
 ];
 
 // --- O documento -------------------------------------------------------------------------------------------
@@ -364,7 +413,7 @@ export function buildReviewDocument(config: LegalData): string {
       '4. Para entrar há login por código de 6 dígitos enviado por e-mail e, se ativado, login com o Google; sem ferramentas de análise ou de publicidade (' +
         tag('codigo') +
         ').',
-      `5. **Controlador:** ${config.controllerName} (${tag('informado')}). Contato para pedidos de privacidade: ${config.privacyContactEmail} (${tag('informado')}). Idade mínima proposta: ${config.minimumAge} anos, **sem** verificação de idade no cadastro (${tag('codigo')}).`,
+      `5. **Controlador:** ${config.controllerName} (${tag('informado')}). Contato para pedidos de privacidade: ${config.privacyContactEmail} (${tag('informado')}). Idade mínima: ${config.minimumAge} anos, declarada pela pessoa no aceite dos Termos, **sem** verificação de idade (${tag('codigo')}); é decisão do dono do site (o advogado validou 16) e fica como proposta até a posição sobre a ECA Digital.`,
     ].join('\n'),
   );
 
@@ -416,6 +465,10 @@ export function buildReviewDocument(config: LegalData): string {
           `uso: ${tag(provider.usedBy)}; região: ${tag('informado')}`,
         ]),
       ),
+      '',
+      '### Transferência internacional: mecanismo a confirmar para cada provedor',
+      '',
+      `A referência adotada pelo dono do site é a **${TRANSFER_RESOLUTION}** (cláusulas-padrão contratuais). Para **cada** provedor da tabela acima (Supabase, Vercel, Resend, Cloudflare, tanto o Turnstile quanto o R2, e Google), o advogado confirma se esse é o mecanismo adequado e se o contrato do provedor o cumpre (${tag('nao-verificado')}). Os textos públicos dizem apenas que buscamos as garantias previstas na LGPD pelos contratos e pelos termos de tratamento de dados dos provedores, e **não citam resolução**. Essa frase só é verdadeira depois que o dono do site aceitar o termo de tratamento de dados (DPA) de cada provedor (\`docs/lancamento.md\`).`,
     ].join('\n'),
   );
 
@@ -463,9 +516,13 @@ export function buildReviewDocument(config: LegalData): string {
 
   parts.push(
     [
-      '## (f) Campos preenchidos como proposta e campos pendentes',
+      '## (f) Campos validados, campos de proposta e campos pendentes',
       '',
-      'Cada campo preenchido tem o comentário `// PROPOSTA: validar com advogado` em `src/content/legal-config.ts`.',
+      'Cada campo preenchido de `src/content/legal-config.ts` tem um destes comentários: `// VALIDADO pelo advogado` (informado pelo dono do site) ou `// PROPOSTA: validar com advogado`. A política só mostra o aviso "ainda precisa ser validado" nos pontos de proposta.',
+      '',
+      '**Validados pelo advogado (' + VALIDATED_FIELDS.length + '):**',
+      '',
+      ...VALIDATED_FIELDS.map((field) => `- \`${field}\`${VALIDATED_NOTES[field]}`),
       '',
       '**Preenchidos como proposta (' + PROPOSAL_FIELDS.length + '):**',
       '',
@@ -503,6 +560,16 @@ export function buildReviewDocument(config: LegalData): string {
       'Sobre a gestão de membros pela administração (etapa 8f): o que a administração passou a poder ver, fazer e registrar sobre as pessoas. O texto de `/privacidade` já descreve esses pontos; o prazo de retenção da auditoria (`audit.retention`) está "A DEFINIR".',
       '',
       ...SECOND_ROUND_QUESTIONS.map((question, index) => `${index + 1}. ${question}`),
+    ].join('\n'),
+  );
+
+  parts.push(
+    [
+      '## (j) Perguntas da terceira rodada',
+      '',
+      'Sobre as adequações legais (etapa 8g): a idade mínima de 18 anos (decisão do dono do site; o advogado validou 16), o aceite dos Termos com a declaração de idade, o registro mínimo de exclusões, o foro e as duas funcionalidades planejadas e **não implementadas** (a censura de palavras e a verificação de idade). Reúne também as perguntas abertas da primeira rodada que mudaram de forma.',
+      '',
+      ...THIRD_ROUND_QUESTIONS.map((question, index) => `${index + 1}. ${question}`),
     ].join('\n'),
   );
 
