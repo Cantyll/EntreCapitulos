@@ -19,7 +19,13 @@ test.describe.serial('painel: livros, capa e tema', () => {
     admin = await createAdmin();
   });
 
-  test('termina o livro atual, cadastra um livro com capa e começa a ler', async ({ openAs }) => {
+  test('termina o livro atual, cadastra um livro com capa e começa a ler', async ({
+    openAs,
+    guard,
+  }) => {
+    // A capa vem do Supabase local (IP de loopback) e o otimizador de imagens do Next recusa esse endereço: 400.
+    // Só acontece no ambiente de teste (ver "Fora da cobertura" no CLAUDE.md).
+    guard.allowStatus(400);
     const { page } = await openAs(admin);
 
     await page.goto('/painel/livros');
@@ -52,7 +58,10 @@ test.describe.serial('painel: livros, capa e tema', () => {
   test('o tema da capa vale no site e no painel e some ao desligar o tema automático', async ({
     openAs,
     browser,
+    guard,
   }) => {
+    // O otimizador de imagens do Next recusa a capa do Supabase local (IP de loopback): 400, só nos testes.
+    guard.allowStatus(400);
     const { page } = await openAs(admin);
     const visitor = await (await browser.newContext()).newPage();
 
