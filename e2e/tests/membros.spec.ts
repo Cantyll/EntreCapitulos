@@ -1029,11 +1029,15 @@ test.describe('diálogos de confirmação', () => {
       expect(target44.height, name).toBeGreaterThanOrEqual(44);
     }
     // O texto do diálogo (avisos, itens da lista e rótulo do campo) também tem pelo menos 16px.
-    const textSizes = await dialog
-      .locator('p, li, label')
-      .evaluateAll((nodes) => nodes.map((el) => parseFloat(getComputedStyle(el).fontSize)));
+    const textSizes = await dialog.locator('p, li, label').evaluateAll((nodes) =>
+      nodes.map((el) => ({
+        tag: el.tagName.toLowerCase(),
+        text: (el.textContent ?? '').trim().slice(0, 40),
+        size: parseFloat(getComputedStyle(el).fontSize),
+      })),
+    );
     expect(textSizes.length).toBeGreaterThan(4);
-    expect(Math.min(...textSizes)).toBeGreaterThanOrEqual(16);
+    expect(textSizes.filter((item) => item.size < 16)).toEqual([]);
     const input = dialog.getByLabel(/Para confirmar, digite EXCLUIR/);
     expect(
       await input.evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),

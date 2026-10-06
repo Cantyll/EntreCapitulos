@@ -28,6 +28,14 @@ type Fixtures = {
 
 const CSP_BINDING = '__reportCspViolation';
 
+/**
+ * O WebKit relata como erro não tratado uma busca de prefetch do `<Link>` (`?_rsc=…` ou `&_rsc=…`) que a navegação, ou o fechamento
+ * do contexto, cancelou no meio ("… due to access control checks."). Não é defeito do site: acontece em qualquer
+ * página com links quando a pessoa sai dela. Só esse formato exato é ignorado; qualquer outro erro não tratado
+ * continua falhando o teste.
+ */
+const ABORTED_PREFETCH = /[?&]_rsc=[A-Za-z0-9_-]+ due to access control checks\.?$/;
+
 export const test = base.extend<Fixtures>({
   guard: [
     async ({ context }, use) => {
@@ -44,7 +52,10 @@ export const test = base.extend<Fixtures>({
             return;
           problems.push(`console.error: ${text}`);
         });
-        page.on('pageerror', (error) => problems.push(`erro não tratado: ${error.message}`));
+        page.on('pageerror', (error) => {
+          if (ABORTED_PREFETCH.test(error.message)) return;
+          problems.push(`erro não tratado: ${error.message}`);
+        });
         page.on('response', (response) => {
           if (response.status() >= 500)
             problems.push(`resposta ${response.status()}: ${new URL(response.url()).pathname}`);
