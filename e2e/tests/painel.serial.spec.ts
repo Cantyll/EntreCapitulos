@@ -36,6 +36,13 @@ test.describe.serial('painel da administração', () => {
     admin = await createAdmin();
   });
 
+  // Todos os testes desta sequência mostram o livro que ganhou capa no primeiro. A capa vem do Supabase local (IP de
+  // loopback) e o otimizador de imagens do Next recusa esse endereço: 400, só no ambiente de teste (ver "Fora da
+  // cobertura" no CLAUDE.md). Qualquer outro erro continua falhando o teste.
+  test.beforeEach(({ guard }) => {
+    guard.allowStatus(400);
+  });
+
   test('termina o livro atual, cadastra um livro com capa e começa a ler', async ({ openAs }) => {
     const { page } = await openAs(admin);
 
