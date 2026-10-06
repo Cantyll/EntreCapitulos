@@ -5,6 +5,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Container } from '@/components/ui/Container';
 import { Icon } from '@/components/ui/Icon';
+import { COMMUNITY_RULES } from '@/content/legal/community-rules';
 import { SOBRE } from '@/content/sobre';
 import { loadShelf } from '@/lib/public/loaders';
 import { getViewer } from '@/lib/public/person';
@@ -84,7 +85,7 @@ export default async function AboutPage() {
           Combinados da comunidade
         </h2>
         <ul className={styles.rules}>
-          {SOBRE.rules.map((rule) => (
+          {COMMUNITY_RULES.map((rule) => (
             <li key={rule.title}>
               <Icon name={rule.icon} />
               <div>

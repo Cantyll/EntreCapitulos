@@ -6,6 +6,7 @@ import { buildPrivacy } from './privacy';
 import { FACT_SOURCE_LABEL, PROVIDERS, type FactSource } from './providers';
 import { buildTerms } from './terms';
 import type { LegalBlock, LegalDoc, LegalFeatures } from './types';
+import { TERMS_CHANGELOG, TERMS_VERSION } from './version';
 
 /*
  * Documento de revisão jurídica (`docs/revisao-juridica.md`): um arquivo temporário para entregar a um advogado.
@@ -224,6 +225,27 @@ export const DATA_MAP: readonly DataRow[] = [
     source: 'codigo',
   },
   {
+    data: 'Texto e foto da autora na página Sobre (publicados pela própria titular)',
+    where:
+      'Supabase (tabelas `site_pages`, `site_page_drafts` e `site_page_revisions`) e, para a foto, o bucket público `covers` do Supabase Storage (prefixo `site/sobre/`)',
+    purpose:
+      'Apresentar a autora e o clube na página Sobre, que a administração edita e publica no painel',
+    basis: null,
+    retention: null,
+    sees: 'O texto e a foto publicados: qualquer visitante (público). Rascunhos e as 20 últimas versões publicadas: só a administração. A foto é recortada em 512x512 e reencodada em WebP sem metadados (EXIF, localização) e o arquivo original enviado é apagado em seguida. A foto de um RASCUNHO fica no bucket público: quem souber o endereço (um UUID aleatório, que não aparece em nenhuma listagem) consegue abri-la antes de ela ser publicada. Os arquivos do Storage NÃO entram nas cópias de segurança (a foto se reenvia pelo painel); o texto entra, como as demais tabelas.',
+    source: 'codigo',
+  },
+  {
+    data: 'Autoria das publicações do Sobre (identificador interno da conta de quem salvou ou publicou cada versão)',
+    where:
+      'Supabase (colunas `updated_by` e `published_by` das tabelas da página Sobre; só funções do banco gravam)',
+    purpose: 'Saber quem salvou e publicou cada versão (histórico das 20 últimas)',
+    basis: 3,
+    retention: null,
+    sees: 'Só a administração, no histórico. Só o identificador interno (uuid), sem nome, e-mail nem texto: o `updated_by` da página publicada é legível pela API como o resto de `profiles` (id, nome e papel já são públicos). Se a conta for excluída o campo fica vazio e a página não é apagada.',
+    source: 'codigo',
+  },
+  {
     data: 'Registros técnicos de acesso (IP, data e hora, navegador, páginas)',
     where: 'Registros dos provedores (Vercel, Supabase e outros)',
     purpose: 'Operar e proteger o serviço',
@@ -320,8 +342,8 @@ export const FUTURE_FEATURES: readonly string[] = [
   'Convites por e-mail, mensagens aos membros, ações em lote, banimento com prazo, anotações da administração sobre pessoas e cargos personalizados (a gestão de membros de hoje não faz nada disso): cada um mudaria o que a política diz.',
   'Edição de comentário pelo autor: hoje o banco não deixa mudar o texto.',
   'Busca no site.',
-  'Motor de censura de palavras (etapa 8h, NÃO implementada): ocultaria palavras inadequadas a menores de 18 anos em todo o conteúdo dinâmico para quem não tem a idade verificada, inclusive visitantes.',
-  'Verificação de idade opcional (etapa 8i, NÃO implementada e bloqueada pelo parecer do advogado): CPF e data de nascimento, conferidos à mão só pela administração, criptografados, apagados na decisão e fora das cópias de segurança.',
+  'Motor de censura de palavras (etapa 8h, NÃO implementada, prevista para depois do lançamento): ocultaria palavras inadequadas a menores de 18 anos em todo o conteúdo dinâmico para quem não tem a idade verificada, inclusive visitantes.',
+  'Verificação de idade opcional (etapa 8i, NÃO implementada, prevista para depois do lançamento): CPF e data de nascimento, conferidos à mão só pela administração, criptografados, apagados na decisão e fora das cópias de segurança.',
 ];
 
 /** As perguntas para o advogado. */
@@ -570,6 +592,19 @@ export function buildReviewDocument(config: LegalData): string {
       'Sobre as adequações legais (etapa 8g): a idade mínima de 18 anos (decisão do dono do site; o advogado validou 16), o aceite dos Termos com a declaração de idade, o registro mínimo de exclusões, o foro e as duas funcionalidades planejadas e **não implementadas** (a censura de palavras e a verificação de idade). Reúne também as perguntas abertas da primeira rodada que mudaram de forma.',
       '',
       ...THIRD_ROUND_QUESTIONS.map((question, index) => `${index + 1}. ${question}`),
+    ].join('\n'),
+  );
+
+  parts.push(
+    [
+      '## (k) Mudanças dos Termos',
+      '',
+      `Versão atual dos Termos: \`${TERMS_VERSION}\` (\`TERMS_VERSION\`, em \`src/content/legal/version.ts\`; a data é a de "última atualização" do texto e o sufixo ".2" distingue duas versões do mesmo dia). Quem aceitou uma versão anterior vê o aviso "Atualizamos os Termos de Uso e a Política de Privacidade" e pode continuar lendo e comentando; o aviso só pede um novo aceite, sem bloquear (${tag('codigo')}). Uma verificação automática garante que o texto dos Termos e dos combinados nunca muda sem a versão subir.`,
+      '',
+      ...TERMS_CHANGELOG.flatMap((entry) => [
+        `- **${entry.version}**${entry.version === TERMS_VERSION ? ' (atual)' : ''}`,
+        ...entry.changes.map((change) => `  - ${change}`),
+      ]),
     ].join('\n'),
   );
 

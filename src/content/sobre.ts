@@ -6,8 +6,6 @@
  * Para mudar o texto, edite só este arquivo.
  */
 
-import type { IconName } from '@/components/ui/Icon';
-
 export const SOBRE = {
   title: 'Oi, eu sou a Agatha.',
   lead: 'Eu sempre li com um lápis na mão. Um dia percebi que as anotações nas margens eram a melhor parte, e que eu queria conversar sobre elas com alguém.',
@@ -29,28 +27,6 @@ export const SOBRE = {
       text: 'Entrando no clube, o capítulo em que você parou fica salvo para a próxima vez.',
     },
   ],
-  rules: [
-    {
-      icon: 'eyeOff',
-      title: 'Marque os spoilers',
-      text: 'Se o seu comentário fala de capítulos à frente, marque até qual.',
-    },
-    {
-      icon: 'heart',
-      title: 'Discordar é bem-vindo',
-      text: 'Com carinho. Critique ideias, nunca pessoas.',
-    },
-    {
-      icon: 'shield',
-      title: 'Sem autopromoção',
-      text: 'Links de venda e divulgação são removidos pela moderação.',
-    },
-    {
-      icon: 'book',
-      title: 'Todo ritmo vale',
-      text: 'Quem está atrasado é tão parte do clube quanto quem adiantou.',
-    },
-  ] satisfies { icon: IconName; title: string; text: string }[],
   cta: {
     title: 'Leia com a gente',
     text: 'Entre com seu e-mail ou conta Google. Leva menos de um minuto.',

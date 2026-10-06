@@ -1,11 +1,12 @@
 import type { LegalData } from '../legal-config';
-import { SOBRE } from '../sobre';
 import { ageSentence } from './age';
+import { COMMUNITY_RULES } from './community-rules';
 import type { LegalDoc, LegalSection } from './types';
 
 /*
  * Termos de Uso (RASCUNHO para revisão de um profissional). Os combinados da comunidade vêm de
- * `src/content/sobre.ts` (a mesma lista da página "Sobre o clube"): mudou lá, muda aqui.
+ * `./community-rules.ts` (a mesma lista que `/sobre` mostra, só para leitura): NÃO do conteúdo editável da página
+ * Sobre. Mudou o texto dos Termos ou dos combinados? Suba `TERMS_VERSION` (ver `version.ts`).
  */
 
 export function buildTerms(config: LegalData): LegalDoc {
@@ -51,7 +52,7 @@ export function buildTerms(config: LegalData): LegalDoc {
       id: 'combinados',
       title: '3. Combinados da comunidade',
       blocks: [
-        { type: 'ul', items: SOBRE.rules.map((rule) => `${rule.title}: ${rule.text}`) },
+        { type: 'ul', items: COMMUNITY_RULES.map((rule) => `${rule.title}: ${rule.text}`) },
         {
           type: 'p',
           text: 'Os primeiros comentários de cada pessoa, e os que têm link, passam por uma análise da moderação antes de aparecer. A moderação pode remover comentários que não respeitem estes combinados.',

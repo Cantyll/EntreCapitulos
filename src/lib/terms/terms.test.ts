@@ -16,10 +16,10 @@ import {
 } from './status';
 
 describe('TERMS_VERSION', () => {
-  it('cabe na coluna (1 a 32 caracteres) e tem o formato AAAA-MM-DD', () => {
+  it('cabe na coluna (1 a 32 caracteres) e tem o formato AAAA-MM-DD, com sufixo de sequência opcional (".2")', () => {
     expect(TERMS_VERSION.length).toBeGreaterThanOrEqual(1);
     expect(TERMS_VERSION.length).toBeLessThanOrEqual(32);
-    expect(TERMS_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(TERMS_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}(\.[2-9]|\.[1-9]\d+)?$/);
   });
 
   it('é a data da última atualização dos textos legais (mudou o texto, mude as duas)', () => {
@@ -37,7 +37,8 @@ describe('TERMS_VERSION', () => {
       'novembro',
       'dezembro',
     ];
-    const [year, month, day] = TERMS_VERSION.split('-').map(Number) as [number, number, number];
+    const date = TERMS_VERSION.split('.')[0]!;
+    const [year, month, day] = date.split('-').map(Number) as [number, number, number];
     expect(legalConfig.lastUpdated).toBe(`${day} de ${months[month - 1]} de ${year}`);
   });
 });
