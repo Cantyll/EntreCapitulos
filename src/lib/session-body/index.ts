@@ -8,9 +8,12 @@ export {
   BODY_MAX_DEPTH,
   CHAPTER_MAX,
   DIVIDER_TITLE_MAX,
+  bodyDepth,
   bodySchema,
   canonicalizeBody,
+  inlineNodeSchema,
   isSafeHref,
+  paragraphNodeSchema,
   parseBody,
 } from './schema';
 export type { BodyIssue, ParsedBody } from './schema';

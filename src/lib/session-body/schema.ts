@@ -55,11 +55,15 @@ const textNode = z.strictObject({
 });
 const hardBreakNode = z.strictObject({ type: z.literal('hardBreak') });
 const inline = z.discriminatedUnion('type', [textNode, hardBreakNode]);
+/** Reaproveitados pelo texto rico da página Sobre (`src/lib/about/rich-text.ts`): o mesmo texto com marcas e quebra de linha. */
+export const inlineNodeSchema = inline;
 
 const paragraphNode = z.strictObject({
   type: z.literal('paragraph'),
   content: z.array(inline).optional(),
 });
+/** O parágrafo da página Sobre é o mesmo do relato: texto com negrito, itálico e link (só http, https e mailto). */
+export const paragraphNodeSchema = paragraphNode;
 const headingNode = z.strictObject({
   type: z.literal('heading'),
   attrs: z.strictObject({ level: z.literal(2) }),
