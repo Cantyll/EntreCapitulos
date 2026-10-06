@@ -403,3 +403,36 @@ Duas coisas que só você consegue fazer, e que **precisam estar feitas antes de
 
 1. **Ensaio de restauração do backup num segundo projeto gratuito do Supabase.** Passo a passo: seção 15, "Restaurar" e "Ensaio real". Simule primeiro (`dry_run` ligado), restaure de verdade, confira as contagens e um login por código, e **apague o projeto de ensaio e os segredos `RESTORE_TARGET_*`** ao terminar.
 2. **Teste de instalação no iPhone real**, no Safari e no app instalado: ícone e nome, abre sem barra, login por código dentro do app instalado, o cartão "Instale o Entre Capítulos" (2ª visita, `?instalacao=ver`), as seções de "Sobre o clube" e de "Minha conta", e a conferência dos **rótulos exatos do iOS em português**. Lista do que conferir: `lancamento.md`, seção 7.
+
+## 17. A página Sobre (etapa 8j)
+
+O texto de `/sobre` se edita em **Painel → Página Sobre** (só a administração). Aqui, o dia a dia e o que fazer quando algo dá errado. Os campos e os limites de cada um estão no README, seção "Página Sobre".
+
+**Os textos legais NÃO se editam aí.** `/termos` e `/privacidade` (e os **Combinados da comunidade**, que fazem parte dos Termos) vivem no código (`src/content/legal/`) e mudam por uma alteração de código, com a versão dos Termos (`TERMS_VERSION`) e o aviso "Atualizamos os Termos" para quem já aceitou. Quem edita o Sobre não consegue mudá-los.
+
+**Editar e publicar.**
+1. Abra **Painel → Página Sobre**. A primeira vez traz o texto provisório do site; depois, o rascunho (ou, se não houver, o que está publicado).
+2. Edite. A barra de baixo mostra "Alterações não salvas" ou "Rascunho salvo em …". **Salvar rascunho** não muda o site. Use **Pré-visualizar** (celular ou computador) para ver como fica.
+3. **Publicar** (com confirmação) leva o texto ao ar **na hora**: a página `/sobre` se atualiza sem esperar. Não há salvamento automático: salve antes de sair (no iPhone, o gesto de voltar da borda **não** avisa).
+
+**Voltar para uma versão anterior.** No fim da tela, **Histórico de versões** lista as últimas 20 versões que foram ao ar. **Restaurar** (com confirmação) publica aquela versão na hora e a coloca no rascunho (o que você ainda não salvou se perde). Passou de 20, as mais antigas saem do histórico.
+
+**Duas pessoas editando.** Se outra pessoa da administração salvou ou publicou enquanto você editava, a tela mostra o aviso de conflito: **Carregar a versão do servidor** (descarta o seu texto) ou **Sobrescrever com a minha**. Se for importante, copie o seu texto antes de escolher.
+
+**A foto da autora.** O recorte é **automático e quadrado** (512x512; o sistema escolhe a região com mais detalhe, sem detecção de rosto): **envie uma foto já enquadrada em quadrado**. Os metadados (como a localização) são removidos. O texto alternativo é obrigatório. **O Storage fica fora do backup** (seção 15): guarde a foto original; se o projeto for restaurado, **reenvie a foto** pelo painel e salve e publique de novo. Fotos que nenhuma versão usa mais (nem o rascunho, nem o publicado, nem o histórico) são apagadas do Storage sozinhas, com mais de 1 hora; um envio que nunca foi salvo some depois disso. Uma foto de **rascunho** ainda não publicada está no bucket público: quem souber o endereço dela (um código aleatório, que não aparece em lista nenhuma) consegue abri-la.
+
+**O que o painel diz quando algo está errado.**
+
+| O que aparece | O que é | O que fazer |
+| --- | --- | --- |
+| "A página Sobre ainda usa o texto provisório…" (Visão geral e tela da Sobre) | Nada foi publicado ainda: `/sobre` mostra o texto de `src/content/sobre.ts` | Edite e publique. O aviso some na primeira publicação |
+| "Não foi possível carregar a página Sobre agora…" | A atualização do banco (migration `…_site_about_page`) não foi aplicada, ou o banco não respondeu | **Actions → Database deploy** (dry run primeiro). `/sobre` continua mostrando o texto de código |
+| "Falta aplicar a atualização do banco (Database deploy)" ao salvar ou publicar | O mesmo | O mesmo |
+| "Outra pessoa da administração mudou esta página…" | Conflito (alguém salvou ou publicou antes) | Escolha a versão a manter |
+| "O texto salvo não pôde ser lido e foi trocado pelo texto padrão" | O conteúdo do banco não passa na validação (não deveria acontecer) | Confira o texto, salve e publique de novo; avise numa sessão de desenvolvimento |
+| "A foto passa de 5 MB" / "não é uma imagem PNG, JPG ou WEBP válida" / "pequena demais" / "grande demais" | Limites do envio da foto (5 MB, PNG/JPG/WEBP de verdade, de 200 a 6000 px) | Escolha outro arquivo |
+
+**Ordem para aplicar a etapa 8j:** (1) **backup manual** (Actions → Backup do banco, resumo OK); (2) **merge**; (3) **Database deploy com dry run**, conferindo que há **exatamente UMA** migration (`…_site_about_page`); (4) Database deploy de verdade; (5) **backup manual e Prova de restauração de novo**. As três tabelas novas (`site_pages`, `site_page_drafts` e `site_page_revisions`) entram no backup; a foto, não.
+
+**Emergência (só pelo SQL Editor, contorna as travas e a auditoria):** se um texto publicado estiver errado e ninguém conseguir entrar no painel, `delete from public.site_pages where slug = 'sobre';` faz `/sobre` voltar ao texto de código (a página volta a se atualizar em até 5 minutos). Prefira sempre o painel.
+
