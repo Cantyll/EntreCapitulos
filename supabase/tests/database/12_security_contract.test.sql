@@ -38,7 +38,9 @@ select set_eq(
         'set_member_role', 'set_member_suspension', 'admin_delete_member', 'admin_member_contact',
         'admin_member_export', 'admin_find_member_by_email', 'admin_masked_emails',
         -- Terms of Use acceptance (stage 8g): the person accepts for themselves; anonymous sign-ins are refused inside.
-        'accept_terms'],
+        'accept_terms',
+        -- Editable About page (stage 8j): administration only, each one checks is_admin() inside.
+        'save_site_page_draft', 'publish_site_page', 'restore_site_page_revision'],
   'the functions executable by authenticated are exactly the expected ones');
 
 -- 3a. Every security definer function pins an empty search_path.
@@ -56,7 +58,8 @@ select set_eq(
   array['comments_before_insert', 'comments_flag_links', 'comments_rate_limit', 'comments_sync_approved_count',
         'handle_new_user', 'is_admin', 'is_staff', 'retract_comment', 'delete_my_account',
         'set_member_role', 'set_member_suspension', 'admin_delete_member', 'admin_member_contact',
-        'admin_member_export', 'admin_find_member_by_email', 'admin_masked_emails', 'accept_terms'],
+        'admin_member_export', 'admin_find_member_by_email', 'admin_masked_emails', 'accept_terms',
+        'save_site_page_draft', 'publish_site_page', 'restore_site_page_revision'],
   'the security definer functions are exactly the expected ones');
 
 -- 4. Write grants of the API roles (anon, authenticated, PUBLIC). "*" = every column. Reads are open by design
@@ -153,6 +156,31 @@ select is((select count(*)::int from information_schema.column_privileges
   'the API roles have no column privilege on account_deletions either');
 select is((select count(*)::int from pg_policies where schemaname = 'public' and tablename = 'account_deletions'), 0,
   'account_deletions has no policy');
+
+-- Editable About page (stage 8j). The page tables are written only by the three security definer functions: the API
+-- roles have SELECT and nothing else. The published page is public; the draft and the history are not (a visitor has
+-- no privilege on them at all, and the RLS limits them to the administration).
+select is((select count(*)::int from information_schema.role_table_grants
+            where table_schema = 'public' and table_name in ('site_pages', 'site_page_drafts', 'site_page_revisions')
+              and grantee in ('anon', 'authenticated', 'PUBLIC') and privilege_type <> 'SELECT'), 0,
+  'the API roles can only SELECT from site_pages, site_page_drafts and site_page_revisions');
+select is((select count(*)::int from information_schema.role_table_grants
+            where table_schema = 'public' and table_name in ('site_page_drafts', 'site_page_revisions')
+              and grantee in ('anon', 'PUBLIC')), 0,
+  'a visitor has no privilege on the About page drafts and revisions');
+select is((select count(*)::int from information_schema.column_privileges
+            where table_schema = 'public' and table_name in ('site_page_drafts', 'site_page_revisions')
+              and grantee in ('anon', 'PUBLIC')), 0,
+  'nor any column privilege on them');
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public'
+              and p.proname in ('save_site_page_draft', 'publish_site_page', 'restore_site_page_revision')
+              and p.provolatile <> 'v'), 0, 'the About page functions are volatile (POST only)');
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.proname = 'site_page_content_problem'
+              and (has_function_privilege('authenticated', p.oid, 'execute')
+                   or has_function_privilege('anon', p.oid, 'execute'))), 0,
+  'site_page_content_problem is internal');
 
 select * from finish();
 rollback;

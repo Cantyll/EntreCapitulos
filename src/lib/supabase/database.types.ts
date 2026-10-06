@@ -431,6 +431,102 @@ export type Database = {
           },
         ];
       };
+      site_page_drafts: {
+        Row: {
+          content: NonNullable<Json>;
+          slug: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          content: NonNullable<Json>;
+          slug: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          content?: NonNullable<Json>;
+          slug?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'site_page_drafts_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      site_page_revisions: {
+        Row: {
+          content: NonNullable<Json>;
+          id: number;
+          kind: string;
+          published_at: string;
+          published_by: string | null;
+          slug: string;
+        };
+        Insert: {
+          content: NonNullable<Json>;
+          id?: never;
+          kind: string;
+          published_at?: string;
+          published_by?: string | null;
+          slug: string;
+        };
+        Update: {
+          content?: NonNullable<Json>;
+          id?: never;
+          kind?: string;
+          published_at?: string;
+          published_by?: string | null;
+          slug?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'site_page_revisions_published_by_fkey';
+            columns: ['published_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      site_pages: {
+        Row: {
+          content: NonNullable<Json>;
+          published_at: string;
+          slug: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          content: NonNullable<Json>;
+          published_at?: string;
+          slug: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          content?: NonNullable<Json>;
+          published_at?: string;
+          slug?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'site_pages_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       terms_acceptances: {
         Row: {
           accepted_at: string;
@@ -547,8 +643,20 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      publish_site_page: {
+        Args: { p_expected_updated_at: string; p_slug: string };
+        Returns: string;
+      };
       purge_account_deletions: { Args: Record<PropertyKey, never>; Returns: number };
+      restore_site_page_revision: {
+        Args: { p_expected_updated_at?: string; p_revision_id: number; p_slug: string };
+        Returns: string;
+      };
       retract_comment: { Args: { p_comment_id: string }; Returns: string };
+      save_site_page_draft: {
+        Args: { p_content: Json; p_expected_updated_at?: string; p_slug: string };
+        Returns: string;
+      };
       set_member_role: {
         Args: { p_expected_role?: string; p_role: string; p_user_id: string };
         Returns: string;
@@ -557,6 +665,7 @@ export type Database = {
         Args: { p_suspended: boolean; p_user_id: string };
         Returns: boolean;
       };
+      site_page_content_problem: { Args: { p_content: Json; p_slug: string }; Returns: string };
       start_book: {
         Args: { p_book_id: string };
         Returns: {
