@@ -2,7 +2,7 @@
 
 > **Documento TEMPORÁRIO**, para entregar ao advogado. Pode ser apagado depois da revisão (ver o README). É **gerado** a partir de `src/content/` (`legal-config.ts`, `legal/privacy.ts`, `legal/terms.ts`, `legal/providers.ts` e `legal/cookies.ts`) por `UPDATE_LEGAL_REVIEW=1 npx vitest run src/content/legal/review.test.ts`; um teste falha se ele ficar diferente das fontes. Não edite à mão.
 
-Última atualização dos textos: 5 de outubro de 2026. Os textos são **RASCUNHO** (`legalReviewed` = `false`).
+Última atualização dos textos: 6 de outubro de 2026. Os textos são **RASCUNHO** (`legalReviewed` = `false`).
 
 Cada fato abaixo vem marcado com a origem: **do código**, **informado pelo dono do site**, **não verificado**.
 
@@ -215,7 +215,7 @@ Quando a verificação de segurança está ativa, o site carrega scripts da Clou
 
 #### 10. Mudanças nesta política
 
-Podemos atualizar esta política. A data da última atualização é 5 de outubro de 2026.
+Podemos atualizar esta política. A data da última atualização é 6 de outubro de 2026.
 
 ### Termos de Uso
 
@@ -268,7 +268,7 @@ O tratamento dos seus dados pessoais está descrito na Política de Privacidade.
 
 #### 8. Mudanças nestes termos
 
-Podemos atualizar estes termos. A data da última atualização é 5 de outubro de 2026.
+Podemos atualizar estes termos. A data da última atualização é 6 de outubro de 2026.
 
 #### 9. Contato
 

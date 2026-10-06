@@ -15,6 +15,8 @@ export const COMMENT_MESSAGES = {
   too_long: 'O comentário passa de 2000 caracteres.',
   invalid_spoiler: 'Escolha um capítulo válido para o aviso de spoiler.',
   rate_limited: 'Você está comentando rápido demais. Espere um pouco e tente de novo.',
+  /** Quem nunca aceitou os Termos (e a declaração de idade) não comenta (etapa 8g). A equipe é isenta. */
+  terms_not_accepted: 'Para comentar, aceite os Termos e a Política de Privacidade.',
   /** Comentários suspensos pela administração (etapa 8f): sem motivo nem data, de propósito. */
   comments_suspended:
     'Seus comentários estão suspensos. Fale com a administração pelo e-mail de contato.',
@@ -30,6 +32,7 @@ const PREFIXES = [
   'invalid_parent',
   'rate_limited',
   'comments_suspended',
+  'terms_not_accepted',
 ] as const satisfies readonly CommentMessageKey[];
 
 export function classifyCommentError(error: DbErrorLike | null | undefined): CommentMessageKey {

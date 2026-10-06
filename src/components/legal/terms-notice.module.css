@@ -1,0 +1,35 @@
+/* Aviso do aceite dos Termos (etapa 8g): uma faixa fina logo abaixo do cabeçalho. Só tokens do tema. */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 16px;
+  padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+  border-bottom: 1px solid var(--line-2);
+  background: var(--rose-tint);
+  color: var(--rose-deep);
+  font-size: 16px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.text {
+  margin: 0;
+}
+
+.link {
+  font-weight: 600;
+  color: var(--rose-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Alvo de toque de 44px. */
+@media (pointer: coarse) {
+  .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

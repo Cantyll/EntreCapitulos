@@ -77,7 +77,7 @@ describe('o compositor da discussão', () => {
 
   it('suspensa: o aviso aprovado no lugar do campo, e "Responder" também some (canReply)', () => {
     const source = read('src/components/comments/Discussion.tsx');
-    expect(source).toMatch(/!suspended;/);
+    expect(source).toMatch(/!suspended && !termsBlocked;/);
     expect(source).toMatch(/canReply: canComment/);
     expect(source).toContain('COMMENT_MESSAGES.comments_suspended');
   });

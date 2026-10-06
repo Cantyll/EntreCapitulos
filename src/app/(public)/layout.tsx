@@ -2,6 +2,7 @@ import { unstable_rethrow } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
 
 import { InstallGate } from '@/components/install/InstallGate';
+import { TermsNotice } from '@/components/legal/TermsNotice';
 import { SiteFooter } from '@/components/site/SiteFooter';
 import { SiteHeader } from '@/components/site/SiteHeader';
 import { SiteHeaderSkeleton } from '@/components/site/SiteHeaderSkeleton';
@@ -35,6 +36,10 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
       <div className={styles.shell}>
         <Suspense fallback={<SiteHeaderSkeleton />}>
           <HeaderWithCurrentBook />
+        </Suspense>
+        {/* Aviso do aceite dos Termos: só para quem está logado e ainda não aceitou (a equipe também). */}
+        <Suspense fallback={null}>
+          <TermsNotice />
         </Suspense>
         <main id="conteudo" tabIndex={-1} className={styles.main}>
           {children}

@@ -6,14 +6,15 @@ import styles from './LegalLinks.module.css';
 
 /**
  * "Ao entrar, você concorda com os Termos e a Política de Privacidade e declara ter 18 anos ou mais." (login).
- * A idade vem de `legal-config.ts` e é uma DECLARAÇÃO da pessoa: o site não a verifica nem a confirma.
+ * A idade vem de `legal-config.ts` e é uma DECLARAÇÃO da pessoa: o site não a verifica nem a confirma. O primeiro
+ * acesso (`/boas-vindas`) tem a caixa de aceite no lugar desta frase.
  */
-export function LegalLinks({ verb }: { verb: 'entrar' | 'continuar' }) {
+export function LegalLinks({ verb }: { verb: 'entrar' }) {
   return (
     <p className={styles.note}>
       Ao {verb}, você concorda com os <Link href="/termos">Termos</Link> e a{' '}
-      <Link href="/privacidade">Política de Privacidade</Link>
-      {verb === 'entrar' ? ` e declara ter ${legalConfig.minimumAge} anos ou mais` : ''}.
+      <Link href="/privacidade">Política de Privacidade</Link> e declara ter{' '}
+      {legalConfig.minimumAge} anos ou mais.
     </p>
   );
 }

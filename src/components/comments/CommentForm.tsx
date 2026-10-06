@@ -17,7 +17,7 @@ type Props = {
   /** Capítulos que o aviso de spoiler oferece (de `chapter_to + 1` até o total). Vazio: sem o seletor. */
   spoilerChoices: readonly number[];
   chapterTo: number;
-  /** Para onde /boas-vindas volta depois de escolher o nome (a própria sessão). */
+  /** Para onde /boas-vindas volta depois de escolher o nome ou aceitar os Termos (a própria sessão). */
   welcomeHref: string;
   placeholder: string;
   label: string;
@@ -154,6 +154,11 @@ export function CommentForm({
       {state.status === 'error' && state.code === 'profile_incomplete' && (
         <Link className={styles.formLink} href={welcomeHref as never}>
           Escolher meu nome
+        </Link>
+      )}
+      {state.status === 'error' && state.code === 'terms_not_accepted' && (
+        <Link className={styles.formLink} href={welcomeHref as never}>
+          Aceitar os Termos
         </Link>
       )}
       {state.status === 'ok' && !onPosted && (

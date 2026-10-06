@@ -67,7 +67,7 @@ export const legalConfig = {
   /** Idade mínima declarada no aceite dos Termos (18, por causa da ECA Digital, Lei 15.211/2025). */
   minimumAge: 18,
   /** Data da última atualização dos textos. */
-  lastUpdated: '5 de outubro de 2026',
+  lastUpdated: '6 de outubro de 2026',
 
   /** Região onde cada provedor roda a parte usada pelo site. */
   regions: {

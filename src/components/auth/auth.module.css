@@ -120,3 +120,45 @@
   gap: 8px;
   min-height: 0;
 }
+
+/* Caixa do aceite dos Termos e da declaração de idade (nunca vem marcada). O texto é o rótulo da caixa. */
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.checkInput {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 3px 0 0;
+  accent-color: var(--rose-2);
+}
+
+.checkLabel {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.checkLabel a {
+  color: var(--rose-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (pointer: coarse) {
+  .checkInput {
+    width: 28px;
+    height: 28px;
+    margin-top: 0;
+  }
+
+  /* O rótulo é a área de toque da caixa: pelo menos 44px de altura e 16px de texto. */
+  .checkLabel {
+    min-height: 44px;
+    padding: 4px 0;
+    font-size: 16px;
+  }
+}
