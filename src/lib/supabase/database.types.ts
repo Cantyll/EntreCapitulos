@@ -3,6 +3,21 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      account_deletions: {
+        Row: {
+          deleted_at: string;
+          user_id: string;
+        };
+        Insert: {
+          deleted_at?: string;
+          user_id: string;
+        };
+        Update: {
+          deleted_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       books: {
         Row: {
           author: string;
@@ -416,11 +431,41 @@ export type Database = {
           },
         ];
       };
+      terms_acceptances: {
+        Row: {
+          accepted_at: string;
+          first_accepted_at: string;
+          user_id: string;
+          version: string;
+        };
+        Insert: {
+          accepted_at?: string;
+          first_accepted_at?: string;
+          user_id: string;
+          version: string;
+        };
+        Update: {
+          accepted_at?: string;
+          first_accepted_at?: string;
+          user_id?: string;
+          version?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'terms_acceptances_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: true;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      accept_terms: { Args: { p_version: string }; Returns: undefined };
       admin_delete_member: { Args: { p_user_id: string }; Returns: undefined };
       admin_find_member_by_email: { Args: { p_email: string }; Returns: string };
       admin_masked_emails: {
@@ -502,6 +547,7 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      purge_account_deletions: { Args: Record<PropertyKey, never>; Returns: number };
       retract_comment: { Args: { p_comment_id: string }; Returns: string };
       set_member_role: {
         Args: { p_expected_role?: string; p_role: string; p_user_id: string };

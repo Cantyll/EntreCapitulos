@@ -19,6 +19,8 @@ insert into auth.users (id, email) values
 update public.profiles set role = 'admin' where id = '00000000-0000-4000-8000-0000000000a1';
 update public.profiles set role = 'moderator' where id = '00000000-0000-4000-8000-0000000000a2';
 update public.profiles set display_name_confirmed_at = now();
+-- Everybody has accepted the Terms (the acceptance check has its own test file, 14_legal_compliance).
+insert into public.terms_acceptances (user_id, version) select id, 'test' from public.profiles;
 
 insert into public.books (id, slug, title, author, total_chapters, status) values
   ('10000000-0000-4000-8000-000000000001', 'livro', 'Livro', 'Autora', 52, 'reading');

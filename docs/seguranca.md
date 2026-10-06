@@ -13,6 +13,7 @@ que impede alargar permissões sem querer está em `supabase/tests/database/12_s
 
 | Tabela | RLS ligado | RLS forçado ao dono |
 | --- | --- | --- |
+| `account_deletions` | sim | não |
 | `books` | sim | não |
 | `comment_flags` | sim | não |
 | `comments` | sim | não |
@@ -23,6 +24,7 @@ que impede alargar permissões sem querer está em `supabase/tests/database/12_s
 | `reading_sessions` | sim | não |
 | `session_notes` | sim | não |
 | `session_questions` | sim | não |
+| `terms_acceptances` | sim | não |
 
 ## Políticas de RLS
 
@@ -61,6 +63,7 @@ Inclui as políticas de `storage.objects` (bucket das capas). `USING` filtra o q
 | `public.session_questions` | `session_questions_insert_admin` | INSERT | authenticated |  | `( SELECT is_admin() AS is_admin)` |
 | `public.session_questions` | `session_questions_select` | SELECT | anon, authenticated | `(EXISTS ( SELECT 1 FROM reading_sessions s WHERE (s.id = session_questions.session_id)))` |  |
 | `public.session_questions` | `session_questions_update_admin` | UPDATE | authenticated | `( SELECT is_admin() AS is_admin)` | `( SELECT is_admin() AS is_admin)` |
+| `public.terms_acceptances` | `terms_acceptances_select_own` | SELECT | authenticated | `(user_id = ( SELECT auth.uid() AS uid))` |  |
 | `storage.objects` | `covers_delete_admin` | DELETE | authenticated | `((bucket_id = 'covers'::text) AND ( SELECT is_admin() AS is_admin))` |  |
 | `storage.objects` | `covers_insert_admin` | INSERT | authenticated |  | `((bucket_id = 'covers'::text) AND ( SELECT is_admin() AS is_admin))` |
 | `storage.objects` | `covers_select_admin` | SELECT | authenticated | `((bucket_id = 'covers'::text) AND ( SELECT is_admin() AS is_admin))` |  |
@@ -88,6 +91,7 @@ Permissão na tabela inteira. O RLS ainda se aplica a cada uma delas.
 | `session_notes` | authenticated | DELETE, INSERT, SELECT, UPDATE |
 | `session_questions` | anon | SELECT |
 | `session_questions` | authenticated | DELETE, INSERT, SELECT, UPDATE |
+| `terms_acceptances` | authenticated | SELECT |
 
 ## Permissões por coluna (anon e authenticated)
 
@@ -110,6 +114,7 @@ colunas "anon", "authenticated" e "PUBLIC" dizem quem pode executar pela API.
 
 | Função | Trigger | security definer | search_path | anon | authenticated | PUBLIC |
 | --- | --- | --- | --- | --- | --- | --- |
+| `accept_terms(p_version text)` | não | sim | `"" (vazio)` | não | sim | não |
 | `admin_delete_member(p_user_id uuid)` | não | sim | `"" (vazio)` | não | sim | não |
 | `admin_find_member_by_email(p_email text)` | não | sim | `"" (vazio)` | não | sim | não |
 | `admin_masked_emails(p_user_ids uuid[])` | não | sim | `"" (vazio)` | não | sim | não |
@@ -129,6 +134,7 @@ colunas "anon", "authenticated" e "PUBLIC" dizem quem pode executar pela API.
 | `is_staff()` | não | sim | `"" (vazio)` | sim | sim | não |
 | `mask_email(p_email text)` | não | não | `"" (vazio)` | não | não | não |
 | `publish_session(p_session_id uuid)` | não | não | `"" (vazio)` | não | sim | não |
+| `purge_account_deletions()` | não | não | `"" (vazio)` | não | não | não |
 | `reading_sessions_set_published_at()` | sim | não | `"" (vazio)` | não | não | não |
 | `retract_comment(p_comment_id uuid)` | não | sim | `"" (vazio)` | não | sim | não |
 | `set_member_role(p_user_id uuid, p_role text, p_expected_role text)` | não | sim | `"" (vazio)` | não | sim | não |
