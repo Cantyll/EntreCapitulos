@@ -11,6 +11,8 @@ import { loadDiscussionPage } from '@/lib/comments/queries';
 import { isOwnCommentsSuspended } from '@/lib/members/own-suspension';
 import { sessionHref } from '@/lib/routes';
 import { effectiveProgress } from '@/lib/spoiler';
+import { blocksCommenting } from '@/lib/terms';
+import { getTermsStatus } from '@/lib/terms/server';
 
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
@@ -63,11 +65,17 @@ export async function Discussion({
   const choices = spoilerChoices(chapterTo, totalChapters);
   // Quem está com os comentários suspensos (etapa 8f) vê um aviso no lugar do campo. A equipe nunca é suspensa,
   // então nem se consulta. Falha na leitura vale como "não suspenso": o banco recusa de qualquer jeito.
-  const suspended =
-    commentsOpen && viewer !== null && viewer.nameConfirmed && viewer.role === 'member'
-      ? await isOwnCommentsSuspended(viewer.id)
-      : false;
-  const canComment = commentsOpen && viewer !== null && viewer.nameConfirmed && !suspended;
+  // Quem nunca aceitou os Termos (etapa 8g; a equipe é isenta) vê o convite para aceitar. Falha na leitura vale
+  // como "aceitou": o banco recusa de qualquer jeito (`terms_not_accepted:`) e o formulário mostra o motivo.
+  const checkMember =
+    commentsOpen && viewer !== null && viewer.nameConfirmed && viewer.role === 'member';
+  const [suspended, termsStatus] = await Promise.all([
+    checkMember && viewer ? isOwnCommentsSuspended(viewer.id) : false,
+    checkMember && viewer ? getTermsStatus(viewer.id) : ('unknown' as const),
+  ]);
+  const termsBlocked = viewer !== null && blocksCommenting(viewer.role, termsStatus);
+  const canComment =
+    commentsOpen && viewer !== null && viewer.nameConfirmed && !suspended && !termsBlocked;
   const welcomeHref = `/boas-vindas?next=${encodeURIComponent(here)}`;
 
   return (
@@ -99,6 +107,14 @@ export async function Discussion({
           <p>Falta escolher o nome que aparece nos seus comentários.</p>
           <ButtonLink href={welcomeHref as never} size="sm">
             Escolher meu nome
+          </ButtonLink>
+        </div>
+      ) : termsBlocked ? (
+        // O banco recusa o comentário de quem nunca aceitou os Termos (a equipe é isenta): aqui só se convida.
+        <div className={`${styles.card} ${styles.guest}`} data-terms-required>
+          <p role="note">{COMMENT_MESSAGES.terms_not_accepted}</p>
+          <ButtonLink href={welcomeHref as never} size="sm">
+            Aceitar os Termos
           </ButtonLink>
         </div>
       ) : suspended ? (

@@ -21,13 +21,14 @@ describe('links das páginas legais', () => {
     expect(footer).toMatch(/href="\/termos"/);
   });
 
-  it('/entrar e /boas-vindas mostram os links (LegalLinks)', () => {
-    for (const page of [
-      'src/app/(public)/entrar/page.tsx',
-      'src/app/(public)/boas-vindas/page.tsx',
-    ]) {
-      expect(read(page)).toMatch(/<LegalLinks verb=/);
-    }
+  it('/entrar mostra os links (LegalLinks) e /boas-vindas tem a caixa do aceite com os links no rótulo', () => {
+    expect(read('src/app/(public)/entrar/page.tsx')).toMatch(/<LegalLinks verb=/);
+    // O primeiro acesso troca a frase "Ao continuar…" pela caixa de declaração e aceite (etapa 8g).
+    expect(read('src/app/(public)/boas-vindas/page.tsx')).not.toMatch(/<LegalLinks/);
+    const form = read('src/components/auth/WelcomeForm.tsx');
+    expect(form).toMatch(/name="acceptTerms"/);
+    expect(form).toMatch(/href="\/termos"/);
+    expect(form).toMatch(/href="\/privacidade"/);
   });
 
   it('a frase de /entrar é a pedida', () => {

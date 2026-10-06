@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 
 import { AppBadge } from '@/components/admin/AppBadge';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminTabBar } from '@/components/admin/AdminTabBar';
 import { AdminTopbar } from '@/components/admin/AdminTopbar';
+import { TermsNotice } from '@/components/legal/TermsNotice';
 import { SkipLink } from '@/components/ui/SkipLink';
 import { requireRole } from '@/lib/auth/session';
 import { SITE_NAME } from '@/lib/brand';
@@ -38,6 +39,10 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         />
         <div className={styles.column}>
           <AdminTopbar pendingComments={pendingCommentsCount} />
+          {/* Aviso do aceite dos Termos: a equipe é isenta para comentar, mas também aceita. */}
+          <Suspense fallback={null}>
+            <TermsNotice user={user} />
+          </Suspense>
           <main id="conteudo" tabIndex={-1} className={styles.main}>
             {children}
           </main>
