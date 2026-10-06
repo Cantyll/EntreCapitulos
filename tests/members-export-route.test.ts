@@ -33,6 +33,11 @@ const payload = (id = ID) => ({
   progress: [
     { chapter: 12, updated_at: '2026-09-29T10:00:00Z', book_slug: 'azrael', book_title: 'Azrael' },
   ],
+  terms: {
+    version: '2026-10-06',
+    accepted_at: '2026-10-07T12:00:00Z',
+    first_accepted_at: '2026-10-06T09:30:00Z',
+  },
 });
 
 vi.mock('server-only', () => ({}));
@@ -145,9 +150,15 @@ describe('o arquivo', () => {
     expect(disposition).not.toMatch(/Fulana|Silva|@|exemplo/i);
 
     const body = JSON.parse(await response.text());
-    expect(body.exportVersion).toBe(2);
+    expect(body.exportVersion).toBe(3);
     expect(body.profile.commentsSuspended).toBe(true);
     expect(body.account.email).toBe(EMAIL);
+    // O aceite dos Termos vem da função do banco (a administração não lê a linha dos outros pelo RLS).
+    expect(body.termsAcceptance).toEqual({
+      version: '2026-10-06',
+      acceptedAt: '2026-10-07T12:00:00Z',
+      firstAcceptedAt: '2026-10-06T09:30:00Z',
+    });
     expect(JSON.stringify(body)).not.toContain(OTHER_ID);
   });
 
