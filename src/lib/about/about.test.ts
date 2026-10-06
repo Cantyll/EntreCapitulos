@@ -226,12 +226,18 @@ describe('foto', () => {
     expect(pathsOf(valid({ photo: { path, alt: 'x' } }))).toEqual(['photo.path']);
   });
 
-  it('o arquivo ENVIADO pelo navegador tem png, jpg ou webp; o processado só webp', () => {
-    expect(isSiteUploadPath(`site/sobre/${UUID}.png`)).toBe(true);
-    expect(isSiteUploadPath(`site/sobre/${UUID}.jpg`)).toBe(true);
-    expect(isSiteUploadPath(`site/sobre/${UUID}.webp`)).toBe(true);
-    expect(isSiteUploadPath(`site/sobre/${UUID}.gif`)).toBe(false);
+  it('o arquivo ENVIADO pelo navegador fica em site/sobre/incoming/ (png, jpg ou webp); o processado só em site/sobre/ e só webp', () => {
+    expect(isSiteUploadPath(`site/sobre/incoming/${UUID}.png`)).toBe(true);
+    expect(isSiteUploadPath(`site/sobre/incoming/${UUID}.jpg`)).toBe(true);
+    expect(isSiteUploadPath(`site/sobre/incoming/${UUID}.webp`)).toBe(true);
+    expect(isSiteUploadPath(`site/sobre/incoming/${UUID}.gif`)).toBe(false);
     expect(isSiteUploadPath(`books/${UUID}/a.png`)).toBe(false);
+    // O original enviado NUNCA é uma foto pronta: o conteúdo não aceita o caminho de envio.
+    expect(isSiteUploadPath(`site/sobre/${UUID}.webp`)).toBe(false);
+    expect(isSitePhotoPath(`site/sobre/incoming/${UUID}.webp`)).toBe(false);
+    expect(
+      pathsOf(valid({ photo: { path: `site/sobre/incoming/${UUID}.webp`, alt: 'x' } })),
+    ).toEqual(['photo.path']);
   });
 
   describe('URL pública', () => {

@@ -34,11 +34,11 @@ export type {
 export { charCount, normalizeLine, normalizeMultiline } from './text';
 export {
   SITE_PHOTO_FOLDER,
+  SITE_PHOTO_INCOMING_FOLDER,
   isSafeLinkUrl,
   isSitePhotoPath,
   isSiteUploadPath,
   normalizeLinkUrl,
-  sitePhotoId,
   sitePhotoUploadPath,
   sitePhotoUrl,
 } from './urls';

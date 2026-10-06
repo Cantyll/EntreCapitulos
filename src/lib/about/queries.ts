@@ -62,7 +62,7 @@ export async function getPublishedAbout(): Promise<PublishedAbout> {
   try {
     row = await readPublishedRow();
   } catch (error) {
-    if (!isAboutUnavailable(error as { code?: unknown })) logFailure('sobre.leitura', error);
+    if (!isAboutUnavailable(error as { code?: string | null })) logFailure('sobre.leitura', error);
     return fallback();
   }
   if (!row) return fallback();

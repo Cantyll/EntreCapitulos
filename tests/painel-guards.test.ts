@@ -83,10 +83,15 @@ describe('painel', () => {
   // Exceções (cada uma com o motivo): ações da gestão de membros que não mudam nada público. A busca só
   // redireciona; "Mostrar e-mail" só lê; suspender comentários só afeta o composer de quem foi suspenso e o painel.
   // As outras ações de membros (cargo, exclusão) mudam o selo e os comentários públicos e expiram o cache.
+  // Página Sobre (etapa 8j): salvar o rascunho e finalizar a foto não mudam nada público (o rascunho nunca é lido por
+  // visitante; a foto só entra no conteúdo quando se salva e só vai ao ar quando se publica). Publicar e restaurar
+  // expiram a tag `site:sobre` (`invalidateSiteSobre`).
   const NO_PUBLIC_CACHE = new Set<string>([
     'searchMembers',
     'showMemberContact',
     'setMemberSuspension',
+    'saveAboutDraftAction',
+    'finalizeAboutPhoto',
   ]);
 
   it.each(actionFiles.map((f) => [f.slice(PAINEL.length)]))(
@@ -98,7 +103,7 @@ describe('painel', () => {
         const name = part.slice(0, part.indexOf('('));
         if (NO_PUBLIC_CACHE.has(name)) continue;
         expect(part, `${name} precisa chamar invalidate… ou updateTag`).toMatch(
-          /invalidate(Books|Session|Comments)\(|refreshAfterBookChange\(|refreshPublic\(|moderate\(|refresh\(|updateTag\(|expire(CommentsOf|AllPublicComments)\(/,
+          /invalidate(Books|Session|Comments|SiteSobre)\(|refreshAfterBookChange\(|refreshPublic\(|moderate\(|refresh\(|updateTag\(|expire(CommentsOf|AllPublicComments)\(/,
         );
       }
     },
