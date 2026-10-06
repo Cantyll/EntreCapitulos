@@ -46,12 +46,19 @@ export function ContactReveal({ memberId }: { memberId: string }) {
   const showRef = useRef<HTMLButtonElement>(null);
   const focusAfterChange = useRef<'revealed' | 'show' | null>(null);
 
+  // Roda de novo quando `pending` muda: ao ocultar logo depois de mostrar, a consulta anterior (e o refresh da
+  // auditoria) ainda pode estar pendente e o botão nasce desabilitado, e `focus()` num botão desabilitado não faz
+  // nada. O pedido de foco só é consumido quando o foco chega.
   useEffect(() => {
     const target = focusAfterChange.current;
-    focusAfterChange.current = null;
-    if (target === 'revealed') revealedRef.current?.focus();
-    if (target === 'show') showRef.current?.focus();
-  }, [state.status]);
+    if (target === 'revealed' && revealedRef.current) {
+      revealedRef.current.focus();
+      focusAfterChange.current = null;
+    } else if (target === 'show' && showRef.current && !showRef.current.disabled) {
+      showRef.current.focus();
+      focusAfterChange.current = null;
+    }
+  }, [state.status, pending]);
 
   useEffect(() => {
     const hide = () =>
