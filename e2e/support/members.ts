@@ -1,5 +1,7 @@
 import type { Page } from '@playwright/test';
 
+import { TERMS_VERSION } from '../../src/content/legal/version';
+
 import { lit, sql } from './db';
 
 let counter = 0;
@@ -55,7 +57,7 @@ export function auditCount(targetId: string, action: string): number {
 
 /**
  * Cria `count` contas de uma vez (SQL direto em `auth.users`; o gatilho do banco cria os perfis) com nomes
- * `<prefixo> NN`, todas com o nome confirmado. Para testar a paginação sem 26 chamadas à API de administração.
+ * `<prefixo> NN`, todas com o nome confirmado e os Termos aceitos. Para testar a paginação sem 26 chamadas à API de administração.
  */
 export function createBulkMembers(prefix: string, count: number, token: string): void {
   sql(`
@@ -67,6 +69,8 @@ export function createBulkMembers(prefix: string, count: number, token: string):
       from generate_series(1, ${Number(count)}) g;
     update public.profiles set display_name_confirmed_at = now()
      where display_name like ${lit(`${prefix} %`)};
+    insert into public.terms_acceptances (user_id, version)
+    select id, ${lit(TERMS_VERSION)} from public.profiles where display_name like ${lit(`${prefix} %`)};
   `);
 }
 

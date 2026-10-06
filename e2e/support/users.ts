@@ -1,5 +1,7 @@
 import type { BrowserContext } from '@playwright/test';
 
+import { TERMS_VERSION } from '../../src/content/legal/version';
+
 import { lit, sql } from './db';
 import { keys } from './stack';
 
@@ -45,11 +47,30 @@ export type CreateUserOptions = {
   role?: Role;
   /** Comentários aprovados que a pessoa já tem (3 ou mais publica direto). */
   approved?: number;
+  /**
+   * Aceite dos Termos (etapa 8g). `true` (padrão): aceitou a versão atual, para o comentário e o primeiro acesso não
+   * dependerem dele em outros testes. `'old'`: aceitou uma versão antiga. `false`: nunca aceitou.
+   */
+  terms?: boolean | 'old';
 };
+
+/** Grava o aceite dos Termos da pessoa (a versão atual, ou uma antiga), como o banco de verdade o guarda. */
+export function acceptTermsBySql(userId: string, version: string = TERMS_VERSION): void {
+  sql(
+    `insert into public.terms_acceptances (user_id, version) values (${lit(userId)}, ${lit(version)})
+     on conflict (user_id) do update set version = excluded.version;`,
+  );
+}
 
 /** Cria a conta pela API de administração do Auth local e ajusta o perfil por SQL. */
 export async function createUser(options: CreateUserOptions = {}): Promise<TestUser> {
-  const { prefix = 'pessoa', name = 'Pessoa Teste', role = 'member', approved } = options;
+  const {
+    prefix = 'pessoa',
+    name = 'Pessoa Teste',
+    role = 'member',
+    approved,
+    terms = true,
+  } = options;
   const email = uniqueEmail(prefix);
   const response = await admin('/auth/v1/admin/users', { email, email_confirm: true });
   if (!response.ok) throw new Error(`criar usuário falhou: ${response.status}`);
@@ -60,6 +81,7 @@ export async function createUser(options: CreateUserOptions = {}): Promise<TestU
   if (role !== 'member') sets.push(`role = ${lit(role)}`);
   if (approved !== undefined) sets.push(`approved_comment_count = ${Number(approved)}`);
   if (sets.length) sql(`update public.profiles set ${sets.join(', ')} where id = ${lit(id)};`);
+  if (terms !== false) acceptTermsBySql(id, terms === 'old' ? 'versao-antiga' : TERMS_VERSION);
   if (role !== 'member') markTutorialSeen(id);
 
   return { id, email, name: name ?? 'Leitor', role };
