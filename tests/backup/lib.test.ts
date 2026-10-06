@@ -67,13 +67,25 @@ describe('checkTables', () => {
     ).not.toThrow();
   });
 
-  it('aceita um dump de antes da migration (sem as tabelas da gestão de membros): o primeiro backup depois do Database deploy não pode falhar por isso', () => {
+  it('aceita o dump com as tabelas das adequações legais (aceite dos Termos e registro de exclusões), com linhas', () => {
+    expect(() =>
+      checkTables(
+        { ...all, 'public.terms_acceptances': 40, 'public.account_deletions': 3 },
+        config,
+      ),
+    ).not.toThrow();
+  });
+
+  it('aceita um dump de antes das migrations (sem as tabelas novas): o primeiro backup depois do Database deploy não pode falhar por isso', () => {
+    const newer = [
+      'public.member_audit',
+      'public.member_suspensions',
+      'public.terms_acceptances',
+      'public.account_deletions',
+    ];
     const counts = { ...all };
-    delete counts['public.member_audit'];
-    delete counts['public.member_suspensions'];
-    expect(new Set(checkTables(counts, config).absent)).toEqual(
-      new Set(['public.member_audit', 'public.member_suspensions']),
-    );
+    for (const table of newer) delete counts[table];
+    expect(new Set(checkTables(counts, config).absent)).toEqual(new Set(newer));
   });
 
   it('não confunde tabela vazia com tabela ausente', () => {

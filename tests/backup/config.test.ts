@@ -73,6 +73,42 @@ describe('configuração do backup (.github/backup.config.json)', () => {
     expect(config.dump.excludeTables).not.toContain('public.member_suspensions');
   });
 
+  it('as tabelas das adequações legais (etapa 8g) entram no backup: sem elas o backup diário falharia', () => {
+    // `terms_acceptances` (aceite dos Termos) e `account_deletions` (registro mínimo de exclusões, para reaplicar as
+    // exclusões depois de restaurar um backup mais antigo) nascem na migration `legal_compliance`.
+    expect(config.dump.allowedTables).toEqual(
+      expect.arrayContaining(['public.terms_acceptances', 'public.account_deletions']),
+    );
+    expect(config.dump.excludeTables).not.toContain('public.terms_acceptances');
+    expect(config.dump.excludeTables).not.toContain('public.account_deletions');
+  });
+
+  it('o registro mínimo de exclusões é expurgado com a MESMA retenção das cópias semanais (o número do SQL é o da configuração)', () => {
+    // Uma linha de `account_deletions` só serve enquanto algum backup ainda guarda a conta: no máximo a retenção
+    // semanal (a mais longa). O número vive em `purge_account_deletions()` (migration) e em `retentionDays.weekly`.
+    const dir = 'supabase/migrations';
+    let days: number | null = null;
+    for (const file of readdirSync(dir)
+      .filter((name) => name.endsWith('.sql'))
+      .sort()) {
+      const sql = readFileSync(`${dir}/${file}`, 'utf8').replace(/--[^\n]*/g, '');
+      const fn = sql.match(
+        /create\s+(?:or\s+replace\s+)?function\s+public\.purge_account_deletions\(\)[\s\S]*?\$\$;/i,
+      );
+      if (!fn) continue;
+      const interval = fn[0].match(
+        /delete\s+from\s+public\.account_deletions\s+where\s+deleted_at\s*<\s*now\(\)\s*-\s*interval\s+'(\d+)\s+days'/i,
+      );
+      expect(
+        interval,
+        `${file}: a purga precisa ser "deleted_at < now() - interval 'N days'"`,
+      ).not.toBeNull();
+      days = Number(interval![1]);
+    }
+    expect(days).not.toBeNull();
+    expect(days).toBe(config.retentionDays.weekly);
+  });
+
   it('sessões e tokens do Auth ficam fora do backup', () => {
     expect(config.dump.excludeTables).toEqual(
       expect.arrayContaining([

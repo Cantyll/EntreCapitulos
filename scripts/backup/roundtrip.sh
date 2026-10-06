@@ -20,11 +20,20 @@ moto_pid=""
 # que as tabelas existem, e não que a auditoria (com o CHECK de `details`) e a suspensão (com a chave estrangeira
 # para `profiles`) sobrevivem a dump, criptografia, envio e restauração.
 ROUNDTRIP_AUDIT_ACTOR="00000000-0000-4000-8000-0000000b0001"
+# E nas das adequações legais (etapa 8g): o registro mínimo de exclusões (sem chave estrangeira) e, se o seed
+# não trouxer nenhum aceite dos Termos, um aceite sintético (a chave estrangeira para `profiles` também precisa
+# sobreviver à restauração).
+ROUNDTRIP_DELETED_ID="00000000-0000-4000-8000-0000000b0002"
 suspended_id=""
+terms_inserted=false
 cleanup() {
   [ -z "$moto_pid" ] || kill "$moto_pid" 2>/dev/null || true
   psql "$RESTORE_DB_URL" -X -q -c "delete from public.member_audit where actor_id = '$ROUNDTRIP_AUDIT_ACTOR';" >/dev/null 2>&1 || true
   [ -z "$suspended_id" ] || psql "$RESTORE_DB_URL" -X -q -c "delete from public.member_suspensions where user_id = '$suspended_id';" >/dev/null 2>&1 || true
+  psql "$RESTORE_DB_URL" -X -q -c "delete from public.account_deletions where user_id = '$ROUNDTRIP_DELETED_ID';" >/dev/null 2>&1 || true
+  if [ "$terms_inserted" = "true" ] && [ -n "$suspended_id" ]; then
+    psql "$RESTORE_DB_URL" -X -q -c "delete from public.terms_acceptances where user_id = '$suspended_id';" >/dev/null 2>&1 || true
+  fi
   wipe_dir "$BACKUP_WORKDIR"
 }
 trap cleanup EXIT
@@ -41,7 +50,13 @@ psql "$RESTORE_DB_URL" -X -q -v ON_ERROR_STOP=1 >/dev/null <<SQL || fail "Não f
 insert into public.member_audit (actor_id, target_id, action, details)
 values ('$ROUNDTRIP_AUDIT_ACTOR', gen_random_uuid(), 'role_change', '{"from": "member", "to": "moderator"}');
 insert into public.member_suspensions (user_id) values ('$suspended_id');
+insert into public.account_deletions (user_id, deleted_at) values ('$ROUNDTRIP_DELETED_ID', now() - interval '1 day');
 SQL
+if [ "$(psql "$RESTORE_DB_URL" -X -q -A -t -c "select count(*) from public.terms_acceptances;")" = "0" ]; then
+  psql "$RESTORE_DB_URL" -X -q -v ON_ERROR_STOP=1 -c "insert into public.terms_acceptances (user_id, version) values ('$suspended_id', 'roundtrip');" >/dev/null ||
+    fail "Não foi possível gravar o aceite sintético dos Termos."
+  terms_inserted=true
+fi
 
 bash scripts/backup/make-backup.sh
 bash scripts/backup/upload.sh
