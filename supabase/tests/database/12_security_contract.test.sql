@@ -36,7 +36,9 @@ select set_eq(
         'retract_comment', 'delete_my_account',
         -- Member management (stage 8f): administration only, each one checks is_admin() inside.
         'set_member_role', 'set_member_suspension', 'admin_delete_member', 'admin_member_contact',
-        'admin_member_export', 'admin_find_member_by_email', 'admin_masked_emails'],
+        'admin_member_export', 'admin_find_member_by_email', 'admin_masked_emails',
+        -- Terms of Use acceptance (stage 8g): the person accepts for themselves; anonymous sign-ins are refused inside.
+        'accept_terms'],
   'the functions executable by authenticated are exactly the expected ones');
 
 -- 3a. Every security definer function pins an empty search_path.
@@ -54,7 +56,7 @@ select set_eq(
   array['comments_before_insert', 'comments_flag_links', 'comments_rate_limit', 'comments_sync_approved_count',
         'handle_new_user', 'is_admin', 'is_staff', 'retract_comment', 'delete_my_account',
         'set_member_role', 'set_member_suspension', 'admin_delete_member', 'admin_member_contact',
-        'admin_member_export', 'admin_find_member_by_email', 'admin_masked_emails'],
+        'admin_member_export', 'admin_find_member_by_email', 'admin_masked_emails', 'accept_terms'],
   'the security definer functions are exactly the expected ones');
 
 -- 4. Write grants of the API roles (anon, authenticated, PUBLIC). "*" = every column. Reads are open by design
@@ -125,8 +127,32 @@ select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.
               and p.provolatile <> 'v'), 0, 'the administration functions are volatile (POST only)');
 -- The internal helpers are not reachable through the API.
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-            where n.nspname = 'public' and p.proname in ('mask_email', 'delete_account_cascade')
-              and has_function_privilege('authenticated', p.oid, 'execute')), 0, 'mask_email and delete_account_cascade are internal');
+            where n.nspname = 'public' and p.proname in ('mask_email', 'delete_account_cascade', 'purge_account_deletions')
+              and (has_function_privilege('authenticated', p.oid, 'execute')
+                   or has_function_privilege('anon', p.oid, 'execute'))), 0,
+  'mask_email, delete_account_cascade and purge_account_deletions are internal');
+
+-- Legal compliance (stage 8g). The acceptance of the Terms is written only by accept_terms(): the API roles have
+-- SELECT on terms_acceptances (limited to the person's own row by the RLS) and nothing else; a visitor has none.
+select is((select count(*)::int from information_schema.role_table_grants
+            where table_schema = 'public' and table_name = 'terms_acceptances'
+              and grantee in ('anon', 'authenticated', 'PUBLIC') and privilege_type <> 'SELECT'), 0,
+  'the API roles can only SELECT from terms_acceptances');
+select is((select count(*)::int from information_schema.column_privileges
+            where table_schema = 'public' and table_name = 'terms_acceptances'
+              and grantee in ('anon', 'PUBLIC') and privilege_type = 'SELECT'), 0,
+  'a visitor cannot read terms_acceptances');
+-- The minimum record of deleted accounts is invisible to the API: RLS on, no policy, no privilege of any kind.
+select is((select count(*)::int from information_schema.role_table_grants
+            where table_schema = 'public' and table_name = 'account_deletions'
+              and grantee in ('anon', 'authenticated', 'PUBLIC')), 0,
+  'the API roles have no privilege at all on account_deletions');
+select is((select count(*)::int from information_schema.column_privileges
+            where table_schema = 'public' and table_name = 'account_deletions'
+              and grantee in ('anon', 'authenticated', 'PUBLIC')), 0,
+  'the API roles have no column privilege on account_deletions either');
+select is((select count(*)::int from pg_policies where schemaname = 'public' and tablename = 'account_deletions'), 0,
+  'account_deletions has no policy');
 
 select * from finish();
 rollback;

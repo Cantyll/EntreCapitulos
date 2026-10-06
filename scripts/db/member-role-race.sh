@@ -58,6 +58,7 @@ cleanup() {
   "${PSQL[@]}" -c "drop function if exists public.zz_race_control(uuid, text, text);" >/dev/null 2>&1
   "${PSQL[@]}" -c "delete from auth.users where id in ($FIXTURES);" >/dev/null 2>&1
   "${PSQL[@]}" -c "delete from public.member_audit where actor_id in ($FIXTURES) or target_id in ($FIXTURES);" >/dev/null 2>&1
+  "${PSQL[@]}" -c "delete from public.account_deletions where user_id in ($FIXTURES);" >/dev/null 2>&1
   if [ -f "$WORK/original-admins" ]; then
     while read -r id; do
       [ -n "$id" ] && "${PSQL[@]}" -c "update public.profiles set role = 'admin' where id = '$id';" >/dev/null 2>&1
@@ -72,6 +73,7 @@ trap cleanup EXIT
 # ---------------------------------------------------------------------------------------------
 q "delete from auth.users where id in ($FIXTURES);" >/dev/null
 q "delete from public.member_audit where actor_id in ($FIXTURES) or target_id in ($FIXTURES);" >/dev/null
+q "delete from public.account_deletions where user_id in ($FIXTURES);" >/dev/null
 q "select id from public.profiles where role = 'admin' and id not in ($FIXTURES)" >"$WORK/original-admins"
 [ -s "$WORK/original-admins" ] || echo "aviso: nenhuma conta de administração além das de teste; se uma rodada anterior morreu à força, o cargo do seed não foi restaurado (supabase db reset resolve)." >&2
 q "insert into auth.users (id, email) values

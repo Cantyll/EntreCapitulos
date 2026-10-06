@@ -13,6 +13,8 @@ insert into auth.users (id, email) values
   ('00000000-0000-4000-8000-0000000000b1', 'new@t.test'),
   ('00000000-0000-4000-8000-0000000000b2', 'other@t.test');
 update public.profiles set role = 'admin' where id = '00000000-0000-4000-8000-0000000000a1';
+-- Everybody has accepted the Terms (this file is about the name; the acceptance has its own file, 14_legal_compliance).
+insert into public.terms_acceptances (user_id, version) select id, 'test' from public.profiles;
 
 insert into public.books (id, slug, title, author, total_chapters, status) values
   ('10000000-0000-4000-8000-000000000001', 'livro', 'Livro', 'Autora', 52, 'reading');
