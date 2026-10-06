@@ -14,7 +14,7 @@ export const COVER_MIN_SIDE = 200;
 export const COVER_MAX_SIDE = 6000;
 export const COVER_OUT_MAX = { width: 1000, height: 1500 } as const;
 /** 6000 x 6000: protege a memória contra imagens "bomba" antes de decodificar. */
-const LIMIT_INPUT_PIXELS = COVER_MAX_SIDE * COVER_MAX_SIDE;
+export const LIMIT_INPUT_PIXELS = COVER_MAX_SIDE * COVER_MAX_SIDE;
 const PALETTE_WIDTH = 96;
 
 export type CoverErrorCode = 'invalid_format' | 'too_small' | 'too_large' | 'unreadable' | 'engine';
@@ -28,7 +28,7 @@ export class CoverError extends Error {
   }
 }
 
-async function loadSharp() {
+export async function loadSharp() {
   try {
     return (await import('sharp')).default;
   } catch (error) {
@@ -46,9 +46,14 @@ export type ProcessedCover = {
   tokens: ThemeTokens | null;
 };
 
-export async function processCover(input: Buffer): Promise<ProcessedCover> {
-  const sharp = await loadSharp();
-
+/**
+ * Confere o formato REAL (o bucket só confere o Content-Type que o navegador declarou) e as dimensões, SEM decodificar
+ * a imagem inteira. Serve à capa e à foto da autora (`src/lib/about/photo-image.ts`). Lança `CoverError`.
+ */
+export async function inspectUpload(
+  sharp: Awaited<ReturnType<typeof loadSharp>>,
+  input: Buffer,
+): Promise<{ width: number; height: number }> {
   let format: string | undefined;
   let width = 0;
   let height = 0;
@@ -77,6 +82,12 @@ export async function processCover(input: Buffer): Promise<ProcessedCover> {
     throw new CoverError('invalid_format');
   if (width < COVER_MIN_SIDE || height < COVER_MIN_SIDE) throw new CoverError('too_small');
   if (width > COVER_MAX_SIDE || height > COVER_MAX_SIDE) throw new CoverError('too_large');
+  return { width, height };
+}
+
+export async function processCover(input: Buffer): Promise<ProcessedCover> {
+  const sharp = await loadSharp();
+  await inspectUpload(sharp, input);
 
   try {
     // rotate() aplica a orientação EXIF. O sharp não copia metadados para a saída por padrão.

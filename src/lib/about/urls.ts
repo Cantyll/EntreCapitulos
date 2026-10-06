@@ -42,26 +42,27 @@ export function normalizeLinkUrl(raw: string): string {
 }
 
 export const SITE_PHOTO_FOLDER = 'site/sobre';
+/**
+ * Onde o NAVEGADOR deixa o arquivo enviado, antes de o servidor processá-lo. É uma pasta à parte de propósito: o
+ * original (com os metadados) nunca pode ser confundido com uma foto pronta, que o conteúdo da página aceita só em
+ * `site/sobre/<uuid>.webp`.
+ */
+export const SITE_PHOTO_INCOMING_FOLDER = `${SITE_PHOTO_FOLDER}/incoming`;
 
 const UUID_SOURCE = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const PHOTO_PATH = new RegExp(`^${SITE_PHOTO_FOLDER}/${UUID_SOURCE}\\.webp$`);
-const UPLOAD_PATH = new RegExp(`^${SITE_PHOTO_FOLDER}/(${UUID_SOURCE})\\.(png|jpg|webp)$`);
+const UPLOAD_PATH = new RegExp(`^${SITE_PHOTO_INCOMING_FOLDER}/(${UUID_SOURCE})\\.(png|jpg|webp)$`);
 
 /** A foto já processada, como o conteúdo a guarda: `site/sobre/<uuid>.webp`. */
 export const isSitePhotoPath = (value: unknown): value is string =>
   typeof value === 'string' && PHOTO_PATH.test(value);
 
-/** O arquivo que o NAVEGADOR enviou (antes do processamento): `site/sobre/<uuid>.<png|jpg|webp>`. */
+/** O arquivo que o NAVEGADOR enviou (antes do processamento): `site/sobre/incoming/<uuid>.<png|jpg|webp>`. */
 export const isSiteUploadPath = (value: unknown): value is string =>
   typeof value === 'string' && UPLOAD_PATH.test(value);
 
 export const sitePhotoUploadPath = (id: string, ext: 'png' | 'jpg' | 'webp'): string | null =>
-  isUuid(id) ? `${SITE_PHOTO_FOLDER}/${id}.${ext}` : null;
-
-/** O nome (uuid) do arquivo de um caminho de foto ou de envio, ou `null`. */
-export function sitePhotoId(path: string): string | null {
-  return UPLOAD_PATH.exec(path)?.[1] ?? null;
-}
+  isUuid(id) ? `${SITE_PHOTO_INCOMING_FOLDER}/${id}.${ext}` : null;
 
 /**
  * URL pública da foto, ou `null` se o caminho não for o gerado pelo servidor ou a URL do Supabase não estiver
