@@ -1,9 +1,13 @@
 /*
- * Conteúdo PROVISÓRIO da página "Sobre o clube". É o texto do protótipo, adaptado só para não prometer
- * o que o site ainda não faz (comentários, reações e votação chegam depois). A Agatha precisa ler,
- * aprovar e ajustar tudo isto antes de o site ir ao ar: os textos em primeira pessoa são dela.
+ * Conteúdo PADRÃO (e PROVISÓRIO) da página "Sobre o clube". É o texto do protótipo, adaptado só para não prometer o
+ * que o site ainda não faz (comentários, reações e votação chegam depois). Os textos em primeira pessoa são da
+ * Agatha: ela precisa ler, ajustar e PUBLICAR o dela pelo painel (Painel > Página Sobre) antes de o site ir ao ar.
  *
- * Para mudar o texto, edite só este arquivo.
+ * Este arquivo é o que `/sobre` mostra enquanto NADA foi publicado pelo painel, e também se a leitura do conteúdo
+ * publicado falhar ou o conteúdo vier inválido (o site nunca quebra por causa disso). É também o ponto de partida do
+ * editor na primeira vez. Depois da primeira publicação, mudar o texto da página é no painel, não aqui. O título e o
+ * botão da chamada final ficam aqui, no código (só o texto dela é editável). Os "Combinados da comunidade" NÃO estão
+ * aqui: vivem em `src/content/legal/community-rules.ts`.
  */
 
 export const SOBRE = {

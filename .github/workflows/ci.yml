@@ -69,6 +69,13 @@ jobs:
         env:
           SECURITY_DOC_DB_CONTAINER: supabase_db_entre-capitulos
 
+      # Página Sobre (etapa 8j): o esquema do app (zod) e a função do banco `site_page_content_problem` guardam os
+      # MESMOS limites. O teste manda os mesmos casos aos dois e exige a mesma resposta.
+      - name: About page limits agree with the database function
+        run: npx vitest run tests/about-db-agreement.test.ts
+        env:
+          SECURITY_DOC_DB_CONTAINER: supabase_db_entre-capitulos
+
       # Backup (etapa 8d): ciclo completo contra o banco local e um S3 local (moto), só com os dados sintéticos
       # do seed: dump, criptografia, envio, conferência, download, descriptografia, restauração e contagens.
       # Não usa R2 nem nenhum segredo; o moto é instalado num ambiente virtual descartável e fixado por versão.

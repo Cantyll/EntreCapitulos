@@ -37,6 +37,6 @@ describe('combinados da comunidade', () => {
   });
 
   it('o conteúdo padrão da página Sobre (src/content/sobre.ts) não tem combinados', () => {
-    expect(read('src/content/sobre.ts')).not.toMatch(/\brules\b/);
+    expect(read('src/content/sobre.ts')).not.toMatch(/\brules\s*:/);
   });
 });
