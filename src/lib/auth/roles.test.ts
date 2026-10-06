@@ -54,6 +54,7 @@ describe('painel por papel', () => {
       'Livros',
       'Comentários',
       'Membros',
+      'Página Sobre',
     ]);
     const soon = Object.values(comingSoonPages).map((page) => page.href as string);
     const inMenu = adminNav.map((i) => i.href as string);
@@ -69,7 +70,11 @@ describe('painel por papel', () => {
     expect(item.access).toBe('admin');
     expect(getAdminNavFor('moderator').map((i) => i.label)).not.toContain('Membros');
     expect(getAdminNavFor('member')).toEqual([]);
-    expect(getAdminTabbar('admin').more.map((i) => i.label)).toEqual(['Livros', 'Membros']);
+    expect(getAdminTabbar('admin').more.map((i) => i.label)).toEqual([
+      'Livros',
+      'Membros',
+      'Página Sobre',
+    ]);
     expect(getAdminTabbar('admin').left.concat(getAdminTabbar('admin').right)).not.toContain(item);
     expect(isAdminNavActive(item, '/painel/membros')).toBe(true);
     expect(isAdminNavActive(item, '/painel/membros/aaaaaaaa-1111-4222-8333-444444444444')).toBe(
@@ -77,6 +82,18 @@ describe('painel por papel', () => {
     );
     expect(getAdminTitle('/painel/membros')).toBe('Membros');
     expect(getAdminTitle('/painel/membros/aaaaaaaa-1111-4222-8333-444444444444')).toBe('Membros');
+  });
+
+  it('a Página Sobre (etapa 8j) é só da administração, fica em "Mais" no celular e tem o título certo', () => {
+    const item = adminNav.find((i) => i.label === 'Página Sobre')!;
+    expect(item.href).toBe('/painel/sobre');
+    expect(item.access).toBe('admin');
+    expect(item.placement).toBe('more');
+    expect(getAdminNavFor('moderator').map((i) => i.label)).not.toContain('Página Sobre');
+    expect(getAdminNavFor('member')).toEqual([]);
+    expect(getAdminTabbar('admin').left.concat(getAdminTabbar('admin').right)).not.toContain(item);
+    expect(isAdminNavActive(item, '/painel/sobre')).toBe(true);
+    expect(getAdminTitle('/painel/sobre')).toBe('Página Sobre');
   });
 
   it('as áreas "Em breve" ainda têm título no topo', () => {

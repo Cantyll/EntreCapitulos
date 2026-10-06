@@ -389,6 +389,7 @@ describe('loadAboutEditorState', () => {
       draftUpdatedAt: null,
       hasUnpublishedChanges: false,
       publishedAt: null,
+      publishedSignature: null,
       contentUnreadable: false,
       history: [],
     });

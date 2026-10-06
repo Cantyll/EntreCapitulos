@@ -63,14 +63,29 @@ export function Toolbar({
   editor,
   nextDivider,
   disabled,
+  variant = 'full',
+  label = 'Formatação',
+  dockWhenFocused = false,
 }: {
   editor: Editor;
   /** Número da próxima divisória; `null` quando todos os capítulos da faixa já têm uma. */
   nextDivider: number | null;
   disabled: boolean;
+  /**
+   * `compact` (página Sobre): só negrito, itálico, lista e link, sem título, citação nem divisória. `full` é o do
+   * relato da sessão.
+   */
+  variant?: 'full' | 'compact';
+  /** Nome da barra para leitor de tela (a página Sobre tem várias: abertura e seções). */
+  label?: string;
+  /**
+   * Com vários editores na mesma página, só a barra do editor com foco sobe acima do teclado (senão todas subiriam
+   * juntas, uma sobre a outra). A do relato (um editor só) continua subindo sempre que o teclado abre.
+   */
+  dockWhenFocused?: boolean;
 }) {
   const inset = useKeyboardInset();
-  const docked = inset > 0;
+  const compact = variant === 'compact';
   const [linkOpen, setLinkOpen] = useState(false);
   const [href, setHref] = useState('');
   const [linkError, setLinkError] = useState('');
@@ -86,8 +101,11 @@ export function Toolbar({
       list: e.isActive('bulletList'),
       link: e.isActive('link'),
       hasSelection: !e.state.selection.empty,
+      focused: e.isFocused,
     }),
   });
+  // A barra continua ancorada enquanto se digita o endereço do link (o campo tira o foco do texto).
+  const docked = inset > 0 && (!dockWhenFocused || active.focused || linkOpen);
 
   const openLink = () => {
     const current = (editor.getAttributes('link').href as string | undefined) ?? '';
@@ -133,7 +151,7 @@ export function Toolbar({
         className={styles.toolbar}
         style={docked ? { bottom: inset } : undefined}
         role="toolbar"
-        aria-label="Formatação"
+        aria-label={label}
       >
         <div className={styles.toolRow}>
           <ToolButton
@@ -151,20 +169,24 @@ export function Toolbar({
             onClick={() => editor.chain().focus().toggleItalic().run()}
           />
           <span className={styles.sep} aria-hidden="true" />
-          <ToolButton
-            label="Título"
-            icon="heading"
-            active={active.heading}
-            disabled={disabled}
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          />
-          <ToolButton
-            label="Citação"
-            icon="quote"
-            active={active.quote}
-            disabled={disabled}
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          />
+          {!compact && (
+            <>
+              <ToolButton
+                label="Título"
+                icon="heading"
+                active={active.heading}
+                disabled={disabled}
+                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+              />
+              <ToolButton
+                label="Citação"
+                icon="quote"
+                active={active.quote}
+                disabled={disabled}
+                onClick={() => editor.chain().focus().toggleBlockquote().run()}
+              />
+            </>
+          )}
           <ToolButton
             label="Lista"
             icon="ul"
@@ -180,31 +202,35 @@ export function Toolbar({
             disabled={disabled}
             onClick={openLink}
           />
-          <span className={styles.sep} aria-hidden="true" />
-          <ToolButton
-            label={
-              nextDivider === null
-                ? 'Divisória de capítulo: todos os capítulos da faixa já têm uma'
-                : `Divisória de capítulo ${nextDivider}`
-            }
-            icon="divider"
-            disabled={disabled || nextDivider === null}
-            onClick={() => {
-              if (nextDivider === null) return;
-              editor
-                .chain()
-                .focus()
-                // Divisória + um parágrafo vazio: o cursor fica depois dela, pronto para escrever (com a
-                // divisória selecionada, a primeira letra digitada a apagaria).
-                .insertContent([
-                  { type: 'chapterDivider', attrs: { chapter: nextDivider } },
-                  { type: 'paragraph' },
-                ])
-                .run();
-            }}
-          >
-            Divisória de capítulo
-          </ToolButton>
+          {!compact && (
+            <>
+              <span className={styles.sep} aria-hidden="true" />
+              <ToolButton
+                label={
+                  nextDivider === null
+                    ? 'Divisória de capítulo: todos os capítulos da faixa já têm uma'
+                    : `Divisória de capítulo ${nextDivider}`
+                }
+                icon="divider"
+                disabled={disabled || nextDivider === null}
+                onClick={() => {
+                  if (nextDivider === null) return;
+                  editor
+                    .chain()
+                    .focus()
+                    // Divisória + um parágrafo vazio: o cursor fica depois dela, pronto para escrever (com a
+                    // divisória selecionada, a primeira letra digitada a apagaria).
+                    .insertContent([
+                      { type: 'chapterDivider', attrs: { chapter: nextDivider } },
+                      { type: 'paragraph' },
+                    ])
+                    .run();
+                }}
+              >
+                Divisória de capítulo
+              </ToolButton>
+            </>
+          )}
         </div>
 
         {linkOpen && (
