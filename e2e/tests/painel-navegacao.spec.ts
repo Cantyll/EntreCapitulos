@@ -80,7 +80,7 @@ test.describe('navegação do painel', () => {
     }
   });
 
-  test('iPhone: a barra inferior não leva às áreas "Em breve" e "Mais" só tem Livros, Membros e Página Sobre @mobile', async ({
+  test('iPhone: a barra inferior não leva às áreas "Em breve" e "Mais" só tem Livros, Membros, Página Sobre e os atalhos @mobile', async ({
     openAs,
   }, testInfo) => {
     test.skip(testInfo.project.name !== 'webkit-mobile', 'barra inferior é só do celular');
@@ -92,12 +92,15 @@ test.describe('navegação do painel', () => {
     }
     await bar.getByRole('button', { name: 'Mais' }).click();
     const sheet = page.getByRole('dialog', { name: 'Mais' });
-    // Livros, Membros, Página Sobre e o atalho "Ver o site" (que não é uma área do painel).
+    // Livros, Membros, Página Sobre e os atalhos "Ver o site" e "Minha conta" (que não são áreas do painel), mais o
+    // botão "Tutorial" (etapa 8k), que abre o menu do "?".
     await expect(sheet.getByRole('link')).toHaveText([
       'Livros',
       'Membros',
       'Página Sobre',
       'Ver o site',
+      'Minha conta',
     ]);
+    await expect(sheet.getByRole('button', { name: 'Tutorial' })).toBeVisible();
   });
 });
