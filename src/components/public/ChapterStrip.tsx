@@ -24,6 +24,11 @@ function labelClass(kind: string): string {
  * `src/lib/chapters/layout.ts`): um segmento por capítulo quando cada um cabe com 3px, ou um bloco por
  * sessão, com uma trilha contínua para o que falta ler. Os segmentos e blocos de sessão são links com
  * nome acessível ("Capítulo 10, sessão 4"; "Sessão 1, capítulos 1 a 3"); o resto é só desenho.
+ *
+ * Com ponteiro de toque (`pointer: coarse`) nenhum segmento chega a 44px, então os dois desenhos com
+ * links somem e entra um terceiro: a fita só como indicador (`aria-hidden`, sem links) e, logo abaixo,
+ * uma lista de pílulas de 44px, uma por sessão. Em qualquer tamanho, leitor de tela e Tab encontram UM
+ * só conjunto de links: os outros ficam com `display: none`.
  */
 export function ChapterStrip({
   strip,
@@ -38,6 +43,7 @@ export function ChapterStrip({
   const compact = size === 'compact';
   const step = chapterModeStep(strip.total, compact ? 1 : 2);
   const blocks = buildStripBlocks(strip);
+  const pills = blocks.filter((block) => block.session || block.kind === 'next');
   const rootClass = [styles.strip, compact && styles.compact, step !== null && styles[`need${step}`]]
     .filter(Boolean)
     .join(' ');
@@ -124,8 +130,56 @@ export function ChapterStrip({
             ) : null,
           )}
       </div>
+      <div className={styles.touch}>
+        <div
+          className={styles.indicator}
+          aria-hidden="true"
+          style={{
+            gridTemplateColumns: blocks
+              .map((block) => `minmax(${MIN_SEGMENT_PX}px, ${block.span}fr)`)
+              .join(' '),
+          }}
+        >
+          {blocks.map((block, index) => (
+            <span
+              key={block.from}
+              className={[styles.seg, styles[block.kind], block.tone ? styles.alt : ''].join(' ')}
+              style={{ gridColumn: index + 1, gridRow: 1 } as CSSProperties}
+            />
+          ))}
+        </div>
+        {pills.length > 0 && (
+          <ul className={styles.pills} aria-label="Sessões da fita">
+            {pills.map((block) => (
+              <li key={block.from}>
+                {block.session ? (
+                  <Link
+                    href={sessionHref(bookSlug, block.session.number)}
+                    className={[styles.pill, block.kind === 'last' && styles.pill_last]
+                      .filter(Boolean)
+                      .join(' ')}
+                    aria-label={block.ariaLabel ?? undefined}
+                  >
+                    Sessão {block.session.number}
+                    <small>{chapterRange(block.from, block.to)}</small>
+                  </Link>
+                ) : (
+                  <span className={`${styles.pill} ${styles.pill_next}`}>
+                    Próxima
+                    <small>{chapterRange(block.from, block.to)}</small>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
+}
+
+function chapterRange(from: number, to: number): string {
+  return from === to ? `cap. ${from}` : `cap. ${from}–${to}`;
 }
 
 /** Legenda: o que cada forma significa. Texto sempre ao lado do desenho. */

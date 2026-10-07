@@ -265,3 +265,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Alvos de toque de 44px (etapa 8k): "Ver todas" e "Ver estante" crescem sem mexer no cabeçalho da seção. */
+@media (pointer: coarse) {
+  .link {
+    min-height: var(--tap);
+    margin-block: -6px;
+  }
+}

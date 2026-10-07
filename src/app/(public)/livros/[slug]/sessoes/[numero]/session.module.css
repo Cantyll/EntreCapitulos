@@ -394,3 +394,23 @@
     padding: 20px 18px;
   }
 }
+
+/* Alvos de toque de 44px (etapa 8k). */
+@media (pointer: coarse) {
+  /* Área de toque de 44x44 sem mexer na linha: o preenchimento cresce e a margem negativa o devolve. */
+  .crumbs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    padding: 10px 6px;
+    margin: -10px -6px;
+  }
+
+  .pill {
+    min-height: var(--tap);
+  }
+
+  .toc li a {
+    min-height: var(--tap);
+  }
+}

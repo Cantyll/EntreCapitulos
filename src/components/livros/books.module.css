@@ -489,3 +489,23 @@ dialog.dialog::backdrop {
     grid-template-columns: 1fr;
   }
 }
+
+/* Alvos de toque de 44px (etapa 8k). */
+@media (pointer: coarse) {
+  /* Alvo de 44px de altura: o interruptor cresce junto com o círculo (igual ao da Página Sobre). */
+  .switch {
+    width: 68px;
+    height: var(--tap);
+  }
+
+  .switch::after {
+    top: 4px;
+    left: 4px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .switch[aria-checked='true']::after {
+    transform: translateX(24px);
+  }
+}
