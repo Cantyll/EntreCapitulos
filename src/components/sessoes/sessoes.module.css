@@ -710,3 +710,33 @@
     min-height: var(--tap);
   }
 }
+
+/* Alvos de toque de 44px (etapa 8k). */
+@media (pointer: coarse) {
+  .title {
+    min-height: var(--tap);
+  }
+
+  /* "Usar “Sessão N…”" fica no meio da frase: a área de toque cresce sem mexer na linha (margem negativa). */
+  .suggest button {
+    min-height: var(--tap);
+    margin-block: -12px;
+  }
+
+  /* Alvo de 44px de altura: o interruptor cresce junto com o círculo (igual ao da Página Sobre). */
+  .switch {
+    width: 68px;
+    height: var(--tap);
+  }
+
+  .switch::after {
+    top: 4px;
+    left: 4px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .switch[aria-checked='true']::after {
+    transform: translateX(24px);
+  }
+}

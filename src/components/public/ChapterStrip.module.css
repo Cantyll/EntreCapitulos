@@ -245,11 +245,85 @@ a.seg:focus-visible {
   }
 }
 
-/* Alvo de toque: o segmento da fita grande ganha altura no celular. */
+/*
+ * Ponteiro de toque: nenhum segmento chega a 44px. Os dois desenhos com links somem (a especificidade
+ * maior vence a escada do @container acima) e entra `.touch`: a fita só como indicador, sem links e
+ * `aria-hidden`, e uma pílula de 44px por sessão logo abaixo. Um só conjunto de links por vez.
+ */
+.touch {
+  display: none;
+}
+
 @media (pointer: coarse) {
-  .strip:not(.compact) a.seg {
-    height: 24px;
+  .strip.strip .byChapter,
+  .strip.strip .bySession {
+    display: none;
   }
+
+  .touch {
+    display: grid;
+    gap: 10px;
+  }
+}
+
+.indicator {
+  display: grid;
+  column-gap: var(--gap);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pill small {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+/* A última sessão: o mesmo destaque da fita (--rose-deep), sobre --rose-tint (contraste >= 7). */
+.pill_last {
+  border: 1.5px solid var(--rose-deep);
+  background: var(--rose-tint);
+  color: var(--rose-deep);
+  font-weight: 600;
+}
+
+.pill_last small {
+  color: var(--rose-deep);
+}
+
+/* A próxima sessão: contorno tracejado, como na fita. Não é link. */
+.pill_next {
+  border: 1.5px dashed var(--rose);
+  color: var(--ink-2);
+}
+
+a.pill:focus-visible {
+  outline-offset: 3px;
 }
 
 .label {
