@@ -106,6 +106,17 @@ select is(has_column_privilege('authenticated', 'public.profiles', 'avatar_url',
 select is(has_column_privilege('authenticated', 'public.comments', 'body', 'update'), false, 'a comment body is not editable');
 select is(has_table_privilege('anon', 'public.comments', 'insert'), false, 'anon cannot insert comments');
 
+-- Finding M-1: the public (anon) read of profiles is column-restricted. A visitor reads only the
+-- columns with a public purpose (name, avatar and role for the staff badge); the private metadata
+-- (approved-comment count, timestamps, onboarding flag) is not readable by anon.
+select is(has_column_privilege('anon', 'public.profiles', 'display_name', 'select'), true, 'anon reads display_name');
+select is(has_column_privilege('anon', 'public.profiles', 'avatar_url', 'select'), true, 'anon reads avatar_url');
+select is(has_column_privilege('anon', 'public.profiles', 'role', 'select'), true, 'anon reads role (public staff badge)');
+select is(has_column_privilege('anon', 'public.profiles', 'approved_comment_count', 'select'), false, 'anon cannot read approved_comment_count');
+select is(has_column_privilege('anon', 'public.profiles', 'created_at', 'select'), false, 'anon cannot read created_at');
+select is(has_column_privilege('anon', 'public.profiles', 'updated_at', 'select'), false, 'anon cannot read updated_at');
+select is(has_column_privilege('anon', 'public.profiles', 'display_name_confirmed_at', 'select'), false, 'anon cannot read display_name_confirmed_at');
+
 -- Member management (stage 8f). The audit and the suspensions are written only by the security definer functions:
 -- the only privilege the API roles have on them is SELECT (the RLS limits it to the administration, and to the
 -- person for their own suspension), and a visitor has none. The suspension is NOT a column of profiles (that
