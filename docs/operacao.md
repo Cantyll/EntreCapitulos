@@ -436,3 +436,12 @@ O texto de `/sobre` se edita em **Painel → Página Sobre** (só a administraç
 
 **Emergência (só pelo SQL Editor, contorna as travas e a auditoria):** se um texto publicado estiver errado e ninguém conseguir entrar no painel, `delete from public.site_pages where slug = 'sobre';` faz `/sobre` voltar ao texto de código (a página volta a se atualizar em até 5 minutos). Prefira sempre o painel.
 
+## 18. Tutorial do painel (etapa 8k)
+
+O tour guiado do painel está descrito no README ("Tutorial do painel"). Aqui, o dia a dia.
+
+- **Alguém quer ver o tour de novo:** pelo **"?"** do painel (Tour completo ou Escolher um capítulo). Rever nunca apaga o "já vi".
+- **O cartão "Quer um tour rápido?" não aparece para uma pessoa nova da equipe:** confira se a migration `…_tour_progress` foi aplicada (Actions → Database deploy). Sem ela, o painel funciona normalmente, só sem o cartão automático e a dica; o "?" funciona.
+- **Fazer o cartão aparecer de novo para alguém (raro; só pelo SQL Editor, emergência):** `update public.profiles set tour_seen_version = 0 where id = '<uuid>';` (o uuid está no endereço do perfil em Painel → Membros). A função do banco nunca diminui o número; o SQL Editor contorna isso.
+- **Funcionalidade nova no painel:** o passo do tour e o `TOUR_VERSION` sobem juntos (README). O teste `tests/tour-targets.test.ts` falha se um passo apontar para um elemento que não existe.
+- **Ordem para aplicar a etapa 8k:** (1) **backup manual**; (2) **merge**; (3) **Database deploy com dry run**, com **exatamente UMA** migration (`…_tour_progress`); (4) Database deploy de verdade; (5) **backup manual e Prova de restauração de novo**.

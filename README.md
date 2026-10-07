@@ -302,6 +302,26 @@ A **própria conta** aparece sem nenhuma ação (use **Minha conta**). Não há 
 
 **Ordem para aplicar esta etapa:** (1) **backup manual** (Actions → Backup do banco, resumo OK); (2) **merge** do PR; (3) **Database deploy com dry run**, conferindo que há **exatamente UMA** migration a aplicar (`…_site_about_page`; a da etapa 8g, `…_legal_compliance`, precisa já estar aplicada: se o dry run listar as duas, aplique primeiro a da 8g pelo item dela em `docs/lancamento.md`); (4) Database deploy de verdade; (5) **backup manual e Prova de restauração de novo** (as três tabelas novas entram no backup). Entre o merge e o deploy do banco, `/sobre` continua mostrando o texto de código e `/painel/sobre` mostra "Não foi possível carregar a página Sobre agora…" (sem o editor); depois do deploy tudo volta ao normal.
 
+## Tutorial do painel
+
+O painel tem um **tour guiado** (etapa 8k) para a equipe: a **administração** vê o tour completo (10 capítulos) e a **moderação**, só "Comentários e moderação" e "Conta e instalação". Membros e visitantes não veem nada. **O tour só mostra e explica**: nunca cria, edita, publica, aprova, suspende nem apaga nada (os passos que levam a outra tela só navegam; abrir "Nova sessão" não cria rascunho).
+
+**Como começar:**
+
+- **Primeira visita ao painel:** um cartão "Quer um tour rápido?" aparece no topo do conteúdo (não é uma janela por cima), com **Começar** e **Agora não**. Os dois botões gravam que a pessoa já viu, e o cartão não volta sozinho. Ordem, quando mais de um aviso coincide: **Termos, tour, instalação**, e só o primeiro fica na tela até ser dispensado (com o aviso dos Termos, o cartão do tour espera; com o cartão do tour, o de instalação no iPhone espera).
+- **Sempre:** o botão **"?"** do topo do painel (à esquerda do sino), com **Ajuda desta tela**, **Tour completo**, **Escolher um capítulo** e, quando houver passos novos, **Novidades**. No celular, também em **Mais → Tutorial**. No computador, a tecla **?** abre o mesmo menu (nunca dentro de um campo nem no editor).
+- **Em Minha conta** (só a equipe): **Ver o tutorial desta parte** abre o capítulo "Conta e instalação" no painel.
+
+Dentro do tour: **Próximo**, **Voltar**, **Sair** (ou Esc); as setas do teclado também navegam. Recarregar a página continua de onde parou. Se a tela tiver alterações não salvas (editor de sessão ou Página Sobre), o tour **não** muda de tela: ele avisa e espera você salvar.
+
+**Editar os passos.** Os textos e a ordem ficam em `src/content/tour/steps.ts` (dados; até 280 caracteres por texto). Cada passo aponta um elemento da tela pelo atributo `data-tour="…"` (nunca por classe); sem alvo na tela, o passo aparece como cartão centralizado. O teste `tests/tour-targets.test.ts` confere que todo alvo existe na página certa.
+
+**Ao criar uma funcionalidade nova no painel:** acrescente o passo no capítulo certo, com `since` igual ao novo número, e **suba `TOUR_VERSION`** em `src/content/tour/version.ts`. Quem já tinha visto o tutorial recebe a dica "Há novidades no tutorial" e o item **Novidades** no "?". Coloque o `data-tour` no elemento novo.
+
+**Onde fica o "já vi".** No banco, `profiles.tour_seen_version` (0 = nunca viu), gravado só pela função `mark_tour_seen`, que só aumenta o número e só aceita a equipe. Se a leitura falhar (ou antes do Database deploy), o cartão automático e a dica não aparecem e o "?" continua funcionando. O número entra em "Baixar meus dados" (versão 4 do arquivo).
+
+**Ordem para aplicar esta etapa:** (1) **backup manual** (Actions → Backup do banco, resumo OK); (2) **merge** do PR; (3) **Database deploy com dry run**, conferindo que há **exatamente UMA** migration a aplicar (`…_tour_progress`; as anteriores, até `…_restrict_public_profile_columns`, precisam já estar aplicadas); (4) Database deploy de verdade; (5) **backup manual e Prova de restauração de novo**.
+
 ## Privacidade e dados pessoais
 
 > **Os textos legais são RASCUNHO.** Nenhum texto sobre privacidade ou termos foi escrito por um profissional. Eles precisam de revisão jurídica antes de valerem. Os dados que dependem de decisão ou de análise (bases legais, transferência internacional, prazos de retenção, prazo de resposta e a região de serviços globais) vivem em **um único arquivo**, `src/content/legal-config.ts`, hoje preenchidos com **propostas a validar com advogado** (cada campo tem o comentário `// PROPOSTA: validar com advogado`); o que ainda não tiver valor fica como **A DEFINIR**. Enquanto houver campo **A DEFINIR**, **ou** enquanto `legalReviewed` for `false`, as páginas `/privacidade` e `/termos` mostram o aviso "Rascunho em revisão" e ficam com `noindex`. **Preencher os campos não remove o aviso:** só mudar `legalReviewed` para `true`, depois da revisão de um profissional. O teste `src/content/legal-config.test.ts` lista os campos pendentes no resultado do CI, sem falhar.
