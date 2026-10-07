@@ -88,7 +88,6 @@ Permissão na tabela inteira. O RLS ainda se aplica a cada uma delas.
 | `comments` | authenticated | SELECT |
 | `member_audit` | authenticated | SELECT |
 | `member_suspensions` | authenticated | SELECT |
-| `profiles` | anon | SELECT |
 | `profiles` | authenticated | SELECT |
 | `reading_progress` | authenticated | SELECT |
 | `reading_sessions` | anon | SELECT |
@@ -113,6 +112,7 @@ Onde a escrita é limitada a certas colunas.
 | `comment_flags` | authenticated | UPDATE | `reason` |
 | `comments` | authenticated | INSERT | `id, session_id, author_id, parent_id, body, read_up_to, spoiler_up_to` |
 | `comments` | authenticated | UPDATE | `spoiler_up_to, status` |
+| `profiles` | anon | SELECT | `id, display_name, avatar_url, role` |
 | `profiles` | authenticated | UPDATE | `display_name, display_name_confirmed_at` |
 | `reading_progress` | authenticated | INSERT | `user_id, book_id, chapter` |
 | `reading_progress` | authenticated | UPDATE | `chapter` |
