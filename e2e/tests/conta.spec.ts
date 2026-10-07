@@ -65,7 +65,9 @@ test.describe('minha conta', () => {
     expect(() => JSON.parse(text)).not.toThrow();
     // Versão 3: o aceite dos Termos da própria pessoa, com a versão e as duas datas.
     const file = JSON.parse(text);
-    expect(file.exportVersion).toBe(3);
+    expect(file.exportVersion).toBe(4);
+    // Versão 4 (etapa 8k): a versão do tutorial do painel vista. Um membro nunca vê o tutorial: 0.
+    expect(file.profile.tourSeenVersion).toBe(0);
     expect(file.termsAcceptance.version).toBe(TERMS_VERSION);
     expect(file.termsAcceptance.acceptedAt).toBeTruthy();
     expect(file.termsAcceptance.firstAcceptedAt).toBeTruthy();
