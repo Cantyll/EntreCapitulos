@@ -7,6 +7,7 @@ import { FACT_SOURCE_LABEL, PROVIDERS, type FactSource } from './providers';
 import { buildTerms } from './terms';
 import type { LegalBlock, LegalDoc, LegalFeatures } from './types';
 import { TERMS_CHANGELOG, TERMS_VERSION } from './version';
+import { TOUR_STORAGE_KEY } from '@/lib/tour/storage';
 
 /*
  * Documento de revisão jurídica (`docs/revisao-juridica.md`): um arquivo temporário para entregar a um advogado.
@@ -214,6 +215,17 @@ export const DATA_MAP: readonly DataRow[] = [
     source: 'codigo',
   },
   {
+    data: 'Versão do tutorial do painel já vista (só a equipe)',
+    where:
+      'Supabase (coluna `profiles.tour_seen_version`; só a função `mark_tour_seen` grava, e só aumenta)',
+    purpose:
+      'Preferência de uso: não oferecer de novo o tutorial a quem já o viu e avisar quando houver passos novos',
+    basis: 2,
+    retention: 1,
+    sees: 'A própria pessoa (em "Baixar meus dados") e a administração (no arquivo de dados da pessoa). Visitantes não leem a coluna; uma pessoa logada pode ler a de outra (o mesmo acesso das demais colunas do perfil). Não é dado sensível: é um número.',
+    source: 'codigo',
+  },
+  {
     data: 'Registro mínimo de exclusões (identificador técnico da conta excluída e data)',
     where:
       'Supabase (tabela `account_deletions`; só funções do banco gravam e leem; nenhum acesso pela API, nem da administração)',
@@ -309,6 +321,16 @@ export const DATA_MAP: readonly DataRow[] = [
     basis: null,
     retention: null,
     sees: 'Só a própria pessoa (fica no aparelho).',
+    source: 'codigo',
+  },
+  {
+    data: 'Posição no tutorial do painel (nesta aba)',
+    where: `sessionStorage do navegador (\`${TOUR_STORAGE_KEY}\`), só para a equipe; nunca é enviada ao servidor`,
+    purpose:
+      'Continuar o tutorial depois de recarregar a página e abrir o capítulo certo pelo link de Minha conta (de uso único)',
+    basis: null,
+    retention: null,
+    sees: 'Só a própria pessoa (fica na aba e some ao sair do tutorial ou fechar a aba).',
     source: 'codigo',
   },
 ];

@@ -150,7 +150,7 @@ describe('o arquivo', () => {
     expect(disposition).not.toMatch(/Fulana|Silva|@|exemplo/i);
 
     const body = JSON.parse(await response.text());
-    expect(body.exportVersion).toBe(3);
+    expect(body.exportVersion).toBe(4);
     expect(body.profile.commentsSuspended).toBe(true);
     expect(body.account.email).toBe(EMAIL);
     // O aceite dos Termos vem da função do banco (a administração não lê a linha dos outros pelo RLS).
@@ -178,7 +178,13 @@ describe('o arquivo', () => {
     await post();
     const reads = calls.filter((call) => call.startsWith('from:'));
     const exportAt = calls.findIndex((call) => call.startsWith('rpc:admin_member_export'));
-    expect(reads).toEqual(['from:profiles', 'from:comments', 'from:member_suspensions']);
+    expect(reads).toEqual([
+      'from:profiles',
+      'from:comments',
+      'from:member_suspensions',
+      // Versão 4 (etapa 8k): a versão do tutorial vista, à parte.
+      'from:profiles',
+    ]);
     expect(exportAt).toBe(calls.length - 1);
     expect(calls[exportAt]).toBe(`rpc:admin_member_export:${JSON.stringify({ p_user_id: ID })}`);
   });

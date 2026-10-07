@@ -1,6 +1,6 @@
 /*
  * Arquivo "dados da pessoa" baixado pela administração (etapa 8f). Tem o MESMO formato de "Baixar meus dados"
- * (`buildAccountExport`, versão 3), só com dados dela: o perfil e os comentários o route handler lê pelo RLS da
+ * (`buildAccountExport`, versão 4), só com dados dela: o perfil e os comentários o route handler lê pelo RLS da
  * administração, sempre filtrados pelo id da pessoa; a conta (e-mail, último acesso, provedores), o progresso de
  * leitura e o aceite dos Termos vêm da função `admin_member_export`, que também grava a linha de auditoria
  * `export_data`.
@@ -107,6 +107,7 @@ export function buildMemberExport(input: {
   profile: ExportProfileInput | null;
   comments: readonly ExportCommentInput[];
   commentsSuspended: boolean;
+  tourSeenVersion?: number | null;
 }): AccountExport {
   return buildAccountExport({
     generatedAt: input.generatedAt,
@@ -116,5 +117,6 @@ export function buildMemberExport(input: {
     progress: input.payload.progress,
     commentsSuspended: input.commentsSuspended,
     terms: input.payload.terms,
+    tourSeenVersion: input.tourSeenVersion ?? null,
   });
 }

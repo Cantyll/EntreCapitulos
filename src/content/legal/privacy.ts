@@ -4,6 +4,7 @@ import { ageSentence } from './age';
 import { SITE_COOKIES } from './cookies';
 import { activeProviders, regionOf } from './providers';
 import type { LegalBlock, LegalDoc, LegalFeatures, LegalSection } from './types';
+import { TOUR_STORAGE_KEY } from '@/lib/tour/storage';
 
 /*
  * Política de Privacidade (RASCUNHO para revisão de um profissional). Tudo o que depende de decisão ou de
@@ -301,6 +302,10 @@ export function buildPrivacy(config: LegalData, features: LegalFeatures): LegalD
         {
           type: 'p',
           text: `Em iPhones e iPads (no Safari ou no navegador embutido de outro aplicativo), o site guarda uma preferência no armazenamento local do navegador (${INSTALL_RULES.storageKey}) para decidir quando mostrar o cartão que ensina a colocar o Entre Capítulos na Tela de Início. Ela guarda em quantos dias diferentes você abriu o site neste aparelho, o último desses dias, se você tocou em "Agora não" (e quando; o cartão pode voltar depois de ${INSTALL_RULES.dismissDays} dias) e se você tocou em "Já instalei". Não guarda nome, e-mail nem identificador de conta, nunca é enviada ao servidor e fica neste aparelho até o navegador limpar os dados do site. Nos outros aparelhos e no aplicativo instalado, o site não grava essa preferência.`,
+        },
+        {
+          type: 'p',
+          text: `Para a equipe (administração e moderação), o painel tem um tutorial guiado. Enquanto ele está aberto, o site guarda em que passo a pessoa está no armazenamento da aba do navegador (${TOUR_STORAGE_KEY}), para continuar depois de recarregar a página; isso some ao sair ou concluir o tutorial, ou ao fechar a aba, e nunca é enviado ao servidor. Na conta, guardamos só o número da versão do tutorial que a pessoa já viu, para não oferecê-lo de novo; ele aparece em "Baixar meus dados".`,
         },
         ...(features.turnstile
           ? [

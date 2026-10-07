@@ -12,6 +12,7 @@ import {
   type MemberNotice,
 } from '@/lib/members';
 import { adminMemberHref } from '@/lib/routes';
+import { isTourUnavailable } from '@/lib/tour/errors';
 import { createClient } from '@/lib/supabase/server';
 
 /*
@@ -88,6 +89,15 @@ export async function POST(request: Request, context: RouteContext<'/painel/memb
       throw suspension.error;
     }
 
+    // A versão do tutorial do painel vista (versão 4), à parte: sem a coluna (antes do Database deploy), `null`.
+    const tour = await supabase
+      .from('profiles')
+      .select('tour_seen_version')
+      .eq('id', id)
+      .maybeSingle();
+    if (tour.error && !isTourUnavailable(tour.error)) throw tour.error;
+    const tourSeen = (tour.data as { tour_seen_version?: unknown } | null)?.tour_seen_version;
+
     // Por último: é ela que grava a auditoria.
     const { data: raw, error } = await supabase.rpc('admin_member_export', { p_user_id: id });
     if (error) {
@@ -113,6 +123,7 @@ export async function POST(request: Request, context: RouteContext<'/painel/memb
       profile: profile.data,
       comments,
       commentsSuspended: suspension.data !== null && !suspension.error,
+      tourSeenVersion: !tour.error && typeof tourSeen === 'number' ? tourSeen : null,
     });
 
     return new Response(JSON.stringify(body, null, 2), {

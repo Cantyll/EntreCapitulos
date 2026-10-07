@@ -6,12 +6,13 @@
  *
  * Versões: 1 (etapa 7a) e 2 (etapa 8f: `profile.commentsSuspended`, a situação da suspensão de comentários, que
  * a própria pessoa também recebe) e 3 (etapa 8g: `termsAcceptance`, a versão e as datas do aceite dos Termos e da
- * declaração de ter 18 anos ou mais, ou `null` se a pessoa nunca aceitou). O arquivo que a administração baixa de
- * uma pessoa tem o mesmo formato.
+ * declaração de ter 18 anos ou mais, ou `null` se a pessoa nunca aceitou) e 4 (etapa 8k: `profile.tourSeenVersion`, a
+ * versão do tutorial do painel que a pessoa já viu, uma preferência de uso; `null` quando não se sabe). O arquivo que
+ * a administração baixa de uma pessoa tem o mesmo formato.
  */
 import { formatIsoDay } from '@/lib/site';
 
-export const EXPORT_VERSION = 3;
+export const EXPORT_VERSION = 4;
 
 export type ExportAccountInput = {
   id: string;
@@ -69,6 +70,8 @@ export type AccountExport = {
     displayNameConfirmedAt: string | null;
     /** Os comentários dela estão suspensos pela administração? (versão 2) */
     commentsSuspended: boolean;
+    /** Versão do tutorial do painel já vista (versão 4): 0 = nunca viu; `null` = não se sabe. */
+    tourSeenVersion: number | null;
     createdAt: string;
     updatedAt: string;
   } | null;
@@ -108,6 +111,8 @@ export function buildAccountExport(input: {
   commentsSuspended: boolean;
   /** `null` ou ausente: a pessoa nunca aceitou (ou a tabela ainda não existe). */
   terms?: ExportTermsInput | null;
+  /** `null` ou ausente: a coluna ainda não existe (antes do Database deploy). */
+  tourSeenVersion?: number | null;
 }): AccountExport {
   const { account, profile } = input;
   return {
@@ -127,6 +132,7 @@ export function buildAccountExport(input: {
       approvedCommentCount: profile.approved_comment_count,
       displayNameConfirmedAt: profile.display_name_confirmed_at,
       commentsSuspended: input.commentsSuspended,
+      tourSeenVersion: input.tourSeenVersion ?? null,
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
     },
