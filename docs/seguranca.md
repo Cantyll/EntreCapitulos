@@ -142,6 +142,7 @@ colunas "anon", "authenticated" e "PUBLIC" dizem quem pode executar pela API.
 | `handle_new_user()` | sim | sim | `"" (vazio)` | não | não | não |
 | `is_admin()` | não | sim | `"" (vazio)` | sim | sim | não |
 | `is_staff()` | não | sim | `"" (vazio)` | sim | sim | não |
+| `mark_tour_seen(p_version integer)` | não | sim | `"" (vazio)` | não | sim | não |
 | `mask_email(p_email text)` | não | não | `"" (vazio)` | não | não | não |
 | `publish_session(p_session_id uuid)` | não | não | `"" (vazio)` | não | sim | não |
 | `publish_site_page(p_slug text, p_expected_updated_at text)` | não | sim | `"" (vazio)` | não | sim | não |

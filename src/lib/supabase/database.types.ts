@@ -227,6 +227,7 @@ export type Database = {
           display_name_confirmed_at: string | null;
           id: string;
           role: string;
+          tour_seen_version: number;
           updated_at: string;
         };
         Insert: {
@@ -237,6 +238,7 @@ export type Database = {
           display_name_confirmed_at?: string | null;
           id: string;
           role?: string;
+          tour_seen_version?: number;
           updated_at?: string;
         };
         Update: {
@@ -247,6 +249,7 @@ export type Database = {
           display_name_confirmed_at?: string | null;
           id?: string;
           role?: string;
+          tour_seen_version?: number;
           updated_at?: string;
         };
         Relationships: [];
@@ -615,6 +618,7 @@ export type Database = {
       };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
+      mark_tour_seen: { Args: { p_version: number }; Returns: number };
       mask_email: { Args: { p_email: string }; Returns: string };
       publish_session: {
         Args: { p_session_id: string };
