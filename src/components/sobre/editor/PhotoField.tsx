@@ -32,6 +32,7 @@ export function PhotoField({
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const altRef = useRef<HTMLInputElement>(null);
+  const uploadRef = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const url = photo ? sitePhotoUrl(photo.path) : null;
@@ -95,6 +96,7 @@ export function PhotoField({
             tabIndex={-1}
           />
           <Button
+            ref={uploadRef}
             variant="ghost"
             size="sm"
             disabled={disabled || busy}
@@ -111,7 +113,9 @@ export function PhotoField({
               disabled={disabled || busy}
               onClick={() => {
                 onChange(null);
-                setNotice(null);
+                setNotice({ kind: 'ok', text: 'Foto removida.' });
+                // O botão "Remover foto" sai da tela: o foco vai para o "Enviar foto", que fica no mesmo lugar.
+                uploadRef.current?.focus();
               }}
             >
               <Icon name="trash" size="sm" />

@@ -1,4 +1,5 @@
 import { expect, test } from '../support/fixtures';
+import { untilHydrated } from '../support/hydration';
 import { createAdmin, createModerator, createUser } from '../support/users';
 
 /*
@@ -64,10 +65,15 @@ test.describe('quem pode editar a página Sobre', () => {
     const { page } = await openAs(await createAdmin());
     await page.goto('/painel/sobre');
     await expect(page.locator('[data-editor-root]')).toBeVisible();
-    await expect(page.getByLabel('Título da página')).toBeVisible();
-    // Uma seção, um link e a foto abertos: os campos de todos os tipos aparecem.
+    // Sem esperar a hidratação o clique se perde e o teste mediria só o formulário inicial.
+    await untilHydrated(page.getByLabel('Título da página'));
+    // Uma seção e um link abertos: os campos de todos os tipos aparecem (a foto só tem o campo de texto alternativo
+    // depois de um envio, medido pelo teste da foto).
     await page.getByRole('button', { name: 'Adicionar seção' }).click();
     await page.getByRole('button', { name: 'Adicionar link' }).click();
+    await expect(page.getByLabel('Título da seção 1')).toBeVisible();
+    await expect(page.getByLabel('Endereço do link 1')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: /Texto da seção 1/ })).toBeVisible();
 
     const problems = await page.evaluate(() => {
       const out: string[] = [];
@@ -95,6 +101,16 @@ test.describe('quem pode editar a página Sobre', () => {
           out.push(`alvo ${name(element)}: ${Math.round(rect.width)}x${Math.round(rect.height)}`);
         }
       }
+      // Prova de cobertura: o que foi medido inclui campos, botões e as caixas de texto rico.
+      out.push(
+        ...(root.querySelectorAll('input[type="text"], textarea').length >= 5
+          ? []
+          : ['poucos campos']),
+        ...(root.querySelectorAll('[role="textbox"]').length >= 2
+          ? []
+          : ['sem caixas de texto rico']),
+        ...(root.querySelectorAll('button').length >= 10 ? [] : ['poucos botões']),
+      );
       return out;
     });
     expect(problems).toEqual([]);

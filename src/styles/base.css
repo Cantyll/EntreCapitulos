@@ -21,6 +21,11 @@ html {
   scroll-behavior: smooth;
 }
 
+/* A barra de salvar e publicar do editor da página Sobre fica fixa embaixo: o campo que recebe o foco não pode ficar atrás dela. */
+html:has([data-about-bar]) {
+  scroll-padding-bottom: calc(var(--safe-bottom) + 130px);
+}
+
 body {
   margin: 0;
   background: var(--bg);

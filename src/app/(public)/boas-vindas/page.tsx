@@ -39,7 +39,7 @@ export default async function WelcomePage({ searchParams }: { searchParams: Sear
           askName
             ? 'Falta só um passo para participar das conversas.'
             : status === 'outdated'
-              ? 'Atualizamos os Termos de Uso e a Política de Privacidade. Leia e aceite de novo para continuar comentando.'
+              ? 'Atualizamos os Termos de Uso e a Política de Privacidade. Leia e aceite de novo quando puder.'
               : 'Para comentar, falta aceitar os Termos de Uso e a Política de Privacidade.'
         }
       />

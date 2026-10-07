@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import type { Page } from '@playwright/test';
+import type { Browser, BrowserContext, Page } from '@playwright/test';
 import sharp from 'sharp';
 
 import { sql } from '../support/db';
@@ -31,6 +31,16 @@ const editor = (page: Page) => page.locator('[data-editor-root]');
 const save = (page: Page) => page.getByRole('button', { name: 'Salvar rascunho' });
 const publish = (page: Page) => page.getByRole('button', { name: 'Publicar', exact: true });
 const status = (page: Page) => page.locator('[data-about-status]');
+
+/** Um visitante (contexto sem login) com a mesma vigia dos outros contextos: CSP, console.error e respostas 5xx. */
+async function openVisitor(
+  browser: Browser,
+  guard: { watchContext: (context: BrowserContext) => Promise<void> },
+) {
+  const context = await browser.newContext();
+  await guard.watchContext(context);
+  return { context, page: await context.newPage() };
+}
 
 async function openEditor(page: Page) {
   await page.goto('/painel/sobre');
@@ -78,6 +88,7 @@ test.describe.serial('página Sobre editável', () => {
   test('edita, salva o rascunho (o visitante continua vendo o texto de código) e publica', async ({
     openAs,
     browser,
+    guard,
   }) => {
     const { page } = await openAs(admin);
     await openEditor(page);
@@ -108,8 +119,7 @@ test.describe.serial('página Sobre editável', () => {
     await expect(save(page)).toBeDisabled();
 
     // O rascunho NUNCA é público: um visitante (contexto sem login) ainda vê o texto de código.
-    const visitor = await browser.newContext();
-    const visitorPage = await visitor.newPage();
+    const { context: visitor, page: visitorPage } = await openVisitor(browser, guard);
     await visitorPage.goto('/sobre');
     await expect(visitorPage.getByRole('heading', { level: 1, name: CODE_TITLE })).toBeVisible();
     await expect(visitorPage.getByText(TITLE)).toHaveCount(0);
@@ -157,6 +167,7 @@ test.describe.serial('página Sobre editável', () => {
   test('interruptores: um bloco oculto some da página pública; Combinados e Leia como aplicativo ficam', async ({
     openAs,
     browser,
+    guard,
   }) => {
     const { page } = await openAs(admin);
     await openEditor(page);
@@ -167,8 +178,7 @@ test.describe.serial('página Sobre editável', () => {
     await page.getByRole('dialog').getByRole('button', { name: 'Publicar' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Página publicada' })).toBeVisible();
 
-    const visitor = await browser.newContext();
-    const visitorPage = await visitor.newPage();
+    const { context: visitor, page: visitorPage } = await openVisitor(browser, guard);
     await visitorPage.goto('/sobre');
     expect(await blockOrder(visitorPage)).toEqual([
       'presentation',
@@ -227,19 +237,22 @@ test.describe.serial('página Sobre editável', () => {
   test('pré-visualização: o componente REAL, com o texto do formulário, em celular e computador, sem rolagem horizontal', async ({
     openAs,
     browser,
+    guard,
   }) => {
     const { page } = await openAs(admin);
     await openEditor(page);
     await page.getByLabel('Título da página').fill('Título só na prévia');
     await page.getByRole('tab', { name: 'Pré-visualizar' }).click();
+    // A aba "Editar" some de verdade (o atributo hidden perdia para o display do painel): nenhum campo na tela.
+    await expect(page.getByLabel('Título da página')).toBeHidden();
+    await expect(page.getByRole('heading', { name: 'Histórico' })).toBeHidden();
 
     // O texto NÃO salvo aparece na prévia, e o visitante não o vê.
     const frame = page.locator('[data-about-preview-host] [data-about-root]');
     await expect(
       frame.getByRole('heading', { level: 1, name: 'Título só na prévia' }),
     ).toBeAttached();
-    const visitor = await browser.newContext();
-    const visitorPage = await visitor.newPage();
+    const { context: visitor, page: visitorPage } = await openVisitor(browser, guard);
     await visitorPage.goto('/sobre');
     await expect(visitorPage.getByText('Título só na prévia')).toHaveCount(0);
     await visitor.close();
@@ -299,11 +312,13 @@ test.describe.serial('página Sobre editável', () => {
     // Voltar para "Editar" mantém o texto digitado (nada se perdeu ao trocar de aba).
     await page.getByRole('tab', { name: 'Editar' }).click();
     await expect(page.getByLabel('Título da página')).toHaveValue('Título só na prévia');
+    await expect(page.locator('[data-about-preview-host]')).toBeHidden();
   });
 
   test('histórico: as versões publicadas, restaurar uma (com confirmação) a publica e a coloca no rascunho', async ({
     openAs,
     browser,
+    guard,
   }) => {
     const { page } = await openAs(admin);
     // Três publicações seguidas, com títulos conhecidos.
@@ -345,8 +360,7 @@ test.describe.serial('página Sobre editável', () => {
       'Versão histórica A',
     );
     await expect(page.getByLabel('Título da página')).toHaveValue('Versão histórica A');
-    const visitor = await browser.newContext();
-    const visitorPage = await visitor.newPage();
+    const { context: visitor, page: visitorPage } = await openVisitor(browser, guard);
     await visitorPage.goto('/sobre');
     await expect(
       visitorPage.getByRole('heading', { level: 1, name: 'Versão histórica A' }),
@@ -361,7 +375,7 @@ test.describe.serial('página Sobre editável', () => {
     );
   });
 
-  test('teclado: Tab percorre os campos e os botões de ordem funcionam sem mouse, mantendo o foco', async ({
+  test('teclado: Tab atravessa o formulário até a barra de baixo (sem armadilha de foco) e os botões de ordem funcionam sem mouse', async ({
     openAs,
   }) => {
     const { page } = await openAs(admin);
@@ -372,6 +386,26 @@ test.describe.serial('página Sobre editável', () => {
     }
     await page.getByRole('button', { name: 'Adicionar seção' }).click();
     await page.getByLabel('Título da seção 2').fill('Segunda seção');
+
+    // Tab de verdade, do primeiro campo até "Publicar" (habilitado: há alterações): nenhum campo de texto rico, botão
+    // de ordem ou interruptor segura o foco, e os botões de ordem aparecem no caminho.
+    await page.getByLabel('Título da página').focus();
+    const visited: string[] = [];
+    for (let step = 0; step < 150; step += 1) {
+      await page.keyboard.press('Tab');
+      const label = await page.evaluate(() => {
+        const el = document.activeElement as HTMLElement | null;
+        return el
+          ? (el.getAttribute('aria-label') || el.textContent || el.id || el.tagName).trim()
+          : '';
+      });
+      visited.push(label);
+      if (label === 'Publicar') break;
+    }
+    expect(visited.at(-1)).toBe('Publicar');
+    expect(visited).toEqual(
+      expect.arrayContaining(['Descer seção 1', 'Subir seção 2', 'Salvar rascunho']),
+    );
 
     const down1 = page.getByRole('button', { name: 'Descer seção 1' });
     await down1.focus();
@@ -404,18 +438,25 @@ test.describe.serial('página Sobre editável', () => {
   test('foto: arquivo falso é recusado sem deixar sobra; a foto boa vira 512x512 sem metadados, exige o alt, vai ao ar e some ao remover', async ({
     openAs,
     browser,
+    guard,
   }) => {
     const { page } = await openAs(admin);
     await openEditor(page);
-    const objects = (like: string) =>
-      Number(
+    // Compara NOMES, não totais: a varredura apaga sobras antigas de rodadas anteriores a qualquer momento.
+    const names = (like: string) =>
+      new Set(
         sql(
-          `select count(*) from storage.objects where bucket_id = 'covers' and name like '${like}';`,
-        ),
+          `select name from storage.objects where bucket_id = 'covers' and name like '${like}' order by name;`,
+        )
+          .split('\n')
+          .filter(Boolean),
       );
+    const added = (like: string, before: Set<string>) =>
+      [...names(like)].filter((name) => !before.has(name));
+    const objects = (name: string) => names(name).size;
     const input = page.getByLabel('Escolher o arquivo da foto da autora');
-    const incomingBefore = objects('site/sobre/incoming/%');
-    const finalsBefore = objects('site/sobre/%.webp');
+    const incomingBefore = names('site/sobre/incoming/%');
+    const finalsBefore = names('site/sobre/%.webp');
 
     // Um texto com nome e tipo de PNG: o navegador deixa passar (só confere o tipo declarado), o servidor confere o
     // formato REAL e recusa. Nada fica no Storage (nem o original enviado).
@@ -430,8 +471,8 @@ test.describe.serial('página Sobre editável', () => {
         .filter({ hasText: 'O arquivo não é uma imagem PNG, JPG ou WEBP válida.' }),
     ).toBeVisible();
     await expect(page.getByLabel('Texto alternativo da foto (obrigatório)')).toHaveCount(0);
-    expect(objects('site/sobre/incoming/%')).toBe(incomingBefore);
-    expect(objects('site/sobre/%.webp')).toBe(finalsBefore);
+    expect(added('site/sobre/incoming/%', incomingBefore)).toEqual([]);
+    expect(added('site/sobre/%.webp', finalsBefore)).toEqual([]);
 
     // Tipo que o navegador já recusa (GIF), sem nem ir ao Storage.
     await input.setInputFiles({
@@ -457,8 +498,8 @@ test.describe.serial('página Sobre editável', () => {
     const alt = page.getByLabel('Texto alternativo da foto (obrigatório)');
     await expect(alt).toBeVisible();
     await expect(alt).toBeFocused();
-    expect(objects('site/sobre/incoming/%')).toBe(incomingBefore);
-    expect(objects('site/sobre/%.webp')).toBe(finalsBefore + 1);
+    expect(added('site/sobre/incoming/%', incomingBefore)).toEqual([]);
+    expect(added('site/sobre/%.webp', finalsBefore)).toHaveLength(1);
 
     // Sem o texto alternativo não salva, e o aviso aparece junto do campo.
     await expect(save(page)).toBeEnabled();
@@ -486,8 +527,7 @@ test.describe.serial('página Sobre editável', () => {
     await publish(page).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Publicar' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Página publicada' })).toBeVisible();
-    const visitor = await browser.newContext();
-    const visitorPage = await visitor.newPage();
+    const { context: visitor, page: visitorPage } = await openVisitor(browser, guard);
     await visitorPage.goto('/sobre');
     const photo = visitorPage.locator('[data-about-photo]');
     await expect(photo).toHaveAttribute('alt', 'A Agatha com um livro nas mãos');

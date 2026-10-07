@@ -7,6 +7,11 @@
   min-width: 0;
 }
 
+/* `hidden` perde para o `display: grid` acima: sem esta regra o painel "Editar" ficaria na tela sobre a aba "Pré-visualizar". */
+.root[hidden] {
+  display: none;
+}
+
 .card {
   display: grid;
   gap: 16px;
