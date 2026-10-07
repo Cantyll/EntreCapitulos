@@ -660,7 +660,9 @@ test.describe('perfil', () => {
       text = await response.text();
     }
     const file = JSON.parse(text);
-    expect(file.exportVersion).toBe(3);
+    expect(file.exportVersion).toBe(4);
+    // Versão 4 (etapa 8k): a versão do tutorial do painel vista pela pessoa (membro: 0).
+    expect(file.profile.tourSeenVersion).toBe(0);
     // O aceite dos Termos (versão 3) vem da função do banco: a administração não lê a linha dos outros pelo RLS.
     expect(file.termsAcceptance.version).toBe(TERMS_VERSION);
     expect(file.termsAcceptance.acceptedAt).toBeTruthy();

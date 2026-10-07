@@ -1,6 +1,7 @@
 import type { BrowserContext } from '@playwright/test';
 
 import { TERMS_VERSION } from '../../src/content/legal/version';
+import { TOUR_VERSION } from '../../src/content/tour/version';
 
 import { lit, sql } from './db';
 import { keys } from './stack';
@@ -31,17 +32,24 @@ async function admin(path: string, body: unknown): Promise<Response> {
 }
 
 /**
- * PONTO DE EXTENSÃO (etapa 8c): contas da equipe nascem com o tutorial do painel marcado como "já
- * visto", para o diálogo de boas-vindas não bloquear os outros testes. A coluna
- * `profiles.tour_seen_version` só existirá na 8c; quando existir, troque o corpo desta função por
- * `update public.profiles set tour_seen_version = <TOUR_VERSION> where id = …`. Enquanto isso, não faz nada.
+ * Contas da equipe nascem com o tutorial do painel marcado como "já visto" (etapa 8k), para o cartão "Quer um tour
+ * rápido?" não aparecer nos outros testes. Os testes do tutorial redefinem o valor (`setTutorialSeen` ou a opção
+ * `tutorial: 'unseen'` de `createUser`).
  */
+export function setTutorialSeen(userId: string, version: number): void {
+  sql(
+    `update public.profiles set tour_seen_version = ${Number(version)} where id = ${lit(userId)};`,
+  );
+}
+
 export function markTutorialSeen(userId: string): void {
-  void userId;
+  setTutorialSeen(userId, TOUR_VERSION);
 }
 
 export type CreateUserOptions = {
   prefix?: string;
+  /** Equipe: `'unseen'` deixa o tutorial do painel por ver (o cartão "Quer um tour rápido?" aparece). */
+  tutorial?: 'seen' | 'unseen';
   /** Nome público; `null` deixa o nome por confirmar (cai em /boas-vindas). */
   name?: string | null;
   role?: Role;
@@ -70,6 +78,7 @@ export async function createUser(options: CreateUserOptions = {}): Promise<TestU
     role = 'member',
     approved,
     terms = true,
+    tutorial = 'seen',
   } = options;
   const email = uniqueEmail(prefix);
   const response = await admin('/auth/v1/admin/users', { email, email_confirm: true });
@@ -82,7 +91,7 @@ export async function createUser(options: CreateUserOptions = {}): Promise<TestU
   if (approved !== undefined) sets.push(`approved_comment_count = ${Number(approved)}`);
   if (sets.length) sql(`update public.profiles set ${sets.join(', ')} where id = ${lit(id)};`);
   if (terms !== false) acceptTermsBySql(id, terms === 'old' ? 'versao-antiga' : TERMS_VERSION);
-  if (role !== 'member') markTutorialSeen(id);
+  if (role !== 'member' && tutorial === 'seen') markTutorialSeen(id);
 
   return { id, email, name: name ?? 'Leitor', role };
 }
