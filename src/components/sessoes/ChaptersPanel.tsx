@@ -71,7 +71,7 @@ export function ChaptersPanel({
   };
 
   return (
-    <section className={styles.card} aria-labelledby="capitulos-titulo">
+    <section className={styles.card} aria-labelledby="capitulos-titulo" data-tour="editor-chapters">
       <h2 id="capitulos-titulo">Capítulos desta sessão</h2>
       <p className={styles.muted} style={{ marginBottom: 10 }}>
         Cada divisória começa um capítulo no relato. É por elas que o filtro de spoiler esconde ou

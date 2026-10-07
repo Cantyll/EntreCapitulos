@@ -57,7 +57,7 @@ export function SessionsList({
   return (
     <>
       <div className={styles.toolbarRow}>
-        <nav className={styles.seg} aria-label="Filtrar sessões">
+        <nav className={styles.seg} aria-label="Filtrar sessões" data-tour="sessions-filters">
           {FILTERS.map(({ key, label }) => (
             <Link
               key={key}
@@ -69,20 +69,20 @@ export function SessionsList({
             </Link>
           ))}
         </nav>
-        <ButtonLink href={ADMIN_NEW_SESSION_HREF} size="sm">
+        <ButtonLink href={ADMIN_NEW_SESSION_HREF} size="sm" data-tour="sessions-new">
           <Icon name="plus" size="sm" /> Nova sessão
         </ButtonLink>
       </div>
 
       {shown.length === 0 ? (
-        <p className={styles.empty}>
+        <p className={styles.empty} data-tour="sessions-list">
           {sessions.length === 0
             ? 'Nenhuma sessão ainda. Use “Nova sessão” para escrever a primeira.'
             : 'Nenhuma sessão neste filtro.'}
         </p>
       ) : (
         <>
-          <div className={styles.tableWrap}>
+          <div className={styles.tableWrap} data-tour="sessions-list">
             <table className={styles.table}>
               <caption>
                 <VisuallyHidden>Sessões de leitura</VisuallyHidden>
@@ -131,7 +131,11 @@ export function SessionsList({
             </table>
           </div>
 
-          <ul className={styles.cards} style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          <ul
+            className={styles.cards}
+            style={{ listStyle: 'none', padding: 0, margin: 0 }}
+            data-tour="sessions-list"
+          >
             {shown.map((s) => (
               <li key={s.id} className={styles.sessionCard}>
                 <b>{s.title}</b>

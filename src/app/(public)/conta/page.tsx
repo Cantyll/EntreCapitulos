@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { DeleteAccountForm } from '@/components/conta/DeleteAccountForm';
 import { InstallAccountSection } from '@/components/install/InstallAccountSection';
+import { TourAccountLink } from '@/components/tour/TourAccountLink';
 import { NameForm } from '@/components/conta/NameForm';
 import styles from '@/components/conta/conta.module.css';
 import { PageHeader } from '@/components/site/PageHeader';
@@ -59,6 +60,20 @@ export default async function AccountPage() {
 
         {/* Só no Safari do iPhone/iPad fora do app instalado: decide no navegador, depois da montagem. */}
         <InstallAccountSection />
+
+        {/* Etapa 8k: o "?" do tutorial só existe no painel; aqui a equipe tem o atalho para o capítulo desta tela. */}
+        {isStaff && (
+          <section className={styles.card} aria-labelledby="conta-tutorial-titulo">
+            <h2 id="conta-tutorial-titulo">Tutorial do painel</h2>
+            <p>
+              O tutorial do painel tem um capítulo sobre esta tela: o nome nos comentários, a cópia
+              dos seus dados, a exclusão da conta e a instalação no iPhone.
+            </p>
+            <div className={styles.actions}>
+              <TourAccountLink role={user.role === 'admin' ? 'admin' : 'moderator'} />
+            </div>
+          </section>
+        )}
 
         <section className={styles.card} aria-labelledby="conta-dados-titulo">
           <h2 id="conta-dados-titulo">Baixar meus dados</h2>

@@ -336,7 +336,7 @@ export function SessionEditor({
   const canUnpublish = published && state.token !== null && session.commentCount === 0;
 
   return (
-    <div className={styles.grid} data-editor-root>
+    <div className={styles.grid} data-editor-root data-unsaved={hasUnsent ? 'true' : undefined}>
       <div className={styles.main}>
         <div className={styles.topRow}>
           <span className={styles.chip}>
@@ -345,6 +345,7 @@ export function SessionEditor({
           <span
             className={styles.status}
             data-status={state.status}
+            data-tour="editor-status"
             role="status"
             aria-live="polite"
           >
@@ -452,7 +453,7 @@ export function SessionEditor({
           </p>
         )}
 
-        <div className={styles.tabs}>
+        <div className={styles.tabs} data-tour="editor-tabs">
           <div className={styles.seg} role="tablist" aria-label="Escrever ou pré-visualizar">
             <button
               type="button"
@@ -535,7 +536,12 @@ export function SessionEditor({
       <aside className={styles.side} aria-label="Opções da sessão">
         <section className={styles.card} aria-labelledby="publicacao-titulo">
           <h2 id="publicacao-titulo">Publicação</h2>
-          <div className={styles.radioRow} role="radiogroup" aria-label="Quem pode ler">
+          <div
+            className={styles.radioRow}
+            role="radiogroup"
+            aria-label="Quem pode ler"
+            data-tour="publish-visibility"
+          >
             {(['public', 'members'] as const).map((value) => (
               <label key={value} className={styles.radio}>
                 <input
@@ -558,7 +564,7 @@ export function SessionEditor({
             ))}
           </div>
 
-          <div className={styles.actions}>
+          <div className={styles.actions} data-tour="publish-actions">
             {published ? (
               <>
                 <Button
@@ -632,7 +638,11 @@ export function SessionEditor({
           </div>
         </section>
 
-        <section className={styles.card} aria-labelledby="discussao-titulo">
+        <section
+          className={styles.card}
+          aria-labelledby="discussao-titulo"
+          data-tour="publish-comments"
+        >
           <h2 id="discussao-titulo">Discussão</h2>
           <div className={styles.switchRow}>
             <div>
@@ -660,7 +670,11 @@ export function SessionEditor({
           disabled={locked}
         />
 
-        <section className={styles.card} aria-labelledby="impressao-titulo">
+        <section
+          className={styles.card}
+          aria-labelledby="impressao-titulo"
+          data-tour="publish-rating"
+        >
           <h2 id="impressao-titulo">Impressão até aqui</h2>
           <StarPicker
             value={current.rating}
@@ -669,7 +683,7 @@ export function SessionEditor({
           />
         </section>
 
-        <section className={styles.card} aria-labelledby="resumo-titulo">
+        <section className={styles.card} aria-labelledby="resumo-titulo" data-tour="editor-excerpt">
           <h2 id="resumo-titulo">Resumo da lista</h2>
           <label className={styles.muted} htmlFor="resumo">
             Aparece nos cartões das sessões. Vazio = automático (o começo do relato).

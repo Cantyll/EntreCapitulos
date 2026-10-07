@@ -231,6 +231,19 @@ export const iconPaths = {
     </>
   ),
   // Não existe no protótipo: usado na barra inferior do painel.
+  // Etapa 8k: ajuda do painel (o "?" do tutorial) e Minha conta. Mesmo traço dos outros, desenhados aqui.
+  help: (
+    <>
+      <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" />
+      <path d="M12 17h.01" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" />
+    </>
+  ),
   more: (
     <>
       <circle cx="5" cy="12" r="1" />

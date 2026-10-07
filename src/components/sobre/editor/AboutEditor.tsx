@@ -391,7 +391,13 @@ export function AboutEditor({
       : 'Nada salvo ainda';
 
   return (
-    <div className={styles.root} ref={rootRef} data-editor-root data-tour="about-editor">
+    <div
+      className={styles.root}
+      ref={rootRef}
+      data-editor-root
+      data-tour="about-editor"
+      data-unsaved={dirty ? 'true' : undefined}
+    >
       {!everPublished && <ProvisionalNotice />}
 
       {message && (

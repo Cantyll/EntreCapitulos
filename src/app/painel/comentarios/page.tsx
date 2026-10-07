@@ -62,7 +62,7 @@ export default async function CommentsAdminPage({
       {/* A moderadora nunca vê a Visão geral (o `/painel` a manda para cá): o cartão de instalação fica na página dela. */}
       {user.role === 'moderator' && <InstallGate surface="panel" />}
       <div className={styles.toolbar}>
-        <nav className={styles.tabs} aria-label="Estado dos comentários">
+        <nav className={styles.tabs} aria-label="Estado dos comentários" data-tour="comments-tabs">
           {MODERATION_TABS.map((item) => (
             <Link
               key={item}

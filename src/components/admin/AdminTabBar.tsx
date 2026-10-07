@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
 
 import { Icon } from '@/components/ui/Icon';
+import { useTour } from '@/components/tour/TourProvider';
 import { IconButton } from '@/components/ui/IconButton';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import type { Role } from '@/lib/auth/roles';
@@ -25,6 +26,7 @@ import styles from './AdminTabBar.module.css';
  */
 export function AdminTabBar({ pendingComments, role }: { pendingComments: number; role: Role }) {
   const pathname = usePathname();
+  const tour = useTour();
   const { left, right, more, canCreateSession } = getAdminTabbar(role);
   const sheetRef = useRef<HTMLDialogElement>(null);
   const sheetTitleId = useId();
@@ -76,7 +78,7 @@ export function AdminTabBar({ pendingComments, role }: { pendingComments: number
 
   return (
     <div className={styles.root}>
-      <nav className={styles.bar} aria-label="Painel">
+      <nav className={styles.bar} aria-label="Painel" data-tour="admin-nav">
         <ul className={styles.list}>
           {left.map(renderTab)}
           {canCreateSession && (
@@ -147,6 +149,28 @@ export function AdminTabBar({ pendingComments, role }: { pendingComments: number
                 Ver o site
               </Link>
             </li>
+            <li>
+              <Link href="/conta" className={styles.sheetLink} onClick={closeSheet}>
+                <Icon name="user" />
+                Minha conta
+              </Link>
+            </li>
+            {tour && (
+              <li>
+                {/* Etapa 8k: a mesma ajuda do "?" do topo (a folha fecha antes de o menu abrir). */}
+                <button
+                  type="button"
+                  className={styles.sheetLink}
+                  onClick={() => {
+                    closeSheet();
+                    tour.setMenuOpen(true);
+                  }}
+                >
+                  <Icon name="help" />
+                  Tutorial
+                </button>
+              </li>
+            )}
           </ul>
         </div>
       </dialog>
