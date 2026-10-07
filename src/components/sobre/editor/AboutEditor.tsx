@@ -91,6 +91,11 @@ export function AboutEditor({
   const rootRef = useRef<HTMLDivElement>(null);
   const counter = useRef(0);
   const focusAfterMove = useRef<{ key: string; dir: 'up' | 'down' } | null>(null);
+  const focusAfterRemove = useRef<'section' | 'link' | 'step' | null>(null);
+  const noticeRef = useRef<HTMLDivElement>(null);
+  const conflictRef = useRef<HTMLDivElement>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
+  const firstRun = useRef(true);
 
   const [form, setForm] = useState<FormContent>(() => toForm(initial.content));
   const [generation, setGeneration] = useState(0);
@@ -120,6 +125,7 @@ export function AboutEditor({
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const [restoreTarget, setRestoreTarget] = useState<HistoryItem | null>(null);
   const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [statusFocus, setStatusFocus] = useState(0);
 
   const dirty = useMemo(() => isDirty(form, baseline), [form, baseline]);
   // O que a pré-visualização mostra: o formulário agora (salvo ou não), com os textos simples normalizados.
@@ -143,13 +149,55 @@ export function AboutEditor({
     (same && !same.disabled ? same : other)?.focus();
   }, [form.sections, form.links]);
 
+  // Depois de remover um item o botão dele sai da tela: o foco vai para o "Adicionar" da mesma lista.
+  useEffect(() => {
+    const kind = focusAfterRemove.current;
+    if (!kind) return;
+    focusAfterRemove.current = null;
+    rootRef.current?.querySelector<HTMLButtonElement>(`[data-add="${kind}"]`)?.focus();
+  }, [form.sections, form.links, form.howItWorks.steps]);
+
+  // Os avisos ficam no topo da página e os botões, na barra de baixo: erro, conflito e publicação levam o foco (e a
+  // tela) até o aviso, para a pessoa não tocar de novo sem ver o que aconteceu. "Rascunho salvo" não rola a tela: o
+  // estado já aparece na barra.
+  useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
+    const target = conflict
+      ? conflictRef.current
+      : message && (message.kind !== 'ok' || message.link)
+        ? noticeRef.current
+        : null;
+    if (!target) return;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: 'center', behavior: 'auto' });
+  }, [message, conflict]);
+
+  // Salvar desliga o botão "Salvar rascunho" (e publicar, o "Publicar"): se o foco estava nele, vai para o estado na
+  // barra, que fica no mesmo lugar, em vez de cair no início da página.
+  useEffect(() => {
+    if (statusFocus === 0) return;
+    const active = document.activeElement;
+    const lost =
+      !active ||
+      active === document.body ||
+      (active instanceof HTMLButtonElement && active.disabled);
+    if (lost) statusRef.current?.focus({ preventScroll: true });
+  }, [statusFocus]);
+
   const errors = useMemo(() => {
     if (!showErrors) return {};
     const parsed = parseAbout(toContent(form), { forPublish: showErrors === 'publish' });
     return parsed.ok ? {} : fieldErrorMap(parsed.fields);
   }, [form, showErrors]);
 
-  const update = (patch: Partial<FormContent>) => setForm((current) => ({ ...current, ...patch }));
+  const update = (patch: Partial<FormContent>) => {
+    setForm((current) => ({ ...current, ...patch }));
+    // "Rascunho salvo" ou "Página publicada" deixa de valer assim que a pessoa mexe de novo.
+    setMessage((current) => (current && current.kind !== 'error' ? null : current));
+  };
   const newKey = (kind: string) => `novo-${kind}-${++counter.current}`;
   const err = (path: string): string | undefined => errors[path];
 
@@ -168,6 +216,7 @@ export function AboutEditor({
     setSavedLabel(formatDateTime(new Date()));
     setShowErrors(false);
     setConflict(null);
+    setStatusFocus((n) => n + 1);
   }
 
   async function save(expected: string | null = token) {
@@ -252,7 +301,7 @@ export function AboutEditor({
     });
   }
 
-  async function restore(item: HistoryItem, expected: string | null = token) {
+  async function restore(item: HistoryItem, expected: string | null = token, viaDialog = true) {
     setBusy('publish');
     setRestoreError(null);
     try {
@@ -277,11 +326,15 @@ export function AboutEditor({
         setRestoreTarget(null);
         setConflict({ server: outcome.server, retry: { restore: item } });
         setMessage(null);
-      } else {
+      } else if (viaDialog) {
         setRestoreError(outcome.message);
+      } else {
+        setMessage({ kind: 'error', text: outcome.message });
       }
     } catch {
-      setRestoreError('Sem conexão: a versão não foi restaurada. Tente de novo.');
+      const text = 'Sem conexão: a versão não foi restaurada. Tente de novo.';
+      if (viaDialog) setRestoreError(text);
+      else setMessage({ kind: 'error', text });
     } finally {
       setBusy(null);
     }
@@ -301,6 +354,22 @@ export function AboutEditor({
     focusAfterMove.current = { key: item.key, dir: delta === -1 ? 'up' : 'down' };
     update({ links: moveItem(form.links, index, delta) });
     setAnnounce(moveAnnouncement('Link', false, index, index + delta, form.links.length));
+  }
+
+  function removeItem(kind: 'section' | 'link' | 'step', index: number) {
+    focusAfterRemove.current = kind;
+    if (kind === 'section') {
+      update({ sections: removeAt(form.sections, index) });
+      setAnnounce(`Seção ${index + 1} removida.`);
+    } else if (kind === 'link') {
+      update({ links: removeAt(form.links, index) });
+      setAnnounce(`Link ${index + 1} removido.`);
+    } else {
+      update({
+        howItWorks: { ...form.howItWorks, steps: removeAt(form.howItWorks.steps, index) },
+      });
+      setAnnounce(`Passo ${index + 1} removido.`);
+    }
   }
 
   const patchSection = (index: number, patch: Partial<FormContent['sections'][number]>) =>
@@ -327,6 +396,8 @@ export function AboutEditor({
 
       {message && (
         <div
+          ref={noticeRef}
+          tabIndex={-1}
           role={message.kind === 'error' ? 'alert' : 'status'}
           className={`${styles.notice} ${message.kind === 'error' ? styles.noticeError : message.kind === 'ok' ? styles.noticeOk : styles.noticeWarn}`}
         >
@@ -341,6 +412,8 @@ export function AboutEditor({
 
       {conflict && (
         <div
+          ref={conflictRef}
+          tabIndex={-1}
           role="alert"
           className={`${styles.notice} ${styles.noticeWarn}`}
           data-about-conflict=""
@@ -374,7 +447,7 @@ export function AboutEditor({
                     setConflict(null);
                     if (conflict.retry === 'publish') void publish(server.updatedAt, false);
                     else if (conflict.retry === 'save') void save(server.updatedAt);
-                    else void restore(conflict.retry.restore, server.updatedAt);
+                    else void restore(conflict.retry.restore, server.updatedAt, false);
                   }}
                 >
                   {typeof conflict.retry === 'object'
@@ -494,6 +567,7 @@ export function AboutEditor({
               <Button
                 size="sm"
                 variant="soft"
+                data-add="section"
                 disabled={locked || !canAddSection(form.sections.length)}
                 onClick={() =>
                   update({
@@ -526,7 +600,7 @@ export function AboutEditor({
                         count={form.sections.length}
                         itemKey={section.key}
                         onMove={(delta) => moveSection(index, delta)}
-                        onRemove={() => update({ sections: removeAt(form.sections, index) })}
+                        onRemove={() => removeItem('section', index)}
                         disabled={locked}
                       />
                     </div>
@@ -565,6 +639,7 @@ export function AboutEditor({
               <Button
                 size="sm"
                 variant="soft"
+                data-add="link"
                 disabled={locked || !canAddLink(form.links.length)}
                 onClick={() =>
                   update({ links: [...form.links, { key: newKey('link'), label: '', url: '' }] })
@@ -591,7 +666,7 @@ export function AboutEditor({
                         count={form.links.length}
                         itemKey={link.key}
                         onMove={(delta) => moveLink(index, delta)}
-                        onRemove={() => update({ links: removeAt(form.links, index) })}
+                        onRemove={() => removeItem('link', index)}
                         disabled={locked}
                       />
                     </div>
@@ -663,14 +738,7 @@ export function AboutEditor({
                           data-danger=""
                           aria-label={`Remover passo ${index + 1}`}
                           disabled={locked || !canRemoveStep(form.howItWorks.steps.length)}
-                          onClick={() =>
-                            update({
-                              howItWorks: {
-                                ...form.howItWorks,
-                                steps: removeAt(form.howItWorks.steps, index),
-                              },
-                            })
-                          }
+                          onClick={() => removeItem('step', index)}
                         >
                           <Icon name="trash" size="sm" />
                         </button>
@@ -701,6 +769,7 @@ export function AboutEditor({
               <Button
                 size="sm"
                 variant="soft"
+                data-add="step"
                 disabled={locked || !canAddStep(form.howItWorks.steps.length)}
                 onClick={() =>
                   update({
@@ -766,7 +835,13 @@ export function AboutEditor({
       </div>
 
       <div className={styles.bar} data-about-bar="">
-        <div className={styles.status} role="status" aria-live="polite">
+        <div
+          className={styles.status}
+          role="status"
+          aria-live="polite"
+          ref={statusRef}
+          tabIndex={-1}
+        >
           <span
             className={`${styles.dot} ${dirty ? styles.dotDirty : savedLabel ? styles.dotSaved : ''}`}
             aria-hidden="true"
