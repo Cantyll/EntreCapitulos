@@ -7,6 +7,7 @@ import {
 } from '@/lib/account/export';
 import { classifyMemberError } from '@/lib/members/errors';
 import { isTermsUnavailable } from '@/lib/terms/errors';
+import { isTourUnavailable } from '@/lib/tour/errors';
 import { createClient } from '@/lib/supabase/server';
 
 /*
@@ -84,11 +85,20 @@ export async function GET() {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const [profile, progress, suspension, terms] = await Promise.all([
+    // A versão do tutorial do painel já vista (versão 4 do arquivo), numa consulta à parte: antes do Database deploy a
+    // coluna não existe, e pô-la na consulta do perfil derrubaria o arquivo inteiro.
+    const tourQuery = supabase
+      .from('profiles')
+      .select('tour_seen_version')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const [profile, progress, suspension, terms, tour] = await Promise.all([
       profileQuery,
       progressQuery,
       suspensionQuery,
       termsQuery,
+      tourQuery,
     ]);
     if (profile.error) throw profile.error;
     if (progress.error) throw progress.error;
@@ -101,6 +111,11 @@ export async function GET() {
     if (terms.error && !isTermsUnavailable(terms.error)) {
       throw terms.error;
     }
+    // Idem para o tutorial: sem a coluna, `null`; outro erro derruba o arquivo.
+    if (tour.error && !isTourUnavailable(tour.error)) {
+      throw tour.error;
+    }
+    const tourSeen = (tour.data as { tour_seen_version?: unknown } | null)?.tour_seen_version;
 
     const now = new Date();
     const body = buildAccountExport({
@@ -119,6 +134,7 @@ export async function GET() {
       progress: progress.data as unknown as ExportProgressInput[],
       commentsSuspended: suspension.data !== null && !suspension.error,
       terms: terms.error ? null : terms.data,
+      tourSeenVersion: !tour.error && typeof tourSeen === 'number' ? tourSeen : null,
     });
 
     return json(body, 200, {

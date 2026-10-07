@@ -426,7 +426,8 @@ describe('arquivo de dados da pessoa (versão 3)', () => {
       ],
       commentsSuspended: true,
     });
-    expect(file.exportVersion).toBe(3);
+    expect(file.exportVersion).toBe(4);
+    expect(file.profile?.tourSeenVersion).toBeNull();
     expect(file.termsAcceptance).toEqual({
       version: '2026-10-06',
       acceptedAt: '2026-10-07T12:00:00Z',

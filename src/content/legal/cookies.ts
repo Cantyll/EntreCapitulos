@@ -2,6 +2,7 @@ import { NEXT_COOKIE } from '@/lib/auth/constants';
 import { PROGRESS_COOKIE } from '@/lib/spoiler/cookie';
 
 import { INSTALL_RULES } from '../install';
+import { TOUR_STORAGE_KEY } from '@/lib/tour/storage';
 
 /*
  * Os cookies do site. É a lista de "Cookies do site e armazenamento local" do CLAUDE.md: precisa continuar igual
@@ -62,6 +63,14 @@ export const LOCAL_STORAGE_ITEMS: readonly LocalStorageInfo[] = [
     purpose: `Preferência do cartão "Instale o Entre Capítulos": guarda em quantos dias diferentes você abriu o site neste aparelho, o último desses dias, se você tocou em "Agora não" (e quando; o cartão pode voltar depois de ${INSTALL_RULES.dismissDays} dias) e se você tocou em "Já instalei". Não guarda nome, e-mail nem identificador de conta, e nunca é enviada ao servidor.`,
     duration: 'até o navegador limpar os dados do site ("Já instalei" vale por todo esse tempo)',
     who: 'só iPhone e iPad (Safari ou navegador embutido de outro aplicativo); nos demais aparelhos e no aplicativo instalado, nada é gravado',
+  },
+  {
+    // Etapa 8k: o nome vem de `src/lib/tour/storage.ts`.
+    name: `\`${TOUR_STORAGE_KEY}\` (armazenamento da aba do site)`,
+    purpose:
+      'Tutorial do painel: em que passo a pessoa está, para continuar depois de recarregar a página, e o clique em "Ver o tutorial desta parte" (Minha conta), de uso único. Não guarda nome, e-mail nem identificador de conta, e nunca é enviado ao servidor.',
+    duration: 'até sair ou concluir o tutorial, ou fechar a aba',
+    who: 'só a equipe (quem usa o painel)',
   },
   {
     name: '`cf.turnstile.u` (armazenamento local do iframe da Cloudflare)',

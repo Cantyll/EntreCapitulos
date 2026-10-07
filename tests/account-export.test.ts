@@ -125,8 +125,11 @@ describe('buildAccountExport', () => {
 
   it('traz perfil, e-mail, comentários de QUALQUER status e progresso', () => {
     const out = buildAccountExport(base);
-    expect(out.exportVersion).toBe(3);
-    expect(EXPORT_VERSION).toBe(3);
+    expect(out.exportVersion).toBe(4);
+    expect(EXPORT_VERSION).toBe(4);
+    // Versão 4 (etapa 8k): a versão do tutorial do painel vista; sem a informação, `null`.
+    expect(out.profile?.tourSeenVersion).toBeNull();
+    expect(buildAccountExport({ ...base, tourSeenVersion: 1 }).profile?.tourSeenVersion).toBe(1);
     expect(out.profile?.commentsSuspended).toBe(false);
     expect(out.generatedAt).toBe('2026-10-02T15:00:00.000Z');
     expect(out.account.email).toBe('eu@exemplo.com');
@@ -271,6 +274,7 @@ describe('GET /conta/dados', () => {
       `comments.author_id=${ME}`,
       `member_suspensions.user_id=${ME}`,
       `profiles.id=${ME}`,
+      `profiles.id=${ME}`,
       `reading_progress.user_id=${ME}`,
       `terms_acceptances.user_id=${ME}`,
     ]);
@@ -285,7 +289,7 @@ describe('GET /conta/dados', () => {
     expect((await (await GET()).json()).profile.commentsSuspended).toBe(false);
     state.suspended = true;
     const body = await (await GET()).json();
-    expect(body.exportVersion).toBe(3);
+    expect(body.exportVersion).toBe(4);
     expect(body.profile.commentsSuspended).toBe(true);
   });
 
