@@ -31,12 +31,14 @@ export default async function BooksAdminPage() {
         <ThemeCard book={reading} />
         <div className={styles.toolbar}>
           <h2>Todos os livros</h2>
-          <ButtonLink href={ADMIN_NEW_BOOK_HREF} size="sm">
+          <ButtonLink href={ADMIN_NEW_BOOK_HREF} size="sm" data-tour="books-new">
             <Icon name="plus" size="sm" />
             Adicionar livro
           </ButtonLink>
         </div>
-        <BooksTable books={books} />
+        <div data-tour="books-list">
+          <BooksTable books={books} />
+        </div>
       </div>
     </AdminPage>
   );

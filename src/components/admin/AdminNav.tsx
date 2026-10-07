@@ -16,7 +16,7 @@ export function AdminNav({ pendingComments, role }: { pendingComments: number; r
   const pathname = usePathname();
 
   return (
-    <nav className={styles.nav} aria-label="Painel">
+    <nav className={styles.nav} aria-label="Painel" data-tour="admin-nav">
       {getAdminNavFor(role).map((item) => {
         const active = isAdminNavActive(item, pathname);
         return (

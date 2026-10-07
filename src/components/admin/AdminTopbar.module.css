@@ -29,3 +29,11 @@
     padding: 16px 22px;
   }
 }
+
+/* "?" e sino lado a lado (etapa 8k). */
+.tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}

@@ -63,7 +63,7 @@ export default async function OverviewPage() {
         <GettingStartedSlot />
         {aboutPublished === false && <ProvisionalNotice withLink />}
         <p className={styles.intro}>Por onde você quer começar?</p>
-        <ul className={styles.shortcuts}>
+        <ul className={styles.shortcuts} data-tour="overview-shortcuts">
           {SHORTCUTS.map((item) => (
             <li key={item.href}>
               <Link href={item.href} className={styles.shortcut}>

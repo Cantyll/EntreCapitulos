@@ -39,10 +39,12 @@ describe('painel', () => {
   // Comentários é a única área da moderadora (`staff`: administradora e moderadora); o resto do painel é
   // só da administradora. Duas exceções, ambas `staff` de propósito: o layout (a moderadora precisa
   // dele para abrir Comentários) e `/painel`, que manda a moderadora para Comentários.
+  // Etapa 8k: `/tour-actions.ts` também é `staff` de propósito: o tutorial do painel é da administração e da
+  // moderação (a action só guarda a versão do tutorial que a própria pessoa viu).
   const STAFF_PATHS = (file: string) =>
     file.endsWith('/layout.tsx') && file.split('/').length === 2
       ? true
-      : file === '/page.tsx' || file.startsWith('/comentarios/');
+      : file === '/page.tsx' || file === '/tour-actions.ts' || file.startsWith('/comentarios/');
 
   it.each(guarded.map((f) => [f.slice(PAINEL.length)]))('%s exige o papel certo', (file) => {
     const source = readFileSync(join(PAINEL, file as string), 'utf8');
@@ -56,7 +58,13 @@ describe('painel', () => {
       .map((f) => f.slice(PAINEL.length))
       .filter((f) => readFileSync(join(PAINEL, f), 'utf8').includes("requireRole('staff')"));
     expect(staffFiles.sort()).toEqual(
-      ['/comentarios/actions.ts', '/comentarios/page.tsx', '/layout.tsx', '/page.tsx'].sort(),
+      [
+        '/comentarios/actions.ts',
+        '/comentarios/page.tsx',
+        '/layout.tsx',
+        '/page.tsx',
+        '/tour-actions.ts',
+      ].sort(),
     );
   });
 
@@ -86,7 +94,10 @@ describe('painel', () => {
   // Página Sobre (etapa 8j): salvar o rascunho e finalizar a foto não mudam nada público (o rascunho nunca é lido por
   // visitante; a foto só entra no conteúdo quando se salva e só vai ao ar quando se publica). Publicar e restaurar
   // expiram a tag `site:sobre` (`invalidateSiteSobre`).
+  // Tutorial do painel (etapa 8k): `markTourSeenAction` só guarda a versão do tutorial vista pela própria pessoa da
+  // equipe; nada público muda (e refazer a página remontaria o editor de sessão aberto).
   const NO_PUBLIC_CACHE = new Set<string>([
+    'markTourSeenAction',
     'searchMembers',
     'showMemberContact',
     'setMemberSuspension',

@@ -89,7 +89,11 @@ export function QuestionsPanel({
     });
 
   return (
-    <section className={styles.card} aria-labelledby="perguntas-titulo">
+    <section
+      className={styles.card}
+      aria-labelledby="perguntas-titulo"
+      data-tour="editor-questions"
+    >
       <h2 id="perguntas-titulo">Perguntas para a discussão</h2>
       <p className={styles.muted} style={{ marginBottom: 12 }}>
         Perguntas que abrem a conversa no fim da sessão. Cada alteração aqui é salva na hora.

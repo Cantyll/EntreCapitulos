@@ -152,6 +152,7 @@ export function Toolbar({
         style={docked ? { bottom: inset } : undefined}
         role="toolbar"
         aria-label={label}
+        data-tour="editor-toolbar"
       >
         <div className={styles.toolRow}>
           <ToolButton

@@ -51,7 +51,7 @@ export function ModerationBoard({ items, tab, emptyText }: Props) {
       </div>
 
       {tab === 'pendentes' && unflagged.length > 0 && (
-        <div className={styles.bulk}>
+        <div className={styles.bulk} data-tour="comments-bulk">
           <Button
             variant="ghost"
             size="sm"

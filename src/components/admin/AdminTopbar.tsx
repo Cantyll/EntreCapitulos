@@ -1,3 +1,4 @@
+import { HelpButton } from '@/components/tour/HelpButton';
 import { Icon } from '@/components/ui/Icon';
 import { IconLink } from '@/components/ui/IconButton';
 
@@ -11,11 +12,15 @@ export function AdminTopbar({ pendingComments }: { pendingComments: number }) {
       : 'Notificações';
 
   return (
-    <header className={styles.top}>
+    <header className={styles.top} data-admin-topbar="">
       <AdminTitle className={styles.title} />
-      <IconLink href="/painel/comentarios" label={bellLabel} dot={pendingComments > 0}>
-        <Icon name="bell" />
-      </IconLink>
+      {/* Ordem visual e de Tab: [?] [sino]. O sino não muda de lugar (etapa 8k). */}
+      <div className={styles.tools}>
+        <HelpButton />
+        <IconLink href="/painel/comentarios" label={bellLabel} dot={pendingComments > 0}>
+          <Icon name="bell" />
+        </IconLink>
+      </div>
     </header>
   );
 }

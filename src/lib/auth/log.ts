@@ -65,3 +65,11 @@ export function logProxyFailure(error: unknown): void {
   const { name, issues } = describeFailure(error);
   console.error('proxy falhou', { name, ...(issues ? { issues } : {}) });
 }
+
+/**
+ * Aviso sem falha e sem dado pessoal (etapa 8k): só um identificador fixo do próprio código, por exemplo o id de um
+ * passo do tutorial cujo alvo não apareceu na tela. Vai para `console.warn` (não é erro: o painel segue normal).
+ */
+export function logNotice(operation: string, id: string): void {
+  console.warn(operation, safeText(id) ?? '');
+}

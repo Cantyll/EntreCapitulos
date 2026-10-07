@@ -29,9 +29,13 @@ export function AdminSidebar({ pendingComments, role, displayName }: AdminSideba
       <AdminNav pendingComments={pendingComments} role={role} />
       <hr className={styles.sep} />
       <div className={styles.foot}>
-        <Link href="/" className={styles.siteLink}>
+        <Link href="/" className={styles.siteLink} data-tour="nav-site">
           <Icon name="eye" />
           Ver o site
+        </Link>
+        <Link href="/conta" className={styles.siteLink} data-tour="nav-account">
+          <Icon name="user" />
+          Minha conta
         </Link>
         <div className={styles.me}>
           <Avatar name={displayName} size="sm" />

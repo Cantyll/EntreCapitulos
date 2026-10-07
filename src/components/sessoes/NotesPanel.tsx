@@ -149,7 +149,7 @@ export function NotesPanel({
   );
 
   return (
-    <section className={styles.card} aria-labelledby="trechos-titulo">
+    <section className={styles.card} aria-labelledby="trechos-titulo" data-tour="editor-notes">
       <h2 id="trechos-titulo">Trechos e anotações</h2>
       <p className={styles.muted} style={{ marginBottom: 12 }}>
         Trechos são citações curtas e reais do livro, com capítulo e página. Anotações são suas.
