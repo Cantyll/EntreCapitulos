@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
@@ -33,9 +33,18 @@ export function PhotoField({
   const inputRef = useRef<HTMLInputElement>(null);
   const altRef = useRef<HTMLInputElement>(null);
   const uploadRef = useRef<HTMLButtonElement>(null);
+  const focusAltWhenReady = useRef(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const url = photo ? sitePhotoUrl(photo.path) : null;
+
+  // Depois do envio, o foco vai para o texto alternativo, mas só quando o campo já existe na tela (a foto nova chega
+  // pelo pai, depois do envio): um `requestAnimationFrame` corria contra essa renderização.
+  useEffect(() => {
+    if (!focusAltWhenReady.current || !photo) return;
+    focusAltWhenReady.current = false;
+    altRef.current?.focus();
+  }, [photo]);
 
   async function onFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -51,12 +60,12 @@ export function PhotoField({
       const result = await uploadAboutPhoto(file);
       if (result.ok) {
         // O texto alternativo da foto ANTERIOR descreve outra imagem: começa vazio e a pessoa escreve o novo.
+        focusAltWhenReady.current = true;
         onChange({ path: result.path, alt: '' });
         setNotice({
           kind: 'ok',
           text: 'Foto pronta. Descreva a foto no texto alternativo e salve o rascunho.',
         });
-        requestAnimationFrame(() => altRef.current?.focus());
       } else setNotice({ kind: 'error', text: result.message });
     } finally {
       setBusy(false);
