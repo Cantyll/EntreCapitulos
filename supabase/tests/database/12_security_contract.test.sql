@@ -40,7 +40,9 @@ select set_eq(
         -- Terms of Use acceptance (stage 8g): the person accepts for themselves; anonymous sign-ins are refused inside.
         'accept_terms',
         -- Editable About page (stage 8j): administration only, each one checks is_admin() inside.
-        'save_site_page_draft', 'publish_site_page', 'restore_site_page_revision'],
+        'save_site_page_draft', 'publish_site_page', 'restore_site_page_revision',
+        -- Guided panel tutorial (stage 8k): staff only (is_staff() inside), only raises the seen version.
+        'mark_tour_seen'],
   'the functions executable by authenticated are exactly the expected ones');
 
 -- 3a. Every security definer function pins an empty search_path.
@@ -59,7 +61,7 @@ select set_eq(
         'handle_new_user', 'is_admin', 'is_staff', 'retract_comment', 'delete_my_account',
         'set_member_role', 'set_member_suspension', 'admin_delete_member', 'admin_member_contact',
         'admin_member_export', 'admin_find_member_by_email', 'admin_masked_emails', 'accept_terms',
-        'save_site_page_draft', 'publish_site_page', 'restore_site_page_revision'],
+        'save_site_page_draft', 'publish_site_page', 'restore_site_page_revision', 'mark_tour_seen'],
   'the security definer functions are exactly the expected ones');
 
 -- 4. Write grants of the API roles (anon, authenticated, PUBLIC). "*" = every column. Reads are open by design
@@ -116,6 +118,9 @@ select is(has_column_privilege('anon', 'public.profiles', 'approved_comment_coun
 select is(has_column_privilege('anon', 'public.profiles', 'created_at', 'select'), false, 'anon cannot read created_at');
 select is(has_column_privilege('anon', 'public.profiles', 'updated_at', 'select'), false, 'anon cannot read updated_at');
 select is(has_column_privilege('anon', 'public.profiles', 'display_name_confirmed_at', 'select'), false, 'anon cannot read display_name_confirmed_at');
+-- Stage 8k: the seen version of the tutorial is written only by mark_tour_seen() and is not public.
+select is(has_column_privilege('authenticated', 'public.profiles', 'tour_seen_version', 'update'), false, 'tour_seen_version is not writable by clients');
+select is(has_column_privilege('anon', 'public.profiles', 'tour_seen_version', 'select'), false, 'anon cannot read tour_seen_version');
 
 -- Member management (stage 8f). The audit and the suspensions are written only by the security definer functions:
 -- the only privilege the API roles have on them is SELECT (the RLS limits it to the administration, and to the
