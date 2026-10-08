@@ -129,3 +129,13 @@
 .other {
   margin-top: 40px;
 }
+
+@media (pointer: coarse) {
+  /* Alvos de 44px no toque: cada item do índice vira uma linha da altura do dedo. */
+  .toc a,
+  .other a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+  }
+}

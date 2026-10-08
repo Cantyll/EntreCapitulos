@@ -28,6 +28,7 @@
 
 .text p,
 .lead {
+  max-width: 62ch;
   margin: 4px 0 0;
   font-size: 16px;
   color: var(--ink-2);
