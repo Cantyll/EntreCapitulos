@@ -156,10 +156,10 @@ export function TourCard({
   // Procura o alvo (só depois de chegar à página do passo).
   useEffect(() => {
     if (!onRoute || !step.target) return;
-    const name = step.target;
+    const names = step.altTarget ? [step.target, step.altTarget] : [step.target];
     const startedAt = performance.now();
     let frame = requestAnimationFrame(function look() {
-      const element = findVisible(name);
+      const element = names.map(findVisible).find(Boolean) ?? null;
       if (element) {
         setTarget(element);
         return;

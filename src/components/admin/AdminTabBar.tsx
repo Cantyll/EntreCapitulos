@@ -92,22 +92,23 @@ export function AdminTabBar({ pendingComments, role }: { pendingComments: number
             </li>
           )}
           {right.map(renderTab)}
-          {more.length > 0 && (
-            <li className={styles.cell}>
-              <button
-                type="button"
-                className={cx(styles.tab, moreActive && styles.on)}
-                aria-haspopup="dialog"
-                aria-expanded={sheetOpen}
-                onClick={openSheet}
-              >
-                <span className={styles.pill}>
-                  <Icon name="more" size="lg" />
-                </span>
-                <span>Mais</span>
-              </button>
-            </li>
-          )}
+          {/* Sempre presente: além das áreas que não cabem na barra, "Mais" tem Ver o site, Minha conta e Tutorial,
+              que a moderação também usa. */}
+          <li className={styles.cell}>
+            <button
+              type="button"
+              className={cx(styles.tab, moreActive && styles.on)}
+              aria-haspopup="dialog"
+              aria-expanded={sheetOpen}
+              onClick={openSheet}
+              data-tour="admin-more"
+            >
+              <span className={styles.pill}>
+                <Icon name="more" size="lg" />
+              </span>
+              <span>Mais</span>
+            </button>
+          </li>
         </ul>
       </nav>
 
@@ -142,7 +143,7 @@ export function AdminTabBar({ pendingComments, role }: { pendingComments: number
                 </li>
               );
             })}
-            <li className={styles.sheetDivider} aria-hidden="true" />
+            {more.length > 0 && <li className={styles.sheetDivider} aria-hidden="true" />}
             <li>
               <Link href="/" className={styles.sheetLink} onClick={closeSheet}>
                 <Icon name="eye" />

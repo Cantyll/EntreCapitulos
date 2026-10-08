@@ -43,6 +43,11 @@ export type TourStep = {
   body: string;
   /** Valor de `data-tour`. Sem ele, cartão centralizado. */
   target?: string;
+  /**
+   * Alvo usado quando `target` não está visível. Os links da barra lateral (Ver o site, Minha conta) não existem no
+   * celular: lá eles ficam em "Mais", e o passo destaca o botão "Mais".
+   */
+  altTarget?: string;
   /** Página do passo. Um passo `go` navega para ela; os demais só acontecem nela (ou em qualquer tela, sem rota). */
   route?: string;
   /** Só neste aparelho (o passo de instalação só aparece no Safari do iPhone/iPad fora do app instalado). */
@@ -105,8 +110,9 @@ export const TOUR_STEPS: readonly TourStep[] = [
     kind: 'info',
     route: '/painel',
     target: 'nav-site',
+    altTarget: 'admin-more',
     title: 'Ver o site',
-    body: 'Por aqui você abre o site como as leitoras o veem, para conferir uma sessão depois de publicar.',
+    body: 'Por aqui (no celular, em "Mais") você abre o site como as leitoras o veem, para conferir uma sessão depois de publicar.',
     since: 1,
   },
   {
@@ -115,8 +121,9 @@ export const TOUR_STEPS: readonly TourStep[] = [
     kind: 'info',
     route: '/painel',
     target: 'nav-account',
+    altTarget: 'admin-more',
     title: 'Minha conta',
-    body: 'Seu nome de exibição, a cópia dos seus dados e a exclusão da conta ficam em Minha conta. Voltamos a ela no fim do tour.',
+    body: 'Seu nome de exibição, a cópia dos seus dados e a exclusão da conta ficam em Minha conta (no celular, em "Mais"). Voltamos a ela no fim do tour.',
     since: 1,
   },
 
@@ -576,8 +583,9 @@ export const TOUR_STEPS: readonly TourStep[] = [
     chapter: 'leitoras',
     kind: 'info',
     target: 'nav-site',
+    altTarget: 'admin-more',
     title: 'Confira no site',
-    body: 'Depois de publicar, abra o site por aqui para ver a sessão como as leitoras.',
+    body: 'Depois de publicar, abra o site por aqui (no celular, em "Mais") para ver a sessão como as leitoras.',
     since: 1,
   },
 
@@ -587,8 +595,9 @@ export const TOUR_STEPS: readonly TourStep[] = [
     chapter: 'conta',
     kind: 'info',
     target: 'nav-account',
+    altTarget: 'admin-more',
     title: 'Minha conta',
-    body: 'Em Minha conta você muda o nome que aparece nos comentários e baixa uma cópia dos seus dados.',
+    body: 'Em Minha conta (no celular, em "Mais") você muda o nome que aparece nos comentários e baixa uma cópia dos seus dados.',
     since: 1,
   },
   {
