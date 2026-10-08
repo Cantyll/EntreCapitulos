@@ -207,7 +207,9 @@ test.describe('lista', () => {
       await expect(region).toBeVisible();
 
       // O desenho escondido não existe para a tecnologia assistiva (display:none): um só dos dois está na árvore.
-      const cards = width <= 760;
+      // A tabela entra quando a área da lista passa de 800px (consulta de contêiner): com a barra lateral do
+      // painel, só na janela de 1280px.
+      const cards = width <= 1024;
       await expect(region.getByRole('table')).toHaveCount(cards ? 0 : 1);
       await expect(region.getByRole('list', { name: 'Membros do clube' })).toHaveCount(
         cards ? 1 : 0,

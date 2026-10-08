@@ -81,7 +81,7 @@ export default async function MembersAdminPage({ searchParams }: PageProps<'/pai
         <MembersStats stats={stats} />
 
         <div className={styles.layout}>
-          <section aria-label="Membros">
+          <section aria-label="Membros" className={styles.listArea}>
             <div className={styles.toolbar}>
               <MembersSearch search={params.search} filter={params.filter} />
               <MembersFilters active={params.filter} search={params.search} stats={stats} />

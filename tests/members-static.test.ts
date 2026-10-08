@@ -263,9 +263,10 @@ describe('a lista em dois desenhos', () => {
   const css = read('src/components/membros/members.module.css');
 
   it('o desenho escondido usa display:none (leitor de tela e teclado não o percorrem)', () => {
-    expect(css).toMatch(/\.cardsView\s*\{[^}]*display:\s*none/);
+    // Cartões por padrão e a tabela a partir de 800px de lista (consulta de contêiner, etapa adapt).
+    expect(css).toMatch(/\.tableView\s*\{[^}]*display:\s*none/);
     expect(css).toMatch(
-      /@media \(max-width: 760px\)\s*\{[\s\S]*\.tableView\s*\{[^}]*display:\s*none[\s\S]*\.cardsView\s*\{[^}]*display:\s*grid/,
+      /@container memberlist \(min-width: 800px\)\s*\{[\s\S]*\.tableView\s*\{[^}]*display:\s*block[\s\S]*\.cardsView\s*\{[^}]*display:\s*none/,
     );
     // Nenhuma forma de esconder "só visualmente" (a lista completa seria lida duas vezes).
     const hiding = css.slice(css.indexOf('.tableView'), css.indexOf('.table {'));
