@@ -3,6 +3,7 @@ import { mkdirSync, rmSync } from 'node:fs';
 import { lit, sql } from '../support/db';
 import {
   CLAIMS_DIR,
+  LONG_TEXT,
   WORLD,
   chapterText,
   chapterTitle,
@@ -100,6 +101,22 @@ export default function globalSetup() {
       ],
     },
   ];
+  rows.push({
+    slug: WORLD.longSlug,
+    title: LONG_TEXT.bookTitle,
+    total: 6,
+    sessions: [
+      {
+        number: 1,
+        from: 1,
+        to: 3,
+        title: LONG_TEXT.sessionTitle,
+        status: 'published',
+        visibility: 'public',
+        commentsOpen: true,
+      },
+    ],
+  });
   for (let slot = 1; slot <= WORLD.poolSize; slot += 1) {
     rows.push({
       slug: poolSlug(slot),
@@ -119,4 +136,23 @@ export default function globalSetup() {
     });
   }
   sql(insertSql(rows));
+
+  // O livro dos textos no limite: link colado na sinopse e no relato, palavra enorme no gênero, na nota e na pergunta.
+  const { word, link } = LONG_TEXT;
+  const longSession = `(select s.id from public.reading_sessions s join public.books b on b.id = s.book_id
+    where b.slug = ${lit(WORLD.longSlug)} and s.number = 1)`;
+  sql(`
+    update public.books
+       set synopsis = ${lit(`Sinopse com o endereço ${link} colado no meio.`)}, genres = array[${lit(word)}]
+     where slug = ${lit(WORLD.longSlug)};
+    update public.reading_sessions
+       set body = jsonb_set(body, '{content}', (body->'content') || jsonb_build_array(
+             jsonb_build_object('type', 'paragraph', 'content', jsonb_build_array(
+               jsonb_build_object('type', 'text', 'text', ${lit(`Link colado: ${link}`)})))))
+     where id = ${longSession};
+    insert into public.session_notes (session_id, kind, text, reference, position)
+      values (${longSession}, 'quote', ${lit(link)}, ${lit(`Capítulo 3, ${word}`)}, 10);
+    insert into public.session_questions (session_id, text, position)
+      values (${longSession}, ${lit(`E se ${word}${word}?`)}, 10);
+  `);
 }

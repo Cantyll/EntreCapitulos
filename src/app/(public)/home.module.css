@@ -173,6 +173,11 @@
   gap: 8px;
 }
 
+/* A capa tem largura fixa (150px); em tela estreita a coluna é menor e a capa encolhe junto. */
+.miniShelf a > :first-child {
+  max-width: 100%;
+}
+
 .aside {
   display: grid;
   gap: 18px;
