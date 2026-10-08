@@ -37,3 +37,12 @@
   align-items: center;
   gap: 8px;
 }
+
+/* Tela baixa (celular deitado): com a barra de baixo, o topo fixo deixaria pouco espaço para o
+   conteúdo. Ele rola junto com a página. */
+@media (max-height: 500px) {
+  .top {
+    position: relative;
+    top: auto;
+  }
+}

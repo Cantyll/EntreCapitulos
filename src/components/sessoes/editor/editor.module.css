@@ -13,6 +13,13 @@
   min-height: 46px;
 }
 
+/* Tela baixa: o topo do painel rola junto com a página (AdminTopbar), então a barra cola no alto da tela. */
+@media (max-height: 500px) {
+  .toolbarSlot {
+    top: var(--safe-top);
+  }
+}
+
 .toolbar {
   display: grid;
   gap: 6px;

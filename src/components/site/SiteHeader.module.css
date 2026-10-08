@@ -33,3 +33,12 @@
     flex: 1;
   }
 }
+
+/* Tela baixa (celular deitado): o cabeçalho de duas linhas ficaria com quase metade da altura. Ele
+   continua no topo da página, mas rola junto com ela; o caminho de volta está no começo de cada página. */
+@media (max-height: 500px) {
+  .header {
+    position: relative;
+    top: auto;
+  }
+}
