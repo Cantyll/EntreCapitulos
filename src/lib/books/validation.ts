@@ -1,5 +1,5 @@
 import '@/lib/zod-setup';
-import { z } from 'zod';
+import * as z from 'zod';
 
 /*
  * Validação do formulário de livro e do progresso, no servidor. Mensagens em pt-BR. O banco tem as

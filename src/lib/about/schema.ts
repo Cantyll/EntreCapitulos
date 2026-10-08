@@ -1,5 +1,5 @@
 import '@/lib/zod-setup';
-import { z } from 'zod';
+import * as z from 'zod';
 
 import { ABOUT_CONTENT_VERSION, ABOUT_LIMITS } from './limits';
 import {

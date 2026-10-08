@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /*
  * No NAVEGADOR o zod roda sem o modo "JIT" (que compila validadores com `new Function`). A Content-Security-Policy
