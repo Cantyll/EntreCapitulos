@@ -9,12 +9,12 @@ import { getSiteTheme } from '@/lib/theme/server';
 import '@/styles/tokens.css';
 import '@/styles/base.css';
 
-// Newsreader: serifa dos títulos e dos relatos. Variável, com o eixo de tamanho óptico (opsz)
-// que o protótipo também pede ao Google Fonts.
+// Newsreader: serifa dos títulos e dos relatos. Variável (peso), romana e itálica, SEM o eixo de
+// tamanho óptico (opsz) que o protótipo pede: com ele os dois arquivos somam 273 KB e, sem ele, 120 KB,
+// e no 4G lento a serifa chegava 1,6 s depois do resto da página (decisão do dono, impeccable optimize).
 const newsreader = Newsreader({
   subsets: ['latin'],
   style: ['normal', 'italic'],
-  axes: ['opsz'],
   display: 'swap',
   variable: '--font-newsreader',
 });
