@@ -21,3 +21,9 @@ next-env.d.ts
 *.gpg
 *.age
 /backups/
+
+# Detector de design do Impeccable: cache, pendências e o consentimento local ficam fora do git.
+# A configuração compartilhada (.impeccable/config.json) é versionada.
+/.impeccable/hook.cache.json
+/.impeccable/hook.pending.json
+/.impeccable/config.local.json
