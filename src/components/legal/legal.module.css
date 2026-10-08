@@ -93,6 +93,8 @@
 }
 
 .tableWrap {
+  /* Contém os rótulos visualmente ocultos (`position: absolute`): sem isto eles escapam da rolagem e alargam a página. */
+  position: relative;
   margin: 0 0 14px;
   overflow-x: auto;
 }

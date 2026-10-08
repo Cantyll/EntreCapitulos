@@ -367,6 +367,8 @@
 
 /* Tabela */
 .tableWrap {
+  /* Contém os rótulos visualmente ocultos (`position: absolute`): sem isto eles escapam da rolagem e alargam a página. */
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: var(--r);

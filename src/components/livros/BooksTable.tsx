@@ -11,13 +11,21 @@ import { formatRating } from './RatingSelect';
 
 const STATUS_LABEL = { reading: 'Lendo', queued: 'Na fila', finished: 'Terminado' } as const;
 
-/** "Todos os livros": capa, título, autor, estado, progresso ou nota, sessões, comentários e editar. */
-export function BooksTable({ books }: { books: AdminBook[] }) {
+/**
+ * "Todos os livros": capa, título, autor, estado, progresso ou nota, sessões, comentários e editar. `dataTour` marca o
+ * próprio bloco da lista para o tutorial (etapa 8k): um elemento a mais em volta dele, dentro da grade da página,
+ * alargaria a página no celular.
+ */
+export function BooksTable({ books, dataTour }: { books: AdminBook[]; dataTour?: string }) {
   if (books.length === 0) {
-    return <p className={styles.empty}>Nenhum livro cadastrado ainda. Use “Adicionar livro”.</p>;
+    return (
+      <p className={styles.empty} data-tour={dataTour}>
+        Nenhum livro cadastrado ainda. Use “Adicionar livro”.
+      </p>
+    );
   }
   return (
-    <div className={styles.tableWrap}>
+    <div className={styles.tableWrap} data-tour={dataTour}>
       <table className={styles.table}>
         <caption>
           <VisuallyHidden>Todos os livros do clube</VisuallyHidden>
