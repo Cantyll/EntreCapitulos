@@ -77,10 +77,29 @@
   border-radius: 0 0 16px 16px;
 }
 
-/* Celular deitado: a folha ocupa menos da altura. */
+/* Celular deitado: a folha ocupa menos da altura (menos respiro, título menor; o texto continua com 16px). */
 @media (max-height: 499px) {
   .sheet {
     max-height: 60dvh;
+    padding-top: 12px;
+  }
+
+  .sheetBottom {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .sheetTop {
+    padding-top: calc(12px + env(safe-area-inset-top));
+    padding-bottom: 10px;
+  }
+
+  .sheet .title {
+    margin-bottom: 4px;
+    font-size: 19px;
+  }
+
+  .sheet .actions {
+    margin-top: 8px;
   }
 }
 

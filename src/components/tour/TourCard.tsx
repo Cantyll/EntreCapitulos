@@ -59,17 +59,23 @@ function subscribeCompact(callback: () => void): () => void {
   return () => media.removeEventListener('change', callback);
 }
 
-/** Alvo dentro de algo `fixed` ou `sticky` (barra de baixo, cabeçalho, barra de ações): rolar não o move. */
-function isPinned(element: HTMLElement): boolean {
+/**
+ * Alvo que a rolagem não move: dentro de algo `fixed` (barra de baixo) ou, já visível, dentro de algo `sticky`
+ * (cabeçalho, barra de ações da Página Sobre). Um `sticky` fora da tela (a barra de formatação do editor antes de
+ * grudar, no celular deitado) ainda precisa rolar até aparecer.
+ */
+function isPinned(element: HTMLElement, box: Box, viewHeight: number): boolean {
+  let sticky = false;
   for (
     let node: HTMLElement | null = element;
     node && node !== document.body;
     node = node.parentElement
   ) {
     const position = getComputedStyle(node).position;
-    if (position === 'fixed' || position === 'sticky') return true;
+    if (position === 'fixed') return true;
+    if (position === 'sticky') sticky = true;
   }
-  return false;
+  return sticky && box.top >= 0 && box.top + box.height <= viewHeight;
 }
 
 /** As áreas seguras do aparelho, lidas de uma sonda com `padding: env(safe-area-inset-*)`. */
@@ -101,6 +107,14 @@ function toBox(rect: DOMRect): Box {
 
 function viewportHeight(): number {
   return window.visualViewport?.height ?? window.innerHeight;
+}
+
+/** Altura da barra fixa de baixo do painel (só no celular; some nas telas do editor). */
+function bottomBarHeight(viewHeight: number): number {
+  const bar = document.querySelector('[data-admin-tabbar]');
+  if (!bar) return 0;
+  const box = bar.getBoundingClientRect();
+  return box.height > 0 && box.top < viewHeight ? Math.max(0, viewHeight - box.top) : 0;
 }
 
 function headerBottom(): number {
@@ -180,12 +194,16 @@ export function TourCard({
     const element = target instanceof HTMLElement ? target : null;
     let frame = 0;
     let lastKey = '';
-    const currentView = () => ({
-      width: window.innerWidth,
-      height: viewportHeight(),
-      headerBottom: headerBottom(),
-      insets: readInsets(probeRef.current),
-    });
+    const currentView = () => {
+      const height = viewportHeight();
+      return {
+        width: window.innerWidth,
+        height,
+        headerBottom: headerBottom(),
+        insets: readInsets(probeRef.current),
+        bottomBar: bottomBarHeight(height),
+      };
+    };
     const measure = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
@@ -207,13 +225,15 @@ export function TourCard({
         setLayout({ ring: box ? clipToView(box, view, 6) : null, placement });
       });
     };
-    if (element && !isPinned(element)) {
-      const box = toBox(element.getBoundingClientRect());
+    const startBox = element ? toBox(element.getBoundingClientRect()) : null;
+    if (element && startBox && !isPinned(element, startBox, viewportHeight())) {
+      const box = startBox;
       const card = cardRef.current?.getBoundingClientRect();
       const area = scrollArea(
         currentView(),
         { width: card?.width ?? 360, height: card?.height ?? 220 },
         compact,
+        box.height,
       );
       const delta = scrollDelta(box, area);
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
