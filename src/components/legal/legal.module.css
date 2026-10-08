@@ -136,6 +136,7 @@
   .other a {
     display: inline-flex;
     align-items: center;
+    min-width: var(--tap);
     min-height: var(--tap);
   }
 }
