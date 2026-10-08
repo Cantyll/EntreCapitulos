@@ -38,6 +38,7 @@
 }
 
 .hint {
+  max-width: 70ch;
   margin: 0;
   font-size: 13.5px;
   color: var(--ink-3);
@@ -490,6 +491,7 @@
 }
 
 .fixedBlocks p {
+  max-width: 70ch;
   margin: 0;
   font-size: 14px;
   color: var(--ink-2);

@@ -59,7 +59,8 @@
   border-radius: var(--r-sm);
   background-color: var(--surface);
   color: var(--ink);
-  font-size: 14px;
+  /* 14,5px com mouse e 16px no toque (o token): abaixo de 16px o iOS dá zoom ao focar. */
+  font-size: var(--field-font-size);
 }
 
 .hint {
