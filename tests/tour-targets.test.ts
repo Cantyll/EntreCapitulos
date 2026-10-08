@@ -68,6 +68,14 @@ describe('alvos do tutorial', () => {
     },
   );
 
+  it('o alvo substituto (celular) fica na moldura do painel, presente em toda tela', () => {
+    const withAlt = TOUR_STEPS.filter((step) => step.altTarget);
+    expect(withAlt.length).toBeGreaterThan(0);
+    for (const step of withAlt) {
+      expect(declares(shell, step.altTarget!), `${step.id}: ${step.altTarget}`).toBe(true);
+    }
+  });
+
   it('o tour da moderação só aponta para telas que a moderação abre', () => {
     const moderatorChapters = TOUR_CHAPTERS.filter((c) => c.roles.includes('moderator')).map(
       (c) => c.id,
