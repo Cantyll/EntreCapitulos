@@ -108,4 +108,17 @@ test.describe('campos de escrita: foco e placeholder', () => {
     await expect(paper).toHaveCSS('outline-style', 'solid');
     await expect(paper).toHaveCSS('outline-width', '2px');
   });
+
+  test('a borda de baixo dos campos com moldura passa 3:1 (linha de pauta)', async ({ page }) => {
+    await page.goto(sessionPath(WORLD.readingSlug, WORLD.sessions.public.number));
+    const select = page.getByLabel('Li até o').first();
+    await expect(select).toBeVisible();
+    const [rule, side, background] = await select.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return [style.borderBottomColor, style.borderTopColor, style.backgroundColor];
+    });
+    expect(contrastRatio(rule, background)).toBeGreaterThanOrEqual(3);
+    // Os outros lados continuam na Pauta clara: só a linha de baixo mudou.
+    expect(contrastRatio(side, background)).toBeLessThan(3);
+  });
 });

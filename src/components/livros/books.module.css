@@ -119,6 +119,7 @@
   min-height: 44px;
   padding: 10px 14px;
   border: 1px solid var(--line-2);
+  border-bottom-color: var(--field-rule);
   border-radius: var(--r-sm);
   background: var(--surface);
 }
