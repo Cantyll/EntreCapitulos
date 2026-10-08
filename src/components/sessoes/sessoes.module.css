@@ -1,20 +1,28 @@
 /* Editor de sessões e lista do painel (protótipo: aNova, aSessoes, .ed-*, .list-edit, .radio). */
+/*
+ * Duas colunas só quando o texto ganha pelo menos 560px: a lateral (340px) passa para baixo do texto
+ * quando não sobra espaço, pela largura do editor e não da janela (no iPad deitado, com a barra lateral
+ * do painel, a coluna do texto ficava com 330px, largura de celular). Flex com quebra, e não consulta
+ * de contêiner: um contêiner prenderia a barra de formatação, que no celular é `position: fixed`.
+ */
 .grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  display: flex;
+  flex-wrap: wrap;
   gap: 26px;
   width: 100%;
-  align-items: start;
+  align-items: flex-start;
 }
 
 .main {
   display: grid;
+  flex: 999 1 0;
   gap: 16px;
-  min-width: 0;
+  min-width: min(100%, 560px);
 }
 
 .side {
   display: grid;
+  flex: 1 1 340px;
   gap: 18px;
   min-width: 0;
 }
@@ -194,6 +202,11 @@
 .muted {
   color: var(--ink-3);
   font-size: 13.5px;
+}
+
+/* Texto de ajuda em parágrafo: no máximo uns 70 caracteres por linha, mesmo com a coluna larga. */
+p.muted {
+  max-width: 70ch;
 }
 
 .stack {
@@ -656,10 +669,6 @@
 }
 
 @media (max-width: 1020px) {
-  .grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   /* Celular: a lista vira cartões (a tabela de 680px forçaria rolagem lateral). */
   .tableWrap {
     display: none;
