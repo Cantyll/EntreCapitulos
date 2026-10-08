@@ -25,6 +25,7 @@ export function HelpButton() {
   const pathname = usePathname();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const hintButtonRef = useRef<HTMLButtonElement>(null);
+  const hintRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const hintId = useId();
   const [view, setView] = useState<'main' | 'chapters'>('main');
@@ -52,10 +53,20 @@ export function HelpButton() {
     }
   }, [menuOpen, buttonRef]);
 
-  // A dica que nasce de um gesto da pessoa ("Agora não", fim do tour) recebe o foco; a de novidades, não.
+  // A dica que nasce de um gesto da pessoa ("Agora não", fim do tour) recebe o foco; a de novidades, não. Ela fica
+  // ancorada ao "?" pela direita; numa tela estreita (320px) isso a faria sair pela esquerda, então ela desliza para a
+  // direita só o necessário para caber entre as margens de 16px.
   useEffect(() => {
+    const button = buttonRef?.current ?? null;
+    const box = hintRef.current;
+    if (hint && button && box) {
+      const anchor = button.getBoundingClientRect().right;
+      const width = box.getBoundingClientRect().width;
+      const right = Math.min(Math.max(anchor, 16 + width), window.innerWidth - 16);
+      box.style.setProperty('--hint-shift', `${Math.round(anchor - right)}px`);
+    }
     if (hint === 'review') hintButtonRef.current?.focus();
-  }, [hint]);
+  }, [hint, buttonRef]);
 
   if (!tour) return null;
 
@@ -83,6 +94,7 @@ export function HelpButton() {
 
       {hint && (
         <div
+          ref={hintRef}
           className={styles.hint}
           role="dialog"
           aria-modal="false"

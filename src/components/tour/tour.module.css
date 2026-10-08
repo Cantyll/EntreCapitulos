@@ -361,7 +361,8 @@
 .hint {
   position: absolute;
   top: calc(100% + 10px);
-  right: 0;
+  /* Ajustado pelo botão quando a tela é estreita (nunca sai da tela). */
+  right: var(--hint-shift, 0px);
   z-index: 60;
   box-sizing: border-box;
   width: min(280px, calc(100vw - 32px));
