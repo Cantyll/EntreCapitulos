@@ -20,6 +20,16 @@ type BookCoverProps = {
   priority?: boolean;
 };
 
+/**
+ * Fator do tamanho do título na capa gerada. Até 36 caracteres o título usa o tamanho pedido; acima disso encolhe
+ * (até 60%) para caber na capa, que tem largura fixa. O que ainda não couber é cortado com reticências pelo CSS.
+ */
+export function coverTitleScale(title: string): number {
+  const length = [...title.trim()].length;
+  if (length <= 36) return 1;
+  return Math.max(0.6, Math.round(Math.sqrt(36 / length) * 100) / 100);
+}
+
 /** Matiz 0 a 359 estável a partir do título: o mesmo livro sempre tem a mesma capa. */
 export function hueFromTitle(title: string): number {
   let n = 0;
@@ -58,6 +68,7 @@ export function BookCover({
     '--c1': hsl(hue, 0.5, 0.78),
     '--cover-ink': hsl(hue, 0.4, 0.2),
     '--cs': `${fontSize}px`,
+    '--ct': `${Math.round(fontSize * coverTitleScale(title) * 10) / 10}px`,
   } as CSSProperties;
 
   return (

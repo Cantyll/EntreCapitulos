@@ -49,12 +49,18 @@
   position: relative;
   z-index: 1;
   font-family: var(--serif);
-  font-size: var(--cs, 20px);
+  /* --ct: o tamanho já reduzido para títulos longos (coverTitleScale); --cs é o tamanho pedido. */
+  font-size: var(--ct, var(--cs, 20px));
   font-weight: 500;
   width: 100%;
   line-height: 1.05;
   letter-spacing: -0.01em;
   overflow-wrap: anywhere;
+  /* Título que ainda não cabe termina em reticências, em vez de ser cortado no meio de uma linha. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  overflow: hidden;
 }
 
 .ornament {
@@ -73,6 +79,11 @@
   font-size: calc(var(--cs, 20px) * 0.52);
   font-style: italic;
   width: 100%;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .image {

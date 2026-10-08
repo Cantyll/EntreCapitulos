@@ -34,6 +34,12 @@ body {
   font-size: 15px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  /*
+   * Rede de segurança para texto que vem de pessoas (título de livro, link colado na sinopse, nome de 60 letras
+   * sem espaço): a palavra que não cabe na linha quebra em vez de alargar a página. Só age quando a palavra não
+   * cabe; o texto comum não muda.
+   */
+  overflow-wrap: break-word;
 }
 
 img {

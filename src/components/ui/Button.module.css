@@ -13,6 +13,8 @@
     background 0.15s,
     border-color 0.15s;
   white-space: nowrap;
+  /* Nunca mais largo que a coluna: um rótulo com título de livro longo é cortado com reticências (BackButton). */
+  max-width: 100%;
 }
 
 .primary {

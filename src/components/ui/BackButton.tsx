@@ -1,6 +1,7 @@
 import type { Route } from 'next';
 import type { ReactNode } from 'react';
 
+import styles from './BackButton.module.css';
 import { ButtonLink } from './Button';
 import { Icon } from './Icon';
 
@@ -25,7 +26,7 @@ export function BackButton({ href, children = 'Voltar', className }: BackButtonP
   return (
     <ButtonLink href={href} variant="ghost" size="sm" className={className}>
       <Icon name="left" size="sm" />
-      {children}
+      <span className={styles.label}>{children}</span>
     </ButtonLink>
   );
 }

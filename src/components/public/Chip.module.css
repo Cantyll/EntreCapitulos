@@ -8,7 +8,12 @@
   color: var(--rose-deep);
   font-size: 12.5px;
   font-weight: 500;
-  white-space: nowrap;
+  /*
+   * Gênero e nomes vêm do painel: um texto maior que a linha quebra dentro da pílula (até o limite da coluna) em
+   * vez de alargar a página. Sem aperto, a pílula continua numa linha só e não encolhe ao lado de outra.
+   */
+  flex-shrink: 0;
+  max-width: 100%;
 }
 
 .line {
