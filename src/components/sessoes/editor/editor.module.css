@@ -116,6 +116,12 @@
   background: var(--surface);
 }
 
+/* O texto do relato não tem anel próprio (o ProseMirror tira o contorno): ele vai no papel, como na página Sobre. */
+.paper:focus-within {
+  outline: 2px solid var(--rose-2);
+  outline-offset: 1px;
+}
+
 .content {
   min-width: 0;
 }

@@ -97,11 +97,6 @@
   box-shadow: 0 2px 0 var(--rose-2);
 }
 
-.title::placeholder {
-  color: var(--ink-3);
-  opacity: 0.6;
-}
-
 .suggest {
   margin: -6px 0 0;
   font-size: 13px;

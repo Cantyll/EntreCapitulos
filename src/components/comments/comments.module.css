@@ -120,6 +120,16 @@
   padding: 16px 18px;
 }
 
+/*
+ * O campo de texto não tem moldura (escreve-se direto no cartão), então o anel de foco vai no cartão em volta,
+ * como no editor da página Sobre. Só o campo de texto acende o cartão: o seletor e o botão têm o próprio anel.
+ */
+.composer:has(.textarea:focus-visible),
+.replyBox:has(.textarea:focus-visible) {
+  outline: 2px solid var(--rose-2);
+  outline-offset: 2px;
+}
+
 /* --- Formulário (compositor e resposta) --- */
 .form {
   min-width: 0;
