@@ -211,7 +211,7 @@ Uma paleta de papel e tinta, com um único tom de destaque que muda com a capa d
 
 ## Typography
 
-**Display Font:** Newsreader (com Georgia), variável, com eixo de tamanho óptico, romana e itálica.
+**Display Font:** Newsreader (com Georgia), variável no peso, romana e itálica, sem o eixo de tamanho óptico (o protótipo o pede, mas ele dobra o peso dos arquivos; ver Desempenho no CLAUDE.md).
 **Body Font:** Instrument Sans (com a fonte do sistema), pesos 400, 500 e 600.
 
 **Character:** a Newsreader é a voz da página impressa, com títulos em peso médio e espaçamento negativo, e uma itálica que faz o papel da letra cursiva da margem. A Instrument Sans é o lápis da interface: pequena, neutra, legível em 13px.
