@@ -1,0 +1,6 @@
+/* O rótulo pode trazer o título de um livro: numa coluna estreita ele encolhe com reticências (o nome acessível segue inteiro). */
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -127,7 +127,10 @@
 }
 
 .name {
+  min-width: 0;
   font-weight: 600;
+  /* O nome público tem até 60 caracteres e pode não ter espaço: quebra em qualquer ponto em vez de vazar. */
+  overflow-wrap: anywhere;
 }
 
 .badge {
