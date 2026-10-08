@@ -1,5 +1,14 @@
 /* Painel Membros (etapa 8f). Só tokens do tema. */
+/*
+ * A tela se adapta à largura da área de conteúdo (consultas de contêiner), não à da janela: com a barra
+ * lateral do painel, uma janela de 1280px deixa uns 960px para a lista, e o painel não passa de 1172px.
+ *  - `members` (a página): o cartão "Cargos e permissões" fica abaixo da lista, com os três cargos lado a
+ *    lado quando há espaço. Ao lado da lista (como era), ele deixava a tabela com uns 600px, e os nomes
+ *    quebravam letra por letra.
+ *  - `memberlist` (a lista): tabela a partir de 800px; abaixo, cartões (dois por linha no tablet).
+ */
 .stack {
+  container: members / inline-size;
   display: grid;
   gap: 18px;
   width: 100%;
@@ -7,10 +16,15 @@
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 22px;
   align-items: start;
   width: 100%;
+}
+
+.listArea {
+  container: memberlist / inline-size;
+  min-width: 0;
 }
 
 .card {
@@ -177,15 +191,27 @@
 .tableView {
   /* Contém os rótulos visualmente ocultos (`position: absolute`): sem isto eles escapam da rolagem e alargam a página. */
   position: relative;
+  display: none;
   overflow-x: auto;
 }
 
 .cardsView {
-  display: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   margin: 0;
   padding: 0;
   list-style: none;
   gap: 10px;
+}
+
+@container memberlist (min-width: 800px) {
+  .tableView {
+    display: block;
+  }
+
+  .cardsView {
+    display: none;
+  }
 }
 
 .table {
@@ -216,6 +242,13 @@
 
 .table tbody th {
   font-weight: 400;
+}
+
+/* Na tabela, a quebra fica entre palavras: `anywhere` (dos cartões) reduz a largura mínima da célula a
+   uma letra, e a tabela automática esmagava o nome numa coluna de letras. */
+.table .name,
+.table .masked {
+  overflow-wrap: break-word;
 }
 
 .numeric {
@@ -370,6 +403,7 @@
 }
 
 .roles p {
+  max-width: 70ch;
   margin: 0;
   color: var(--ink-3);
   font-size: 13px;
@@ -404,23 +438,30 @@
   }
 }
 
-@media (max-width: 1020px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
+/* Com espaço, os três cargos lado a lado, em vez de um cartão comprido. */
+@container members (min-width: 720px) {
+  .roles dl {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 28px;
+  }
+}
+
+/* Celular: os quatro filtros não cabem numa linha; em vez de uma pílula de duas linhas, uma grade 2x2. */
+@container members (max-width: 479.98px) {
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-radius: var(--r);
+  }
+
+  .tab {
+    justify-content: center;
   }
 }
 
 @media (max-width: 760px) {
   .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .tableView {
-    display: none;
-  }
-
-  .cardsView {
-    display: grid;
   }
 
   .search {
