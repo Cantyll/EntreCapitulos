@@ -298,8 +298,10 @@ Pílulas leves, de peso 500, que se distinguem pela tinta, não pelo tamanho.
 ### Inputs / Fields
 
 - **Style:** fundo Folha, borda de 1px em Pauta marcada, cantos de 10px, 10px por 14px, altura mínima de 44px. Rótulo em 13px peso 600 acima; ajuda em 13px Tinta de nota abaixo.
+- **Linha de pauta:** a borda de baixo do campo é Tinta de nota (`--field-rule`), como a linha de um caderno: é ela que passa os 3:1 de contorno de campo (WCAG 1.4.11); os outros lados ficam em Pauta marcada. Não vale para os campos sem moldura (o cartão do comentário, a resposta e o papel do relato).
+- **Placeholder:** Tinta de nota, sem transparência (4,5:1).
 - **Fonte:** 14,5px no computador e 16px no toque (abaixo disso o iOS dá zoom ao focar).
-- **Focus:** o mesmo contorno de 2px em Tinta de destaque.
+- **Focus:** o mesmo contorno de 2px em Tinta de destaque. Nos campos sem moldura, o contorno acende no cartão ou no papel em volta (`:has(:focus-visible)` ou `:focus-within`), e o cursor de texto é Tinta de destaque.
 - **Error:** borda em Perigo e mensagem em 13px Perigo logo abaixo; mensagens de formulário em caixa de 10px com fundo de Perigo ou Certo.
 
 ### Navigation

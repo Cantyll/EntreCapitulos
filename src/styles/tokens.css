@@ -31,6 +31,12 @@
   --danger: #a93a47;
   --danger-bg: #fbe3e5;
 
+  /*
+   * Linha de pauta: a borda de baixo dos campos com moldura. O --ink-3 passa 4,5:1 em todo tema (o motor do tema
+   * garante contra --soft), acima dos 3:1 que identificam um campo (WCAG 1.4.11); os outros lados seguem na Pauta.
+   */
+  --field-rule: var(--ink-3);
+
   /* Forma e sombra: cartões, campos e pílulas */
   --r: 16px;
   --r-sm: 10px;
