@@ -66,6 +66,19 @@ test.describe('navegação do painel', () => {
     });
   }
 
+  test('iPhone: a moderação também tem "Mais", com Ver o site, Minha conta e Tutorial @mobile', async ({
+    openAs,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'webkit-mobile', 'barra inferior é só do celular');
+    const { page } = await openAs(await createModerator());
+    await page.goto('/painel/comentarios');
+    const bar = page.getByRole('navigation', { name: 'Painel' });
+    await bar.getByRole('button', { name: 'Mais' }).click();
+    const sheet = page.getByRole('dialog', { name: 'Mais' });
+    await expect(sheet.getByRole('link')).toHaveText(['Ver o site', 'Minha conta']);
+    await expect(sheet.getByRole('button', { name: 'Tutorial' })).toBeVisible();
+  });
+
   test('a moderação continua indo direto para Comentários e não abre as áreas "Em breve"', async ({
     openAs,
     guard,
