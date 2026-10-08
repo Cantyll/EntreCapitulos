@@ -1,0 +1,650 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-08T17:46:33Z",
+  "title": "Design System: Entre Capítulos",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Papel",
+        "canonical": "#FFF8F9",
+        "oklch": "oklch(98.5% 0.008 7.3)",
+        "purpose": "Fundo de todas as páginas.",
+        "tonalRamp": [
+          "#0E0A0B",
+          "#272323",
+          "#443E3F",
+          "#625C5D",
+          "#827B7C",
+          "#A39C9D",
+          "#C9C2C3",
+          "#F3ECED"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Folha",
+        "canonical": "#FFFFFF",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "purpose": "Cartões, campos, diálogos e barras.",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#242424",
+          "#404040",
+          "#5D5D5D",
+          "#7D7D7D",
+          "#9E9E9E",
+          "#C4C4C4",
+          "#EEEEEE"
+        ]
+      },
+      "soft": {
+        "role": "neutral",
+        "displayName": "Papel tingido",
+        "canonical": "#FDEFF2",
+        "oklch": "oklch(96.4% 0.016 2.7)",
+        "purpose": "Fundos suaves e a caixa \"Minha teoria\".",
+        "tonalRamp": [
+          "#11080A",
+          "#2B2123",
+          "#473C3F",
+          "#665A5D",
+          "#867A7C",
+          "#A79B9D",
+          "#CEC0C3",
+          "#F8EAED"
+        ]
+      },
+      "soft-2": {
+        "role": "neutral",
+        "displayName": "Papel tingido forte",
+        "canonical": "#F7DDE4",
+        "oklch": "oklch(92.1% 0.030 359.5)",
+        "purpose": "Trilhas e hover do botão suave.",
+        "tonalRamp": [
+          "#15060B",
+          "#301E23",
+          "#4D393F",
+          "#6D575D",
+          "#8D767D",
+          "#AF979E",
+          "#D6BCC3",
+          "#FEE8EE"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Pauta",
+        "canonical": "#F1DDE3",
+        "oklch": "oklch(91.5% 0.023 357.4)",
+        "purpose": "Bordas de cartões e filetes entre itens.",
+        "tonalRamp": [
+          "#13070B",
+          "#2E1F24",
+          "#4A3B40",
+          "#69585E",
+          "#8A787D",
+          "#AB999E",
+          "#D2BEC4",
+          "#FDE8EE"
+        ]
+      },
+      "line-2": {
+        "role": "neutral",
+        "displayName": "Pauta marcada",
+        "canonical": "#E7C8D1",
+        "oklch": "oklch(86.2% 0.037 358.5)",
+        "purpose": "Bordas de campos e capítulos por ler na fita.",
+        "tonalRamp": [
+          "#17050B",
+          "#331C24",
+          "#50383F",
+          "#70555D",
+          "#90747D",
+          "#B3959E",
+          "#D9BBC4",
+          "#FFE7EE"
+        ]
+      },
+      "rose": {
+        "role": "primary",
+        "displayName": "Marca-texto",
+        "canonical": "#CF6C88",
+        "oklch": "oklch(65.3% 0.128 3.3)",
+        "purpose": "Destaque gráfico: segmentos, filetes, números. Nunca texto.",
+        "tonalRamp": [
+          "#1D0009",
+          "#48001F",
+          "#721639",
+          "#953856",
+          "#BA5975",
+          "#DF7A96",
+          "#FDA8BD",
+          "#FFE8ED"
+        ]
+      },
+      "rose-2": {
+        "role": "primary",
+        "displayName": "Tinta de destaque",
+        "canonical": "#B04C69",
+        "oklch": "oklch(55.3% 0.133 4.3)",
+        "purpose": "Botão principal, links, foco.",
+        "tonalRamp": [
+          "#1D0008",
+          "#48011E",
+          "#741137",
+          "#983654",
+          "#BC5774",
+          "#E27994",
+          "#FDA8BC",
+          "#FFE8EC"
+        ]
+      },
+      "rose-deep": {
+        "role": "primary",
+        "displayName": "Tinta profunda",
+        "canonical": "#7E3350",
+        "oklch": "oklch(43.4% 0.109 358.4)",
+        "purpose": "Texto de ênfase, títulos de capítulo, última sessão.",
+        "tonalRamp": [
+          "#1D000B",
+          "#470223",
+          "#6A213F",
+          "#8D405D",
+          "#B0607C",
+          "#D5819E",
+          "#FEA6C3",
+          "#FFE7EE"
+        ]
+      },
+      "rose-tint": {
+        "role": "primary",
+        "displayName": "Realce",
+        "canonical": "#FBE6EC",
+        "oklch": "oklch(94.3% 0.024 358.3)",
+        "purpose": "Fundo de chips e itens ativos.",
+        "tonalRamp": [
+          "#13070B",
+          "#2E1F24",
+          "#4B3B40",
+          "#6A585D",
+          "#8A787D",
+          "#AC989E",
+          "#D2BEC4",
+          "#FDE8EE"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "#2A1E24",
+        "oklch": "oklch(25.2% 0.021 347.2)",
+        "purpose": "Texto principal.",
+        "tonalRamp": [
+          "#12080D",
+          "#2C2026",
+          "#493B42",
+          "#675960",
+          "#877880",
+          "#A999A1",
+          "#CFBFC7",
+          "#FAE9F1"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Tinta secundária",
+        "canonical": "#6C5961",
+        "oklch": "oklch(48.6% 0.028 350.9)",
+        "purpose": "Subtítulos e resumos.",
+        "tonalRamp": [
+          "#14060D",
+          "#2F1F26",
+          "#4C3A41",
+          "#6A575F",
+          "#8B777F",
+          "#AD98A0",
+          "#D3BDC6",
+          "#FEE7F1"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Tinta de nota",
+        "canonical": "#7B6671",
+        "oklch": "oklch(53.4% 0.031 345.3)",
+        "purpose": "Metadados e legendas.",
+        "tonalRamp": [
+          "#14060E",
+          "#2F1E27",
+          "#4C3943",
+          "#6B5762",
+          "#8C7681",
+          "#AE97A3",
+          "#D4BCC9",
+          "#FEE7F3"
+        ]
+      },
+      "av1": {
+        "role": "neutral",
+        "displayName": "Pastel de avatar 1",
+        "canonical": "#F8DCE3",
+        "oklch": "oklch(91.9% 0.032 0.8)",
+        "purpose": "Fundo de avatar.",
+        "tonalRamp": [
+          "#16050A",
+          "#311D23",
+          "#4F393F",
+          "#6E565C",
+          "#8E767C",
+          "#B1979D",
+          "#D7BCC3",
+          "#FFE8ED"
+        ]
+      },
+      "av2": {
+        "role": "neutral",
+        "displayName": "Pastel de avatar 2",
+        "canonical": "#F3E3D6",
+        "oklch": "oklch(92.5% 0.025 61.6)",
+        "purpose": "Fundo de avatar.",
+        "tonalRamp": [
+          "#130902",
+          "#2D2118",
+          "#4A3D32",
+          "#685B50",
+          "#897A6F",
+          "#AA9B8F",
+          "#D0C1B4",
+          "#FBEBDE"
+        ]
+      },
+      "av3": {
+        "role": "neutral",
+        "displayName": "Pastel de avatar 3",
+        "canonical": "#E4E9F0",
+        "oklch": "oklch(93.2% 0.011 256.7)",
+        "purpose": "Fundo de avatar.",
+        "tonalRamp": [
+          "#080B10",
+          "#212429",
+          "#3C4046",
+          "#5A5E64",
+          "#797E84",
+          "#9A9FA5",
+          "#C0C4CB",
+          "#EAEFF6"
+        ]
+      },
+      "av4": {
+        "role": "neutral",
+        "displayName": "Pastel de avatar 4",
+        "canonical": "#EFE0EA",
+        "oklch": "oklch(92.2% 0.021 337.7)",
+        "purpose": "Fundo de avatar.",
+        "tonalRamp": [
+          "#11080E",
+          "#2B2028",
+          "#473C44",
+          "#665962",
+          "#867982",
+          "#A89AA3",
+          "#CEBFC9",
+          "#F8E9F3"
+        ]
+      },
+      "ok": {
+        "role": "status",
+        "displayName": "Certo",
+        "canonical": "#2F7355",
+        "oklch": "oklch(50.3% 0.085 161.9)",
+        "purpose": "Texto de sucesso, sobre ok-bg.",
+        "tonalRamp": [
+          "#000F07",
+          "#012C1B",
+          "#024C32",
+          "#286C4F",
+          "#4A8D6E",
+          "#6CAF8E",
+          "#91D6B3",
+          "#C3FEE0"
+        ]
+      },
+      "ok-bg": {
+        "role": "status",
+        "displayName": "Fundo de certo",
+        "canonical": "#E4F2EA",
+        "oklch": "oklch(94.8% 0.018 161.1)",
+        "purpose": "Fundo de mensagens de sucesso.",
+        "tonalRamp": [
+          "#050E09",
+          "#1C2721",
+          "#38433D",
+          "#55615A",
+          "#74817A",
+          "#95A29B",
+          "#BAC8C0",
+          "#E5F3EB"
+        ]
+      },
+      "warn": {
+        "role": "status",
+        "displayName": "Atenção",
+        "canonical": "#8A5E1F",
+        "oklch": "oklch(51.8% 0.096 71.9)",
+        "purpose": "Texto de aviso, sobre warn-bg.",
+        "tonalRamp": [
+          "#130900",
+          "#341F01",
+          "#593802",
+          "#7F5310",
+          "#A07337",
+          "#C49458",
+          "#EBBA7D",
+          "#FEEBD5"
+        ]
+      },
+      "warn-bg": {
+        "role": "status",
+        "displayName": "Fundo de atenção",
+        "canonical": "#FAEEDB",
+        "oklch": "oklch(95.4% 0.028 79.5)",
+        "purpose": "Fundo de avisos.",
+        "tonalRamp": [
+          "#110A01",
+          "#2B2314",
+          "#483E2F",
+          "#665C4C",
+          "#867C6B",
+          "#A89D8B",
+          "#CEC2B0",
+          "#F9EDDA"
+        ]
+      },
+      "danger": {
+        "role": "status",
+        "displayName": "Perigo",
+        "canonical": "#A93A47",
+        "oklch": "oklch(51.0% 0.145 17.1)",
+        "purpose": "Texto de erro e de ação destrutiva, sobre danger-bg.",
+        "tonalRamp": [
+          "#1E0004",
+          "#490211",
+          "#7A0422",
+          "#9F303F",
+          "#C4535D",
+          "#EA757D",
+          "#FFA9AC",
+          "#FEE8E9"
+        ]
+      },
+      "danger-bg": {
+        "role": "status",
+        "displayName": "Fundo de perigo",
+        "canonical": "#FBE3E5",
+        "oklch": "oklch(93.6% 0.026 11.9)",
+        "purpose": "Fundo de mensagens de erro.",
+        "tonalRamp": [
+          "#150708",
+          "#301F21",
+          "#4D3A3C",
+          "#6C585A",
+          "#8C7779",
+          "#AE989A",
+          "#D5BDBF",
+          "#FFE8EA"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Título do livro atual no topo da home."
+      },
+      "headline": {
+        "displayName": "Título de página",
+        "purpose": "O h1 de cada página."
+      },
+      "title": {
+        "displayName": "Título de seção",
+        "purpose": "Títulos de seção (28px)."
+      },
+      "title-card": {
+        "displayName": "Título de cartão",
+        "purpose": "Título do cartão de sessão (21px no celular)."
+      },
+      "chapter": {
+        "displayName": "Capítulo",
+        "purpose": "Divisória de capítulo no relato, em itálica e Tinta profunda."
+      },
+      "prose": {
+        "displayName": "Prosa",
+        "purpose": "Texto dos relatos, coluna de até 700px; 18px abaixo de 640px."
+      },
+      "body": {
+        "displayName": "Interface",
+        "purpose": "Texto da interface."
+      },
+      "label": {
+        "displayName": "Rótulo",
+        "purpose": "Botões, chips, rótulos de campo e metadados (12,5 a 14px)."
+      },
+      "logo": {
+        "displayName": "Logotipo",
+        "purpose": "Nome do site, em itálica."
+      }
+    },
+    "shadows": [
+      {
+        "name": "folha-apoiada",
+        "value": "0 1px 2px rgba(126, 51, 80, 0.05), 0 14px 34px -18px rgba(126, 51, 80, 0.28)",
+        "purpose": "A única sombra de cartão (--shadow): cartões isolados, diálogos, botão de revelar spoiler."
+      },
+      {
+        "name": "livro-na-estante",
+        "value": "inset 7px 0 0 rgba(0, 0, 0, 0.05), inset 9px 0 10px -7px rgba(0, 0, 0, 0.2), 0 16px 30px -20px rgba(90, 30, 50, 0.55)",
+        "purpose": "Só a capa do livro, com a lombada desenhada por sombras internas."
+      },
+      {
+        "name": "folha-inferior",
+        "value": "0 -20px 50px -20px rgba(42, 30, 36, 0.4)",
+        "purpose": "Diálogos e a folha \"Mais\" quando sobem de baixo no celular."
+      },
+      {
+        "name": "anel-de-foco",
+        "value": "outline: 2px solid var(--rose-2); outline-offset: 2px",
+        "purpose": "Foco visível em todo elemento interativo (por dentro, -2px, em faixas roláveis)."
+      },
+      {
+        "name": "vidro-fosco",
+        "value": "background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(12px)",
+        "purpose": "Cabeçalho fixo do site (a barra inferior do painel usa a Folha a 94% e 14px)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "estado",
+        "value": "0.15s (background, border-color, transform)",
+        "purpose": "Hover e pressionado de botões e segmentos da fita."
+      },
+      {
+        "name": "revelar-spoiler",
+        "value": "filter 0.25s ease",
+        "purpose": "Tirar o desfoque de um trecho coberto."
+      },
+      {
+        "name": "folha-sobe",
+        "value": "0.22s ease-out",
+        "purpose": "Folha inferior entrando no celular."
+      },
+      {
+        "name": "menos-movimento",
+        "value": "prefers-reduced-motion: reduce desliga transições e animações",
+        "purpose": "Respeitar a preferência da pessoa em todo o site."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "prosa",
+        "value": "640px"
+      },
+      {
+        "name": "celular",
+        "value": "760px"
+      },
+      {
+        "name": "uma-coluna",
+        "value": "1020px"
+      },
+      {
+        "name": "toque",
+        "value": "(pointer: coarse)"
+      },
+      {
+        "name": "mouse",
+        "value": "(hover: hover)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botão principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "A ação principal da tela: entrar, publicar, salvar. Uma por bloco.",
+      "html": "<button class=\"ds-btn-primary\">Entrar para o clube</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 999px; padding: 10px 18px; font-family: var(--sans, 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif); font-weight: 500; font-size: 14px; white-space: nowrap; cursor: pointer; transition: background 0.15s, border-color 0.15s; } .ds-btn-primary:focus-visible { outline: 2px solid var(--rose-2, #B04C69); outline-offset: 2px; } .ds-btn-primary { background: var(--rose-2, #B04C69); color: #fff; } .ds-btn-primary:hover, .ds-btn-primary:active { background: var(--rose-deep, #7E3350); }"
+    },
+    {
+      "name": "Botão suave",
+      "kind": "button",
+      "refersTo": "button-soft",
+      "description": "Ação secundária com peso: \"Ler a sessão\", \"Continuar o tour\".",
+      "html": "<button class=\"ds-btn-soft\">Ler a sessão</button>",
+      "css": ".ds-btn-soft { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 999px; padding: 10px 18px; font-family: var(--sans, 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif); font-weight: 500; font-size: 14px; white-space: nowrap; cursor: pointer; transition: background 0.15s, border-color 0.15s; } .ds-btn-soft:focus-visible { outline: 2px solid var(--rose-2, #B04C69); outline-offset: 2px; } .ds-btn-soft { background: var(--rose-tint, #FBE6EC); color: var(--rose-deep, #7E3350); } .ds-btn-soft:hover, .ds-btn-soft:active { background: var(--soft-2, #F7DDE4); }"
+    },
+    {
+      "name": "Botão fantasma",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Ação neutra ou de cancelar; a variante de perigo só troca o texto para vermelho.",
+      "html": "<button class=\"ds-btn-ghost\">Cancelar</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 999px; padding: 10px 18px; font-family: var(--sans, 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif); font-weight: 500; font-size: 14px; white-space: nowrap; cursor: pointer; transition: background 0.15s, border-color 0.15s; } .ds-btn-ghost:focus-visible { outline: 2px solid var(--rose-2, #B04C69); outline-offset: 2px; } .ds-btn-ghost { background: var(--surface, #FFFFFF); border-color: var(--line-2, #E7C8D1); color: var(--ink, #2A1E24); } .ds-btn-ghost:hover, .ds-btn-ghost:active { border-color: var(--rose, #CF6C88); }"
+    },
+    {
+      "name": "Botão de ícone",
+      "kind": "button",
+      "refersTo": "icon-button",
+      "description": "Círculo de 38px (44px no toque), sempre com rótulo acessível; ponto de aviso opcional.",
+      "html": "<button class=\"ds-icon-btn\" aria-label=\"Notificações\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9\"/><path d=\"M10.3 21a1.94 1.94 0 0 0 3.4 0\"/></svg><span class=\"ds-icon-btn-dot\"></span></button>",
+      "css": ".ds-icon-btn { position: relative; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line, #F1DDE3); background: var(--surface, #FFFFFF); color: var(--ink, #2A1E24); cursor: pointer; } .ds-icon-btn:hover { border-color: var(--rose, #CF6C88); } .ds-icon-btn:focus-visible { outline: 2px solid var(--rose-2, #B04C69); outline-offset: 2px; } .ds-icon-btn-dot { position: absolute; top: 7px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--rose-2, #B04C69); border: 2px solid var(--surface, #FFFFFF); }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Faixa de capítulos, visibilidade, estado do livro. Variante de contorno para o que é neutro.",
+      "html": "<span class=\"ds-chip\">Capítulos 1 a 3</span> <span class=\"ds-chip ds-chip-line\">Só para membros</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; background: var(--rose-tint, #FBE6EC); color: var(--rose-deep, #7E3350); font-family: var(--sans, 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif); font-size: 12.5px; font-weight: 500; white-space: nowrap; } .ds-chip-line { background: none; border: 1px solid var(--line-2, #E7C8D1); color: var(--ink-2, #6C5961); }"
+    },
+    {
+      "name": "Navegação do site",
+      "kind": "nav",
+      "refersTo": "nav-link-active",
+      "description": "Links em pílula no cabeçalho; o ativo em Realce com Tinta profunda.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Principal\"><a class=\"ds-nav-link ds-nav-on\" href=\"#\" aria-current=\"page\">Início</a><a class=\"ds-nav-link\" href=\"#\">Sessões</a><a class=\"ds-nav-link\" href=\"#\">Estante</a><a class=\"ds-nav-link\" href=\"#\">Sobre o clube</a></nav>",
+      "css": ".ds-nav { display: flex; gap: 2px; font-family: var(--sans, 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif); } .ds-nav-link { padding: 8px 13px; border-radius: 999px; color: var(--ink-2, #6C5961); font-size: 14px; text-decoration: none; white-space: nowrap; } .ds-nav-link:hover { color: var(--ink, #2A1E24); } .ds-nav-link:focus-visible { outline: 2px solid var(--rose-2, #B04C69); outline-offset: -2px; } .ds-nav-on { background: var(--rose-tint, #FBE6EC); color: var(--rose-deep, #7E3350); font-weight: 500; }"
+    },
+    {
+      "name": "Cartão",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Folha branca isolada sobre o Papel, com borda de Pauta e a sombra única.",
+      "html": "<article class=\"ds-card\"><h3 class=\"ds-card-title\">Até que capítulo você leu?</h3><p class=\"ds-card-text\">Diga onde parou e o site cobre o que vem depois.</p></article>",
+      "css": ".ds-card { padding: 22px; border: 1px solid var(--line, #F1DDE3); border-radius: 16px; background: var(--surface, #FFFFFF); box-shadow: var(--shadow, 0 1px 2px rgba(126, 51, 80, 0.05), 0 14px 34px -18px rgba(126, 51, 80, 0.28)); color: var(--ink, #2A1E24); } .ds-card-title { margin: 0 0 4px; font-family: var(--serif, Newsreader, Georgia, serif); font-size: 20px; font-weight: 500; } .ds-card-text { margin: 0; font-family: var(--sans, 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif); font-size: 13px; color: var(--ink-3, #7B6671); }"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Rótulo acima, campo de 44px com cantos de 10px; 16px de fonte no toque.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Seu e-mail</span><input class=\"ds-input\" type=\"email\" placeholder=\"voce@exemplo.com\"></label>",
+      "css": ".ds-field { display: grid; gap: 6px; font-family: var(--sans, 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif); } .ds-field-label { font-size: 13px; font-weight: 600; color: var(--ink, #2A1E24); } .ds-input { width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid var(--line-2, #E7C8D1); border-radius: 10px; background: var(--surface, #FFFFFF); color: var(--ink, #2A1E24); font: inherit; font-size: 14.5px; box-sizing: border-box; } .ds-input:focus-visible { outline: 2px solid var(--rose-2, #B04C69); outline-offset: 2px; } @media (pointer: coarse) { .ds-input { font-size: 16px; } }"
+    },
+    {
+      "name": "Fita de capítulos",
+      "kind": "custom",
+      "refersTo": "strip-segment-session",
+      "description": "A assinatura: um segmento por capítulo, sessões em Marca-texto alternado, a última em Tinta profunda, a próxima tracejada, o resto por ler.",
+      "html": "<div class=\"ds-strip\" role=\"img\" aria-label=\"Capítulos 1 a 9 lidos em três sessões; próxima sessão, capítulos 10 a 12\"><i class=\"ds-seg ds-s\"></i><i class=\"ds-seg ds-s\"></i><i class=\"ds-seg ds-s\"></i><i class=\"ds-seg ds-s ds-alt\"></i><i class=\"ds-seg ds-s ds-alt\"></i><i class=\"ds-seg ds-s ds-alt\"></i><i class=\"ds-seg ds-last\"></i><i class=\"ds-seg ds-last\"></i><i class=\"ds-seg ds-last\"></i><i class=\"ds-seg ds-next\"></i><i class=\"ds-seg ds-next\"></i><i class=\"ds-seg ds-next\"></i><i class=\"ds-seg ds-unread\"></i><i class=\"ds-seg ds-unread\"></i><i class=\"ds-seg ds-unread\"></i><i class=\"ds-seg ds-unread\"></i><i class=\"ds-seg ds-unread\"></i><i class=\"ds-seg ds-unread\"></i><i class=\"ds-seg ds-unread\"></i><i class=\"ds-seg ds-unread\"></i></div>",
+      "css": ".ds-strip { display: grid; grid-template-columns: repeat(20, minmax(3px, 1fr)); gap: 2px; max-width: 420px; } .ds-seg { display: block; height: 16px; border-radius: 2px; box-sizing: border-box; } .ds-s { background: var(--rose, #CF6C88); } .ds-alt { background: color-mix(in srgb, var(--rose, #CF6C88) 62%, var(--surface, #FFFFFF)); } .ds-last { background: var(--rose-deep, #7E3350); } .ds-next { background: var(--surface, #FFFFFF); border: 1.5px dashed var(--rose, #CF6C88); } .ds-unread { background: var(--line-2, #E7C8D1); }"
+    },
+    {
+      "name": "Cobertura de spoiler",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Trecho desfocado e inerte, com um cartão-botão no centro para revelar.",
+      "html": "<div class=\"ds-cover\"><p class=\"ds-cover-text\" aria-hidden=\"true\">Texto do capítulo seguinte, coberto até a pessoa chegar lá na própria leitura.</p><div class=\"ds-veil\"><button class=\"ds-reveal\" aria-expanded=\"false\"><span>Você marcou que leu até o capítulo 6.</span><small>Mostrar o capítulo 7</small></button></div></div>",
+      "css": ".ds-cover { position: relative; max-width: 420px; } .ds-cover-text { min-height: 150px; margin: 0; filter: blur(7px); opacity: 0.7; font-family: var(--serif, Newsreader, Georgia, serif); font-size: 19.5px; line-height: 1.72; color: var(--ink, #2A1E24); } .ds-veil { position: absolute; inset: 0; display: grid; place-items: center; padding: 8px; } .ds-reveal { display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 320px; padding: 16px 22px; border: 1px solid var(--line-2, #E7C8D1); border-radius: 16px; background: var(--surface, #FFFFFF); box-shadow: var(--shadow, 0 1px 2px rgba(126, 51, 80, 0.05), 0 14px 34px -18px rgba(126, 51, 80, 0.28)); color: var(--ink, #2A1E24); font-family: var(--sans, 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif); font-size: 14px; text-align: center; cursor: pointer; } .ds-reveal small { color: var(--rose-deep, #7E3350); font-size: 13px; font-weight: 600; } .ds-reveal:hover { border-color: var(--rose, #CF6C88); } .ds-reveal:focus-visible { outline: 2px solid var(--rose-2, #B04C69); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "A margem do livro",
+    "overview": "O Entre Capítulos é a margem de um livro aberto: as anotações a lápis que uma leitora faz enquanto lê, e o espaço para quem lê junto responder. A página pertence ao texto da Agatha (serifado, grande, com ar entre as linhas), e a interface é o lápis: fina, discreta, em sans-serif pequena, presente só onde ajuda a ler, a encontrar o capítulo certo ou a conversar.\n\nO tom é íntimo, editorial e calmo. Fundo de papel levemente tingido, cartões brancos com borda fina e uma única sombra de cartão, difusa, títulos em Newsreader de peso médio com o espaçamento apertado de uma página impressa. A cor vem emprestada da capa do livro que está sendo lido: o rosa padrão é só o tom de quando não há capa, e cada livro novo pinta o site com a própria paleta, dentro de contrastes garantidos. Por isso as cores são nomeadas pelo papel que cumprem, nunca pelo tom.\n\nO sistema serve a duas superfícies. O site público é de leitura (relatos longos, fita de capítulos, discussão), e o painel é de operação (a Agatha publicando pelo celular, a moderação aprovando comentários). As duas usam os mesmos tokens e componentes; o painel só troca a navegação (barra lateral no computador, barra inferior no celular). O tema é só claro.",
+    "keyCharacteristics": [
+      "Serifa para ler, sans-serif para operar.",
+      "Cor emprestada da capa do livro atual, aplicada por papéis, sempre com contraste AA.",
+      "Superfícies planas em papel, separadas por borda fina e uma única sombra suave.",
+      "Pílulas para tudo que se toca (botões, chips, navegação); cantos de 16px para o que se lê.",
+      "A fita de capítulos como assinatura: o livro inteiro numa linha, sessão por sessão.",
+      "Feito para o polegar: alvos de 44px, campos de 16px e áreas seguras do iPhone em toda tela."
+    ],
+    "rules": [
+      {
+        "name": "A regra da cor emprestada",
+        "body": "As 17 cores do primeiro grupo (do Papel aos Pastéis) são sobrescritas pelo tema da capa, então nenhuma tela usa hexadecimal solto para esses papéis: só `var(--…)`. O único literal permitido é o branco do texto sobre Tinta de destaque (botão principal e selos de contagem). Um par de texto e fundo que não está entre os seis garantidos pelo motor de tema (branco sobre Tinta de destaque, Tinta de nota e Tinta secundária sobre Papel tingido, Tinta profunda sobre Realce, Tinta sobre Papel, Marca-texto contra Papel) precisa passar no teste de contraste com os temas derivados (`acessibilidade-temas.spec.ts`).",
+        "section": "colors"
+      },
+      {
+        "name": "A regra do marca-texto",
+        "body": "O Marca-texto (`rose`) só pinta forma: segmento, filete, número decorativo, borda. Texto que precisa ser lido usa Tinta de destaque ou Tinta profunda.",
+        "section": "colors"
+      },
+      {
+        "name": "A regra da serifa para ler",
+        "body": "Newsreader só em títulos, no texto dos relatos, no logotipo e na capa gerada. Botões, chips, rótulos, campos e navegação são sempre Instrument Sans.",
+        "section": "typography"
+      },
+      {
+        "name": "A regra do texto mais alto",
+        "body": "A prosa da Agatha (19,5px) é o maior texto corrido do site. Nenhum texto de interface passa de 16px fora dos títulos.",
+        "section": "typography"
+      },
+      {
+        "name": "A regra da sombra única",
+        "body": "Há uma sombra de cartão (`--shadow`), e ela não se empilha nem cresce no hover. Uma lista de itens (sessões, comentários) se separa por filetes de Pauta, sem sombra.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** usar só as variáveis de `tokens.css` para cor, raio e sombra, para que o tema da capa alcance a tela nova.",
+      "**Do** escrever títulos em Newsreader peso 500 com espaçamento negativo (-0,01em a -0,025em) e toda a interface em Instrument Sans.",
+      "**Do** usar pílula (999px) para tudo que se toca e 16px para cartões e diálogos.",
+      "**Do** separar itens de lista com filete de 1px em Pauta e reservar a Folha apoiada para cartões isolados.",
+      "**Do** pôr o hover dentro de `@media (hover: hover)` e dar a todo alvo 44x44px e a todo campo 16px de fonte sob `@media (pointer: coarse)`.",
+      "**Do** mostrar estado por forma e texto, além da cor: na fita, cheio, escuro, contornado e trilha têm forma própria e legenda.",
+      "**Do** manter `-webkit-backdrop-filter` junto de `backdrop-filter` nas barras de vidro fosco e as áreas seguras do iPhone em barras fixas.",
+      "**Do** rodar o teste de contraste com os temas derivados quando um texto novo cair sobre um fundo do tema."
+    ],
+    "donts": [
+      "**Don't** escrever hexadecimal para os papéis do tema, nem montar CSS com valor vindo do banco por outro caminho que não a lista de tokens validada.",
+      "**Don't** usar o Marca-texto (`rose`) como cor de texto.",
+      "**Don't** desenhar um segmento da fita como traço fino: todos têm a mesma altura e no mínimo 3px de largura.",
+      "**Don't** usar biblioteca de componentes pronta; os componentes seguem o protótipo.",
+      "**Don't** usar `100vh`, nem bloquear o zoom por pinça.",
+      "**Don't** usar Newsreader em botões, chips, rótulos ou campos.",
+      "**Don't** empilhar ou aumentar sombras no hover.",
+      "**Don't** usar `black-translucent` na barra de status do iOS: o tema é claro."
+    ]
+  }
+}
