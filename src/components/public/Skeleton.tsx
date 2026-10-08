@@ -13,7 +13,7 @@ const Bar = ({ w = '100%', h = 14 }: { w?: string; h?: number }) => (
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <div aria-busy="true">
+    <div aria-busy="true" className={styles.frame}>
       <p className={styles.sr} role="status">
         Carregando…
       </p>
