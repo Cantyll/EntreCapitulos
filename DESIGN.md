@@ -237,7 +237,9 @@ Uma paleta de papel e tinta, com um único tom de destaque que muda com a capa d
 
 - **Contêiner:** largura máxima de 1160px, centralizado, com margem lateral de 28px (18px abaixo de 760px).
 - **Grades de duas colunas:** a home usa conteúdo + coluna lateral de 320px (vão de 52px); a página da sessão usa o relato (coluna de até 700px) + lateral de 290px com a fita e o índice de capítulos. Abaixo de 1020px tudo vira uma coluna.
-- **Pontos de quebra:** 1020px (duas colunas viram uma; o painel troca a barra lateral pela barra inferior), 760px (margens menores, navegação do site em faixa rolável abaixo do logotipo, cartões de membros no lugar da tabela) e 640px (prosa menor). A fita de capítulos e a página Sobre usam consultas de contêiner (`@container`), não a largura da janela.
+- **Pontos de quebra:** 1020px (duas colunas viram uma; o painel troca a barra lateral pela barra inferior), 760px (margens menores, navegação do site em faixa rolável abaixo do logotipo) e 640px (prosa menor). A fita de capítulos, a página Sobre e Membros usam consultas de contêiner (`@container`), não a largura da janela: em Membros, a tabela só aparece com 800px de lista (abaixo disso, cartões, dois por linha no tablet) e o cartão de cargos fica embaixo da lista, com os três cargos lado a lado. O editor de sessão põe as opções ao lado do texto só quando o texto fica com 560px ou mais; no iPad deitado, com a barra lateral do painel, elas vão para baixo.
+- **Tela baixa (até 500px de altura, o celular deitado):** o cabeçalho do site e o topo do painel deixam de ser fixos e rolam com a página; em pé, continuam fixos.
+- **Medida do texto de ajuda:** parágrafos de ajuda e explicação param em uns 70 caracteres por linha, mesmo em coluna larga.
 - **Ritmo:** cartões com 22px de respiro interno; seções separadas por 44px; o topo da home com 52px acima e 46px abaixo; títulos de página com 40px acima.
 - **Toque (`pointer: coarse`):** todo alvo cresce para 44x44px, campos passam a 16px de fonte e o hover dá lugar ao estado pressionado (`:active`).
 - **Telas do iPhone:** áreas seguras (`env(safe-area-inset-*)`) no documento, no cabeçalho fixo e nas barras inferiores; altura útil com `100dvh`, nunca `100vh`; a barra inferior do painel tem 64px mais a área segura.
@@ -321,7 +323,7 @@ O livro inteiro numa linha: um segmento por capítulo, agrupado por sessão.
 
 - **Segmentos:** todos da mesma altura (16px na fita grande, 8px na compacta), vão de 2px (1px na compacta), largura mínima de 3px. Cores por estado: sessão em Marca-texto, alternando com o Marca-texto misturado à Folha (62%) para separar sessões vizinhas; última sessão em Tinta profunda; capítulos lidos sem sessão visível em Marca-texto misturado à Folha (45%); por ler em Pauta marcada; próxima sessão contornada (tracejado de 1,5px na grande, contorno inteiro na compacta) sobre Folha.
 - **Muitos capítulos:** quando os segmentos não cabem com 3px, a fita passa a desenhar um bloco por sessão, com largura proporcional, e uma trilha única para o que falta ler. A troca é feita pelo CSS, por consulta de contêiner.
-- **Hover:** o segmento com link sobe 2px. No toque, a fita vira só indicador e ganha, logo abaixo, uma pílula de 44px por sessão ("Sessão N · cap. a–b"), a última em Realce com texto Tinta profunda e a próxima tracejada.
+- **Só desenho:** a fita não tem links (o segmento de um capítulo mede uns 10x16px). Logo abaixo dela, em qualquer aparelho, uma pílula por sessão ("Sessão N · cap. a–b") abre a sessão: a última em Realce com texto Tinta profunda, a próxima tracejada e sem link. A pílula tem 44px no toque e 34px com mouse, com a borda em Marca-texto no hover.
 - **Variações:** a grade de blocos de 44px na página do livro (`ChapterMap`), a fita compacta nos cartões do painel.
 
 ### Cobertura de spoiler

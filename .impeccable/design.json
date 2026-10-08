@@ -465,7 +465,7 @@
       {
         "name": "estado",
         "value": "0.15s (background, border-color, transform)",
-        "purpose": "Hover e pressionado de botões e segmentos da fita."
+        "purpose": "Hover e pressionado de botões e pílulas da fita."
       },
       {
         "name": "revelar-spoiler",
@@ -503,6 +503,10 @@
       {
         "name": "mouse",
         "value": "(hover: hover)"
+      },
+      {
+        "name": "tela-baixa",
+        "value": "(max-height: 500px)"
       }
     ]
   },
