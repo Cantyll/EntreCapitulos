@@ -1,13 +1,18 @@
 import AxeBuilder from '@axe-core/playwright';
-import type { Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 
 import { expect, test } from '../support/fixtures';
 import { createAdmin, createModerator, createUser } from '../support/users';
 import { WORLD, sessionPath } from '../support/world';
 
-/** axe (WCAG 2.0 A e AA): falha com qualquer violação "serious" ou "critical". */
+/**
+ * axe (WCAG 2.0, 2.1 e 2.2, A e AA): falha com qualquer violação "serious" ou "critical". O 2.2 traz o
+ * `target-size` (2.5.8, alvo de 24px no mouse), que pegou os segmentos de 10x16px da fita de capítulos.
+ */
 async function expectNoSeriousViolations(page: Page, label: string) {
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze();
   const serious = results.violations.filter(
     (v) => v.impact === 'serious' || v.impact === 'critical',
   );
@@ -33,7 +38,7 @@ const PUBLIC_PAGES: [string, string][] = [
   ['/termos', 'termos'],
 ];
 
-test.describe('acessibilidade (axe, WCAG 2.0 A e AA)', () => {
+test.describe('acessibilidade (axe, WCAG 2.2 A e AA)', () => {
   for (const [path, label] of PUBLIC_PAGES) {
     test(`página pública: ${label} @mobile`, async ({ page }) => {
       await page.goto(path);
@@ -165,6 +170,8 @@ test.describe('alvos de toque de 44px (iPhone) @mobile', () => {
     [sessionPath(WORLD.readingSlug, WORLD.sessions.public.number), 'sessão'],
     ['/estante', 'estante'],
     ['/entrar', 'entrar'],
+    ['/privacidade', 'privacidade'],
+    ['/termos', 'termos'],
   ] as const) {
     test(`telas principais: ${label}`, async ({ page }) => {
       await page.goto(path);
@@ -234,5 +241,76 @@ test.describe('alvos de toque de 44px (iPhone) @mobile', () => {
     await page.goto('/painel/comentarios');
     await expect(page.locator('main')).toBeVisible();
     expect(await smallTargets(page), 'moderação').toEqual([]);
+  });
+});
+
+// Campo com fonte abaixo de 16px faz o Safari do iPhone dar zoom ao focar (CLAUDE.md, bloco PWA, item 2). O
+// seletor de ordem dos comentários tinha 14px até o adapt.
+test.describe('campos com 16px ou mais no toque (iPhone) @mobile', () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(testInfo.project.name !== 'webkit-mobile', 'só o projeto de iPhone mede os campos');
+  });
+
+  async function smallFields(page: Page) {
+    return page.evaluate(() => {
+      const selector =
+        'input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea, [contenteditable="true"]';
+      const out: string[] = [];
+      for (const field of document.querySelectorAll<HTMLElement>(selector)) {
+        const box = field.getBoundingClientRect();
+        if (box.width < 2 || box.height < 2 || field.closest('[inert], [hidden]')) continue;
+        const size = Number.parseFloat(getComputedStyle(field).fontSize);
+        if (size < 16) out.push(`${field.tagName.toLowerCase()}#${field.id} ${size}px`);
+      }
+      return out;
+    });
+  }
+
+  /** Uma página nova por tela: no Chromium que imita o iPhone, a 2ª navegação na mesma aba perde o `pointer: coarse`. */
+  async function expectFieldsAt(
+    context: BrowserContext,
+    path: string,
+    ready: (page: Page) => Promise<void>,
+  ) {
+    const page = await context.newPage();
+    await page.goto(path);
+    await ready(page);
+    expect(await smallFields(page), path).toEqual([]);
+    await page.close();
+  }
+
+  test('site: entrar, sessão com comentários e conta', async ({ page, signedIn }) => {
+    await page.goto('/entrar');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    expect(await smallFields(page), '/entrar').toEqual([]);
+
+    const { context } = await signedIn();
+    await expectFieldsAt(
+      context,
+      sessionPath(WORLD.readingSlug, WORLD.sessions.public.number),
+      async (p) => {
+        await expect(p.getByLabel('Seu comentário')).toBeVisible();
+        await expect(p.getByLabel('Ordenar comentários')).toBeVisible();
+      },
+    );
+    await expectFieldsAt(context, '/conta', async (p) => {
+      await expect(p.getByRole('heading', { name: 'Excluir minha conta' })).toBeVisible();
+    });
+  });
+
+  test('painel: editor, livros, membros, comentários e Página Sobre', async ({ openAs }) => {
+    test.slow();
+    const { context } = await openAs(await createAdmin());
+    for (const path of [
+      '/painel/sessoes/nova',
+      '/painel/livros/novo',
+      '/painel/membros',
+      '/painel/comentarios',
+      '/painel/sobre',
+    ]) {
+      await expectFieldsAt(context, path, async (p) => {
+        await expect(p.locator('main')).toBeVisible();
+      });
+    }
   });
 });
