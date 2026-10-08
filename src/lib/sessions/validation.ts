@@ -1,5 +1,5 @@
 import '@/lib/zod-setup';
-import { z } from 'zod';
+import * as z from 'zod';
 
 import { CHAPTER_MAX } from '@/lib/session-body';
 import { ratingSchema, TOTAL_CHAPTERS_MAX } from '@/lib/books/validation';
