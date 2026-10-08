@@ -33,12 +33,13 @@ import styles from './tour.module.css';
 /*
  * O cartão de um passo do tutorial (etapa 8k), num portal FORA do painel (que fica `inert` nos passos "info" e
  * "go"). No computador ele se ancora ao alvo (abaixo ou acima, com seta). No celular é um balão junto do alvo, da
- * largura da tela, e, quando não cabe, uma folha presa à borda (embaixo ou em cima, a que cobrir menos do alvo); a
- * regra está em `src/lib/tour/placement.ts`. Sem alvo na tela: centralizado (computador) ou folha embaixo (celular).
+ * largura da tela, e, quando não cabe, uma folha presa à borda (embaixo ou em cima, a que deixar à vista o começo do
+ * alvo); a regra está em `src/lib/tour/placement.ts`. Sem alvo na tela: centralizado (computador) ou folha embaixo
+ * (celular).
  *
- *  - Rolagem: o alvo vai para a área livre (no celular, com espaço para o balão abaixo dele). Alvos presos à tela
- *    (barra de baixo, barra de ações da Página Sobre, cabeçalho) não rolam. No celular a rolagem é instantânea: uma
- *    rolagem suave faria o cartão pular de lugar no meio dela.
+ *  - Rolagem: o alvo vai para onde o cartão que vai caber deixa espaço (`scrollArea`). Alvos presos à tela (barra de
+ *    baixo, barra de ações da Página Sobre, cabeçalho, barra lateral) não rolam. No celular a rolagem é instantânea:
+ *    uma rolagem suave faria o cartão pular de lugar no meio dela.
  *  - No celular, um espaço extra no fim da página (só enquanto o passo está aberto) deixa rolar o último bloco da
  *    página para cima do cartão.
  *  - O destaque é recortado à janela; o texto do cartão rola por dentro e os botões ficam sempre visíveis.
