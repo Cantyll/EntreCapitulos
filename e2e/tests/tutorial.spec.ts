@@ -17,6 +17,19 @@ import { createAdmin, createModerator } from '../support/users';
 const STEP_BY_ID = new Map(TOUR_STEPS.map((step) => [step.id, step]));
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
+/** As telas do painel da administração (fora a Visão geral). */
+const PANEL_ROUTES = [
+  '/painel/livros',
+  '/painel/livros/novo',
+  '/painel/sessoes',
+  '/painel/sessoes/nova',
+  '/painel/comentarios',
+  '/painel/membros',
+  '/painel/sobre',
+  '/painel/votacoes',
+  '/painel/configuracoes',
+];
+
 const helpButton = (page: Page) => page.getByRole('button', { name: 'Ajuda e tutorial' });
 const card = (page: Page) => page.locator('[data-tour-card]');
 const welcome = (page: Page) => page.locator('[data-tour-welcome]');
@@ -63,8 +76,30 @@ async function visibleTarget(page: Page, name: string): Promise<Locator | null> 
 }
 
 /**
+ * Onde o cartão está em relação ao alvo: `ok`, `cobre` ou `fora` (o alvo não aparece na tela). Vale para o balão, a
+ * folha do celular e o canto do computador. Quando o alvo e o cartão não cabem juntos na tela (uma lista inteira; no
+ * celular deitado, quase qualquer bloco, com o cabeçalho e a barra de baixo), basta o começo do alvo (os primeiros
+ * 44px) ficar à vista e descoberto.
+ */
+function coverage(
+  card: { x: number; y: number; width: number; height: number },
+  target: { x: number; y: number; width: number; height: number },
+  viewportHeight: number,
+): 'ok' | 'cobre' | 'fora' {
+  const visibleTop = Math.max(target.y, 0);
+  const visibleBottom = Math.min(target.y + target.height, viewportHeight);
+  if (visibleBottom - visibleTop < Math.min(24, target.height)) return 'fora';
+  if (!intersects(card, target)) return 'ok';
+  // Folga para o cabeçalho e a barra de baixo, que também ocupam a tela.
+  const bothFit = target.height + card.height <= viewportHeight - 140;
+  if (bothFit) return 'cobre';
+  const start = { x: target.x, y: visibleTop, width: target.width, height: 44 };
+  return target.y >= -1 && !intersects(card, start) ? 'ok' : 'cobre';
+}
+
+/**
  * O passo atual "assentou" (alvo achado, ou cartão centralizado) e o cartão está dentro da janela, sem cobrir o alvo
- * quando ancorado a ele. Devolve o id do passo.
+ * (o alvo do passo ou, no celular, o substituto). Devolve o id do passo.
  */
 async function checkStep(page: Page): Promise<string> {
   await expect(card(page)).toBeVisible();
@@ -97,20 +132,21 @@ async function checkStep(page: Page): Promise<string> {
     )
     .toBe(true);
 
-  // Ancorado ao alvo: não o cobre. A rolagem até o alvo é suave, então espera o cartão assentar.
+  // Não cobre o alvo, qualquer que seja o desenho do cartão. No computador a rolagem é suave: espera assentar.
   if (step.target) {
-    const target = await visibleTarget(page, step.target);
+    const target =
+      (await visibleTarget(page, step.target)) ??
+      (step.altTarget ? await visibleTarget(page, step.altTarget) : null);
     if (target) {
       await expect
         .poll(
           async () => {
-            if ((await card(page).getAttribute('data-tour-placement')) !== 'anchored') return false;
             const [a, b] = await Promise.all([card(page).boundingBox(), target.boundingBox()]);
-            return a !== null && b !== null && intersects(a, b);
+            return a && b ? coverage(a, b, viewport.height) : 'fora';
           },
-          { message: `${id}: o cartão cobre o alvo` },
+          { message: `${id}: o cartão cobre o alvo ou o alvo ficou fora da tela` },
         )
-        .toBe(false);
+        .toBe('ok');
     }
   }
   return id;
@@ -188,7 +224,7 @@ test.describe('tutorial do painel', () => {
     await expect(page.locator('[data-install-card]')).toHaveCount(0);
   });
 
-  test('tour completo da administração: todos os capítulos, na tela, sem cobrir o alvo e sem mudar nada', async ({
+  test('tour completo da administração: todos os capítulos, na tela, sem cobrir o alvo e sem mudar nada @mobile', async ({
     openAs,
   }) => {
     test.slow();
@@ -237,6 +273,39 @@ test.describe('tutorial do painel', () => {
     expect(STEP_BY_ID.get(ids.at(-1)!)!.target).toBe('help-button');
     await expect(page).toHaveURL(/\/painel\/comentarios/);
     expect(seenVersion(moderator.id)).toBe(TOUR_VERSION);
+  });
+
+  test('celular deitado: o tour completo fica na tela, sem cobrir o alvo @mobile', async ({
+    openAs,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'webkit-mobile',
+      'só o iPhone tem o desenho do celular deitado',
+    );
+    test.slow();
+    const { page } = await openAs(await createAdmin());
+    await page.setViewportSize({ width: 844, height: 390 });
+    await openPanel(page, '/painel');
+    await openMenu(page);
+    await menu(page).getByRole('button', { name: 'Tour completo' }).click();
+    const ids = await walk(page);
+    expect(STEP_BY_ID.get(ids.at(-1)!)!.target).toBe('help-button');
+  });
+
+  test('celular: os elementos presos embaixo ganham o balão ACIMA deles @mobile', async ({
+    openAs,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'webkit-mobile', 'a barra de baixo só existe no celular');
+    const { page } = await openAs(await createAdmin());
+    await openPanel(page, '/painel');
+    await openMenu(page);
+    await menu(page).getByRole('button', { name: 'Tour completo' }).click();
+    await card(page).getByRole('button', { name: 'Próximo', exact: true }).click();
+    // nav-menu: a barra de baixo do painel continua visível, com o balão acima dela.
+    await expect(card(page)).toHaveAttribute('data-tour-step', 'nav-menu');
+    await expect(card(page)).toHaveAttribute('data-tour-placement', 'anchored');
+    await expect(card(page)).toHaveAttribute('data-tour-side', 'above');
+    await checkStep(page);
   });
 
   test('"?": menu, Esc e foco; a moderação só vê os capítulos dela', async ({ openAs }) => {
@@ -426,21 +495,50 @@ test.describe('tutorial do painel', () => {
       await openPanel(page, '/painel');
       await check(`/painel em ${width}px`);
     }
-    await page.setViewportSize({ width: 1280, height: 800 });
-    for (const path of [
-      '/painel/livros',
-      '/painel/livros/novo',
-      '/painel/sessoes',
-      '/painel/sessoes/nova',
-      '/painel/comentarios',
-      '/painel/membros',
-      '/painel/sobre',
-      '/painel/votacoes',
-      '/painel/configuracoes',
-    ]) {
-      await openPanel(page, path);
-      await check(path);
+    // Toda tela do painel, na largura de um celular pequeno, de um iPhone e do computador: uma página mais larga que a
+    // tela deslocava a barra de baixo, o menu do "?" e o cartão do tutorial para fora da área de toque.
+    for (const width of [320, 390, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      for (const path of PANEL_ROUTES) {
+        await openPanel(page, path);
+        await check(`${path} em ${width}px`);
+      }
     }
+  });
+
+  test('celular: nenhuma tela do painel passa da largura do iPhone, e o "?" abre a ajuda em todas @mobile', async ({
+    openAs,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'webkit-mobile', 'mede a largura real do iPhone');
+    test.slow();
+    const { page } = await openAs(await createAdmin());
+    for (const path of ['/painel', ...PANEL_ROUTES]) {
+      await openPanel(page, path);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow, `${path}: mais larga que o iPhone`).toBeLessThanOrEqual(0);
+      await openMenu(page);
+      await menu(page).getByRole('button', { name: 'Ajuda desta tela' }).click();
+      await checkStep(page);
+      await card(page).getByRole('button', { name: 'Sair' }).click();
+      await expect(card(page)).toHaveCount(0);
+    }
+  });
+
+  test('a dica do "?" fica dentro de uma tela de 320px', async ({ openAs }) => {
+    const { page } = await openAs(await createAdmin({ tutorial: 'unseen' }));
+    await page.setViewportSize({ width: 320, height: 640 });
+    await openPanel(page, '/painel');
+    await welcome(page).getByRole('button', { name: 'Agora não' }).click();
+    const hint = page.locator('[data-tour-hint="review"]');
+    await expect(hint).toBeVisible();
+    await expect
+      .poll(async () => {
+        const box = await hint.boundingBox();
+        return box !== null && box.x >= 15 && box.x + box.width <= 320 - 15;
+      })
+      .toBe(true);
   });
 
   test('acessibilidade: menu e cartão abertos sem violação séria @mobile', async ({ openAs }) => {
