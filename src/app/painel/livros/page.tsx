@@ -36,9 +36,7 @@ export default async function BooksAdminPage() {
             Adicionar livro
           </ButtonLink>
         </div>
-        <div data-tour="books-list">
-          <BooksTable books={books} />
-        </div>
+        <BooksTable books={books} dataTour="books-list" />
       </div>
     </AdminPage>
   );
