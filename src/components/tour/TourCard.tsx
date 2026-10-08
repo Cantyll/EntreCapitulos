@@ -14,13 +14,16 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 import { logNotice } from '@/lib/auth/log';
 import {
-  SHEET_MEDIA,
+  COMPACT_MEDIA,
+  clipToView,
   currentStep,
   isLastStep,
   placeCard,
   progress,
+  scrollArea,
   scrollDelta,
   type Box,
+  type Insets,
   type Placement,
   type TourRun,
 } from '@/lib/tour';
@@ -29,8 +32,16 @@ import styles from './tour.module.css';
 
 /*
  * O cartão de um passo do tutorial (etapa 8k), num portal FORA do painel (que fica `inert` nos passos "info" e
- * "go"). No computador ele se ancora ao alvo (abaixo ou acima, com seta); no celular vira folha inferior, com safe
- * areas, e o alvo rola para a área livre acima dela. Sem alvo na tela: cartão centralizado.
+ * "go"). No computador ele se ancora ao alvo (abaixo ou acima, com seta). No celular é um balão junto do alvo, da
+ * largura da tela, e, quando não cabe, uma folha presa à borda (embaixo ou em cima, a que cobrir menos do alvo); a
+ * regra está em `src/lib/tour/placement.ts`. Sem alvo na tela: centralizado (computador) ou folha embaixo (celular).
+ *
+ *  - Rolagem: o alvo vai para a área livre (no celular, com espaço para o balão abaixo dele). Alvos presos à tela
+ *    (barra de baixo, barra de ações da Página Sobre, cabeçalho) não rolam. No celular a rolagem é instantânea: uma
+ *    rolagem suave faria o cartão pular de lugar no meio dela.
+ *  - No celular, um espaço extra no fim da página (só enquanto o passo está aberto) deixa rolar o último bloco da
+ *    página para cima do cartão.
+ *  - O destaque é recortado à janela; o texto do cartão rola por dentro e os botões ficam sempre visíveis.
  *
  *  - info/go: `aria-modal="true"`, Tab preso no cartão.
  *  - try: `aria-modal="false"`, o painel continua interativo e o foco solto (a pessoa toca no elemento real); o
@@ -42,10 +53,35 @@ import styles from './tour.module.css';
 const BLOCKED_TEXT =
   'Esta tela tem alterações que ainda não foram salvas. Salve (ou descarte) antes de continuar o tour: ele nunca apaga o seu texto.';
 
-function subscribeSheet(callback: () => void): () => void {
-  const media = window.matchMedia(SHEET_MEDIA);
+function subscribeCompact(callback: () => void): () => void {
+  const media = window.matchMedia(COMPACT_MEDIA);
   media.addEventListener('change', callback);
   return () => media.removeEventListener('change', callback);
+}
+
+/** Alvo dentro de algo `fixed` ou `sticky` (barra de baixo, cabeçalho, barra de ações): rolar não o move. */
+function isPinned(element: HTMLElement): boolean {
+  for (
+    let node: HTMLElement | null = element;
+    node && node !== document.body;
+    node = node.parentElement
+  ) {
+    const position = getComputedStyle(node).position;
+    if (position === 'fixed' || position === 'sticky') return true;
+  }
+  return false;
+}
+
+/** As áreas seguras do aparelho, lidas de uma sonda com `padding: env(safe-area-inset-*)`. */
+function readInsets(probe: HTMLElement | null): Insets {
+  if (!probe) return { top: 0, right: 0, bottom: 0, left: 0 };
+  const style = getComputedStyle(probe);
+  return {
+    top: parseFloat(style.paddingTop) || 0,
+    right: parseFloat(style.paddingRight) || 0,
+    bottom: parseFloat(style.paddingBottom) || 0,
+    left: parseFloat(style.paddingLeft) || 0,
+  };
 }
 
 function findVisible(name: string): HTMLElement | null {
@@ -74,7 +110,7 @@ function headerBottom(): number {
 
 const FOCUSABLE = 'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
 
-type Layout = { target: Box | null; placement: Placement };
+type Layout = { ring: Box | null; placement: Placement };
 
 export function TourCard({
   run,
@@ -103,9 +139,12 @@ export function TourCard({
   const bodyId = useId();
   const progressId = useId();
   const cardRef = useRef<HTMLDivElement>(null);
-  const sheet = useSyncExternalStore(
-    subscribeSheet,
-    () => window.matchMedia(SHEET_MEDIA).matches,
+  const probeRef = useRef<HTMLSpanElement>(null);
+  // Depois que o passo virou folha no celular, ele continua folha (ver `placeCard`).
+  const sheetLockRef = useRef(false);
+  const compact = useSyncExternalStore(
+    subscribeCompact,
+    () => window.matchMedia(COMPACT_MEDIA).matches,
     () => false,
   );
   // O alvo deste passo: `null` enquanto procura (até ~1,5 s, a página pode estar chegando), `missing` sem alvo.
@@ -136,43 +175,51 @@ export function TourCard({
     return () => cancelAnimationFrame(frame);
   }, [onRoute, step]);
 
-  // Rola até o alvo (respeitando o cabeçalho e a folha inferior) e acompanha a posição dele.
+  // Rola até o alvo (respeitando o cabeçalho e o lugar do cartão) e acompanha a posição dele.
   useEffect(() => {
     const element = target instanceof HTMLElement ? target : null;
     let frame = 0;
     let lastKey = '';
+    const currentView = () => ({
+      width: window.innerWidth,
+      height: viewportHeight(),
+      headerBottom: headerBottom(),
+      insets: readInsets(probeRef.current),
+    });
     const measure = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const card = cardRef.current?.getBoundingClientRect();
         const box = element && element.isConnected ? toBox(element.getBoundingClientRect()) : null;
-        const view = {
-          width: window.innerWidth,
-          height: viewportHeight(),
-          headerBottom: headerBottom(),
-        };
+        const view = currentView();
         // Só refaz o cartão quando algo mudou de fato (a medida também roda de tempos em tempos, abaixo).
-        const key = JSON.stringify([box, card?.width, card?.height, view, sheet]);
+        const key = JSON.stringify([box, card?.width, card?.height, view, compact]);
         if (key === lastKey) return;
         lastKey = key;
-        setLayout({
-          target: box,
-          placement: placeCard(
-            box,
-            { width: card?.width ?? 360, height: card?.height ?? 220 },
-            view,
-            sheet,
-          ),
-        });
+        const placement = placeCard(
+          box,
+          { width: card?.width ?? 360, height: card?.height ?? 220 },
+          view,
+          compact,
+          sheetLockRef.current ? 'sheet' : undefined,
+        );
+        if (compact && box && placement.kind === 'sheet') sheetLockRef.current = true;
+        setLayout({ ring: box ? clipToView(box, view, 6) : null, placement });
       });
     };
-    if (element) {
+    if (element && !isPinned(element)) {
       const box = toBox(element.getBoundingClientRect());
-      const sheetHeight = sheet ? (cardRef.current?.getBoundingClientRect().height ?? 0) : 0;
-      const area = { top: headerBottom() + 12, bottom: viewportHeight() - sheetHeight - 12 };
+      const card = cardRef.current?.getBoundingClientRect();
+      const area = scrollArea(
+        currentView(),
+        { width: card?.width ?? 360, height: card?.height ?? 220 },
+        compact,
+      );
       const delta = scrollDelta(box, area);
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (delta !== 0) window.scrollBy({ top: delta, behavior: reduce ? 'auto' : 'smooth' });
+      if (delta !== 0) {
+        window.scrollBy({ top: delta, behavior: compact || reduce ? 'auto' : 'smooth' });
+      }
     }
     measure();
     window.addEventListener('scroll', measure, true);
@@ -194,7 +241,7 @@ export function TourCard({
       window.visualViewport?.removeEventListener('scroll', measure);
       observer.disconnect();
     };
-  }, [target, sheet]);
+  }, [target, compact]);
 
   // Foco no cartão a cada passo (o leitor de tela lê o título e o texto).
   useEffect(() => {
@@ -242,26 +289,32 @@ export function TourCard({
     }
   }
 
-  const placement = layout?.placement ?? { kind: sheet ? 'sheet' : 'center' };
-  const ring = layout?.target ?? null;
+  const placement: Placement =
+    layout?.placement ?? (compact ? { kind: 'sheet', side: 'bottom' } : { kind: 'center' });
+  const ring = layout?.ring ?? null;
   const style: CSSProperties | undefined =
-    placement.kind === 'anchored' ? { top: placement.top, left: placement.left } : undefined;
+    placement.kind === 'anchored'
+      ? { top: placement.top, left: placement.left, width: placement.width }
+      : undefined;
+  const placementClass =
+    placement.kind === 'sheet'
+      ? `${styles.sheet} ${placement.side === 'top' ? styles.sheetTop : styles.sheetBottom}`
+      : styles[placement.kind];
+  const side =
+    placement.kind === 'sheet' || placement.kind === 'anchored' ? placement.side : undefined;
 
   const missingTarget = target === 'missing' && step.target ? step.target : undefined;
 
   return createPortal(
     <>
+      <span ref={probeRef} className={styles.insetsProbe} aria-hidden="true" />
+      {compact && <div className={styles.scrollRoom} aria-hidden="true" data-tour-room="" />}
       {ring && (
         <div
           className={styles.ring}
           data-tour-ring=""
           aria-hidden="true"
-          style={{
-            top: ring.top - 6,
-            left: ring.left - 6,
-            width: ring.width + 12,
-            height: ring.height + 12,
-          }}
+          style={{ top: ring.top, left: ring.left, width: ring.width, height: ring.height }}
         />
       )}
       <div
@@ -271,23 +324,26 @@ export function TourCard({
         aria-labelledby={titleId}
         aria-describedby={`${progressId} ${bodyId}`}
         tabIndex={-1}
-        className={`${styles.card} ${styles[placement.kind]}`}
+        className={`${styles.card} ${placementClass}`}
         style={style}
         onKeyDown={onKeyDown}
         data-tour-card=""
         data-tour-step={step.id}
         data-tour-placement={placement.kind}
+        data-tour-side={side}
         data-tour-missing={missingTarget}
       >
-        <p id={progressId} className={styles.progress}>
-          Passo {position} de {total} · {chapter.number}. {chapter.title}
-        </p>
-        <h2 id={titleId} className={styles.title}>
-          {blocked ? 'Antes de continuar' : step.title}
-        </h2>
-        <p id={bodyId} className={styles.body}>
-          {blocked ? BLOCKED_TEXT : step.body}
-        </p>
+        <div className={styles.content}>
+          <p id={progressId} className={styles.progress}>
+            Passo {position} de {total} · {chapter.number}. {chapter.title}
+          </p>
+          <h2 id={titleId} className={styles.title}>
+            {blocked ? 'Antes de continuar' : step.title}
+          </h2>
+          <p id={bodyId} className={styles.body}>
+            {blocked ? BLOCKED_TEXT : step.body}
+          </p>
+        </div>
         <div className={styles.actions}>
           <Button variant="ghost" onClick={onExit}>
             Sair
