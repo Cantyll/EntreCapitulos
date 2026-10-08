@@ -60,6 +60,22 @@ select {
   color: inherit;
 }
 
+/* Cursor de texto na cor dos links: mais fácil de achar nos campos sem moldura (comentário, relato). */
+input,
+textarea,
+[contenteditable='true'] {
+  caret-color: var(--rose-2);
+}
+
+/*
+ * O cinza padrão do navegador fica perto de 2,3:1. O --ink-3 passa 4,5:1 em todo tema (o motor do tema garante
+ * contra --soft, que é mais escuro que o fundo e os cartões), e a opacidade 1 desfaz o esmaecimento do Firefox.
+ */
+::placeholder {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
 h1,
 h2,
 h3,
