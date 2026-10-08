@@ -2,7 +2,7 @@
  * Lógica da fita de capítulos, sem React nem DOM. Recebe o total do livro, o capítulo em que a
  * Agatha está (`current_chapter`) e as sessões publicadas VISÍVEIS para a pessoa (quem monta a lista
  * já aplicou o RLS: uma sessão só para membros não entra para um visitante), e devolve um segmento
- * por capítulo mais os rótulos de baixo ("S4", "próx.").
+ * por capítulo.
  *
  * Um capítulo até `current_chapter` sem sessão visível aparece como "lido", sem link: não dá para
  * abrir o que a pessoa não pode ler, e a fita não conta que existe.
@@ -30,17 +30,9 @@ export type StripSegment = {
   tone: 0 | 1;
 };
 
-export type StripLabel = {
-  kind: 'session' | 'last' | 'next';
-  text: string;
-  from: number;
-  to: number;
-};
-
 export type ChapterStrip = {
   total: number;
   segments: StripSegment[];
-  labels: StripLabel[];
   /** Os capítulos da próxima sessão (já sem os que têm sessão), ou `null`. */
   nextRange: { from: number; to: number } | null;
   last: StripSession | null;
@@ -104,25 +96,9 @@ export function buildChapterStrip(input: {
     }
   }
 
-  const labels: StripLabel[] = sessions.map((s) => ({
-    kind: s.number === last?.number ? 'last' : 'session',
-    text: `S${s.number}`,
-    from: s.chapterFrom,
-    to: s.chapterTo,
-  }));
-  if (nextChapters.length > 0) {
-    labels.push({
-      kind: 'next',
-      text: 'próx.',
-      from: nextChapters[0]!,
-      to: nextChapters.at(-1)!,
-    });
-  }
-
   return {
     total,
     segments,
-    labels,
     nextRange:
       nextChapters.length > 0 ? { from: nextChapters[0]!, to: nextChapters.at(-1)! } : null,
     last,

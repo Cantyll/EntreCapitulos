@@ -5,30 +5,20 @@ import {
   MIN_SEGMENT_PX,
   buildStripBlocks,
   chapterModeStep,
-  segmentLabel,
   type ChapterStrip as Strip,
 } from '@/lib/chapters';
 import { sessionHref } from '@/lib/routes';
 
 import styles from './ChapterStrip.module.css';
 
-/** Só "last" e "next" têm estilo próprio; o rótulo de uma sessão comum usa o base. */
-function labelClass(kind: string): string {
-  if (kind === 'last') return `${styles.label} ${styles.label_last}`;
-  if (kind === 'next') return `${styles.label} ${styles.label_next}`;
-  return styles.label!;
-}
-
 /*
- * A fita de capítulos (elemento-assinatura). Dois desenhos no HTML e o CSS mostra um (ver o CSS e
- * `src/lib/chapters/layout.ts`): um segmento por capítulo quando cada um cabe com 3px, ou um bloco por
- * sessão, com uma trilha contínua para o que falta ler. Os segmentos e blocos de sessão são links com
- * nome acessível ("Capítulo 10, sessão 4"; "Sessão 1, capítulos 1 a 3"); o resto é só desenho.
+ * A fita de capítulos (elemento-assinatura): só desenho, com `aria-hidden`. Dois desenhos no HTML e o
+ * CSS mostra um (ver o CSS e `src/lib/chapters/layout.ts`): um segmento por capítulo quando cada um
+ * cabe com 3px, ou um bloco por sessão, com uma trilha contínua para o que falta ler.
  *
- * Com ponteiro de toque (`pointer: coarse`) nenhum segmento chega a 44px, então os dois desenhos com
- * links somem e entra um terceiro: a fita só como indicador (`aria-hidden`, sem links) e, logo abaixo,
- * uma lista de pílulas de 44px, uma por sessão. Em qualquer tamanho, leitor de tela e Tab encontram UM
- * só conjunto de links: os outros ficam com `display: none`.
+ * As sessões se abrem pelas pílulas logo abaixo da fita, uma por sessão ("Sessão N · cap. a–b"), em
+ * qualquer aparelho: um segmento de capítulo mede uns 10x16px, pequeno demais para o mouse (mínimo de
+ * 24px) e para o dedo (44px). Leitor de tela e Tab encontram UM só conjunto de links: as pílulas.
  */
 export function ChapterStrip({
   strip,
@@ -50,90 +40,22 @@ export function ChapterStrip({
 
   return (
     <div className={rootClass}>
-      {step !== null && (
-        <div className={styles.byChapter} style={{ '--n': strip.total } as CSSProperties}>
-          {strip.segments.map((segment) => {
-            const className = [
-              styles.seg,
-              styles[segment.kind],
-              segment.tone ? styles.alt : '',
-            ].join(' ');
-            const style = { gridColumn: segment.chapter, gridRow: 1 } as CSSProperties;
-            return segment.session ? (
-              <Link
-                key={segment.chapter}
-                href={sessionHref(bookSlug, segment.session.number)}
-                className={className}
-                style={style}
-                aria-label={segmentLabel(segment)}
-                title={segmentLabel(segment)}
-              />
-            ) : (
-              // Sem link: desenho puro. Os capítulos "ainda não lidos" não precisam ser lidos em voz alta.
+      <div className={styles.drawing} aria-hidden="true">
+        {step !== null && (
+          <div className={styles.byChapter} style={{ '--n': strip.total } as CSSProperties}>
+            {strip.segments.map((segment) => (
               <span
                 key={segment.chapter}
-                className={className}
-                style={style}
-                title={segmentLabel(segment)}
-                aria-hidden="true"
+                className={[styles.seg, styles[segment.kind], segment.tone ? styles.alt : ''].join(
+                  ' ',
+                )}
+                style={{ gridColumn: segment.chapter, gridRow: 1 } as CSSProperties}
               />
-            );
-          })}
-          {!compact &&
-            strip.labels.map((label) => (
-              <span
-                key={`${label.kind}-${label.text}`}
-                className={labelClass(label.kind)}
-                style={
-                  { gridColumn: `${label.from} / ${label.to + 1}`, gridRow: 2 } as CSSProperties
-                }
-              >
-                {label.text}
-              </span>
             ))}
-        </div>
-      )}
-      <div
-        className={styles.bySession}
-        style={{
-          gridTemplateColumns: blocks
-            .map((block) => `minmax(${MIN_SEGMENT_PX}px, ${block.span}fr)`)
-            .join(' '),
-        }}
-      >
-        {blocks.map((block, index) => {
-          const className = [styles.seg, styles[block.kind], block.tone ? styles.alt : ''].join(' ');
-          const style = { gridColumn: index + 1, gridRow: 1 } as CSSProperties;
-          return block.session ? (
-            <Link
-              key={block.from}
-              href={sessionHref(bookSlug, block.session.number)}
-              className={className}
-              style={style}
-              aria-label={block.ariaLabel ?? undefined}
-              title={block.ariaLabel ?? undefined}
-            />
-          ) : (
-            <span key={block.from} className={className} style={style} aria-hidden="true" />
-          );
-        })}
-        {!compact &&
-          blocks.map((block, index) =>
-            block.label ? (
-              <span
-                key={`label-${block.from}`}
-                className={labelClass(block.kind)}
-                style={{ gridColumn: index + 1, gridRow: 2 } as CSSProperties}
-              >
-                {block.label}
-              </span>
-            ) : null,
-          )}
-      </div>
-      <div className={styles.touch}>
+          </div>
+        )}
         <div
-          className={styles.indicator}
-          aria-hidden="true"
+          className={styles.bySession}
           style={{
             gridTemplateColumns: blocks
               .map((block) => `minmax(${MIN_SEGMENT_PX}px, ${block.span}fr)`)
@@ -148,32 +70,32 @@ export function ChapterStrip({
             />
           ))}
         </div>
-        {pills.length > 0 && (
-          <ul className={styles.pills} aria-label="Sessões da fita">
-            {pills.map((block) => (
-              <li key={block.from}>
-                {block.session ? (
-                  <Link
-                    href={sessionHref(bookSlug, block.session.number)}
-                    className={[styles.pill, block.kind === 'last' && styles.pill_last]
-                      .filter(Boolean)
-                      .join(' ')}
-                    aria-label={block.ariaLabel ?? undefined}
-                  >
-                    Sessão {block.session.number}
-                    <small>{chapterRange(block.from, block.to)}</small>
-                  </Link>
-                ) : (
-                  <span className={`${styles.pill} ${styles.pill_next}`}>
-                    Próxima
-                    <small>{chapterRange(block.from, block.to)}</small>
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
+      {pills.length > 0 && (
+        <ul className={styles.pills} aria-label="Sessões da fita">
+          {pills.map((block) => (
+            <li key={block.from}>
+              {block.session ? (
+                <Link
+                  href={sessionHref(bookSlug, block.session.number)}
+                  className={[styles.pill, block.kind === 'last' && styles.pill_last]
+                    .filter(Boolean)
+                    .join(' ')}
+                  aria-label={block.ariaLabel ?? undefined}
+                >
+                  Sessão {block.session.number}
+                  <small>{chapterRange(block.from, block.to)}</small>
+                </Link>
+              ) : (
+                <span className={`${styles.pill} ${styles.pill_next}`}>
+                  Próxima
+                  <small>{chapterRange(block.from, block.to)}</small>
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
