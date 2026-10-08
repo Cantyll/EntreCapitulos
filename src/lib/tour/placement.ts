@@ -18,7 +18,12 @@ export type Box = { top: number; left: number; width: number; height: number };
 export type Size = { width: number; height: number };
 /** Áreas seguras do aparelho (entalhe, indicador de início), em px. */
 export type Insets = { top: number; right: number; bottom: number; left: number };
-export type View = Size & { headerBottom: number; insets?: Insets };
+export type View = Size & {
+  headerBottom: number;
+  insets?: Insets;
+  /** Altura da barra fixa de baixo do painel (celular), que esconde o que estiver sob ela. 0 sem a barra. */
+  bottomBar?: number;
+};
 
 export type Placement =
   | { kind: 'sheet'; side: 'top' | 'bottom' }
@@ -36,6 +41,11 @@ export type Placement =
 
 export const CARD_MARGIN = 16;
 export const CARD_GAP = 14;
+/**
+ * Folga na rolagem para o balão do celular: o cartão é medido primeiro com outra largura (folha) e, como balão, pode
+ * ganhar uma linha; sem a folga o balão deixaria de caber por poucos pixels e o passo viraria folha.
+ */
+export const BALLOON_SLACK = 48;
 
 /** Celular (retrato ou paisagem) e janelas pequenas. O iPad usa o desenho do computador. */
 export const COMPACT_MEDIA = '(max-width: 699px), (max-height: 499px)';
@@ -132,20 +142,42 @@ export function placeCard(
 }
 
 /**
- * Onde o alvo deve ficar depois da rolagem: entre o cabeçalho fixo e o fim da área livre. No celular, a área livre
- * termina onde o balão precisa começar (deixa espaço para ele abaixo do alvo); se o cartão for grande demais para
- * isso, vale a tela inteira (o cartão vira folha).
+ * Onde o alvo deve ficar depois da rolagem: entre o cabeçalho fixo e o fim da área livre (acima da barra de baixo do
+ * painel, no celular). No computador, se o alvo e o cartão cabem juntos, o alvo sobe o bastante para o cartão caber
+ * logo abaixo dele (senão o cartão iria para o canto, por cima do alvo). No celular, a área depende do que vai caber,
+ * testado nesta ordem:
+ *  1. o balão abaixo do alvo: o alvo fica perto do topo, com espaço para o balão embaixo;
+ *  2. a folha embaixo: o alvo entre o cabeçalho e a folha;
+ *  3. a folha em cima (ela cobre o cabeçalho, e por isso sobra mais altura): o alvo entre a folha e a barra de baixo;
+ *  4. nada cabe (alvo alto, celular deitado): o começo do alvo logo abaixo do cabeçalho.
+ * A posição final é decidida depois por `placeCard`, com o alvo já no lugar, e chega ao mesmo resultado.
  */
 export function scrollArea(
   view: View,
   card: Size,
   compact: boolean,
+  targetHeight: number,
 ): { top: number; bottom: number } {
   const top = view.headerBottom + 12;
-  if (!compact) return { top, bottom: view.height - 12 };
-  const edge = limits(view);
-  const bottom = edge.bottom - card.height - CARD_GAP;
-  return bottom - top >= 44 ? { top, bottom } : { top, bottom: view.height - 12 };
+  const floor = view.height - Math.max(12, view.bottomBar ?? 0);
+  if (!compact) {
+    const room = { top, bottom: view.height - CARD_MARGIN - card.height - CARD_GAP };
+    return targetHeight <= room.bottom - room.top ? room : { top, bottom: view.height - 12 };
+  }
+  const insets = view.insets ?? NO_INSETS;
+  const fits = (area: { top: number; bottom: number }) => targetHeight <= area.bottom - area.top;
+
+  const balloon = {
+    top,
+    bottom: Math.min(floor, limits(view).bottom - card.height - BALLOON_SLACK - CARD_GAP),
+  };
+  if (fits(balloon)) return balloon;
+  const sheetHeight = card.height + insets.bottom;
+  const belowSheet = { top, bottom: view.height - sheetHeight - 12 };
+  if (fits(belowSheet)) return belowSheet;
+  const underTopSheet = { top: card.height + insets.top + 12, bottom: floor };
+  if (fits(underTopSheet)) return underTopSheet;
+  return { top, bottom: floor };
 }
 
 /**

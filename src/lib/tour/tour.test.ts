@@ -305,8 +305,9 @@ describe('posição do cartão', () => {
     });
   });
 
-  it('rolagem no computador: a janela inteira abaixo do cabeçalho', () => {
-    expect(scrollArea(view, card, false)).toEqual({ top: 76, bottom: 788 });
+  it('rolagem no computador: espaço para o cartão abaixo do alvo; sem caber, a janela inteira', () => {
+    expect(scrollArea(view, card, false, 40)).toEqual({ top: 76, bottom: 800 - 16 - 220 - 14 });
+    expect(scrollArea(view, card, false, 600)).toEqual({ top: 76, bottom: 788 });
   });
 
   it('rolagem: zero quando visível, centraliza quando cabe, alinha o topo quando não cabe', () => {
@@ -379,9 +380,35 @@ describe('posição do cartão no celular', () => {
     expect(placeCard(tabs, card, phone, true, 'sheet')).toEqual({ kind: 'sheet', side: 'bottom' });
   });
 
-  it('rolagem no celular: deixa espaço para o balão abaixo do alvo; cartão enorme vale a tela toda', () => {
-    expect(scrollArea(phone, card, true)).toEqual({ top: 88, bottom: 681 - 42 - 220 - 14 });
-    expect(scrollArea(phone, { width: 370, height: 600 }, true)).toEqual({ top: 88, bottom: 669 });
+  it('rolagem no celular: espaço para o balão abaixo de um alvo pequeno', () => {
+    const withBar = { ...phone, bottomBar: 65 };
+    expect(scrollArea(withBar, card, true, 50)).toEqual({
+      top: 88,
+      bottom: 681 - 42 - 220 - 48 - 14,
+    });
+  });
+
+  it('rolagem no celular deitado: alvo médio vai para baixo da folha de cima (ela cobre o cabeçalho)', () => {
+    const landscape = {
+      width: 844,
+      height: 390,
+      headerBottom: 76,
+      insets: { top: 0, right: 47, bottom: 21, left: 47 },
+      bottomBar: 0,
+    };
+    const short = { width: 750, height: 150 };
+    // 138px de alvo: nem com o balão (88..149) nem com a folha embaixo (88..207) ele cabe; com a folha em cima, sim.
+    expect(scrollArea(landscape, short, true, 138)).toEqual({ top: 162, bottom: 378 });
+    // Alto demais para qualquer arranjo: o começo dele logo abaixo do cabeçalho.
+    expect(scrollArea(landscape, short, true, 600)).toEqual({ top: 88, bottom: 378 });
+  });
+
+  it('a barra de baixo do painel limita a área (o que fica sob ela não aparece)', () => {
+    const tall = { width: 370, height: 600 };
+    expect(scrollArea({ ...phone, bottomBar: 65 }, tall, true, 2000)).toEqual({
+      top: 88,
+      bottom: 681 - 65,
+    });
   });
 
   it('o destaque é recortado à janela e some quando o alvo está fora dela', () => {
