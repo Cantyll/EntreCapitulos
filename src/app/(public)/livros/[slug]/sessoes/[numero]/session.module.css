@@ -290,6 +290,13 @@
   box-shadow: var(--shadow);
 }
 
+/* Janela baixa: o cabeçalho do site rola junto com a página (SiteHeader), então a lateral cola mais acima. */
+@media (max-height: 500px) {
+  .sticky {
+    top: calc(var(--safe-top) + 22px);
+  }
+}
+
 .sideBook {
   display: grid;
   grid-template-columns: 62px minmax(0, 1fr);
