@@ -1,7 +1,8 @@
 /*
  * Tutorial guiado do painel (etapa 8k). Só tokens do tema (a capa do livro vale aqui também). No toque, alvos de
- * 44px (48px nas linhas do menu) e texto de 16px; folhas inferiores com safe areas e `dvh`. Sem animação, salvo o
- * pulso discreto do "?" enquanto a dica está aberta, desligado com `prefers-reduced-motion`.
+ * 44px (48px nas linhas do menu) e texto de 16px; no celular o cartão é um balão junto do alvo ou uma folha presa à
+ * borda de cima ou de baixo (ver `src/lib/tour/placement.ts`), com safe areas e `dvh`. Sem animação, salvo o pulso
+ * discreto do "?" enquanto a dica está aberta, desligado com `prefers-reduced-motion`.
  */
 
 /* O painel inteiro: `inert` nos passos "info" e "go" (o cartão vive fora, num portal). Não muda o layout. */
@@ -23,8 +24,11 @@
 .card {
   position: fixed;
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
   width: min(360px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
   padding: 18px 18px 14px;
   border: 1px solid var(--line-2);
   border-radius: 16px;
@@ -50,18 +54,61 @@
   bottom: max(16px, env(safe-area-inset-bottom));
 }
 
+/* Folha do celular, presa à borda de baixo ou de cima (a que cobrir menos do alvo). */
 .sheet {
   right: 0;
-  bottom: 0;
   left: 0;
   width: 100%;
   max-height: 70dvh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 18px max(18px, env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom))
-    max(18px, env(safe-area-inset-left));
+  padding: 18px max(18px, env(safe-area-inset-right)) 14px max(18px, env(safe-area-inset-left));
+}
+
+.sheetBottom {
+  bottom: 0;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
   border-width: 1px 0 0;
   border-radius: 16px 16px 0 0;
+}
+
+.sheetTop {
+  top: 0;
+  padding-top: calc(18px + env(safe-area-inset-top));
+  border-width: 0 0 1px;
+  border-radius: 0 0 16px 16px;
+}
+
+/* Celular deitado: a folha ocupa menos da altura. */
+@media (max-height: 499px) {
+  .sheet {
+    max-height: 60dvh;
+  }
+}
+
+/* O texto rola por dentro; os botões ficam sempre à vista. */
+.content {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Áreas seguras do aparelho, lidas pelo cartão (o JavaScript não lê `env()`). */
+.insetsProbe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Espaço no fim da página, só com o tutorial aberto no celular: o último bloco pode rolar para cima do cartão. */
+.scrollRoom {
+  height: 70dvh;
+  pointer-events: none;
 }
 
 .progress {
@@ -84,14 +131,17 @@
   line-height: 1.5;
 }
 
-/* No celular, todo texto do cartão com pelo menos 16px. */
-.sheet .progress,
-.sheet .body {
-  font-size: 16px;
+/* No celular (balão ou folha) e com ponteiro de toque, todo texto do cartão com pelo menos 16px. */
+@media (pointer: coarse), (max-width: 699px), (max-height: 499px) {
+  .progress,
+  .body {
+    font-size: 16px;
+  }
 }
 
 .actions {
   display: flex;
+  flex: none;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;

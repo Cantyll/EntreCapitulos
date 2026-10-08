@@ -18,10 +18,12 @@ import {
   nextStep,
   parseTourStorage,
   parseTutorialParam,
+  clipToView,
   placeCard,
   previousStep,
   progress,
   runAllowedFor,
+  scrollArea,
   scrollDelta,
   serializeTourStorage,
   shouldOfferTour,
@@ -274,11 +276,9 @@ describe('posição do cartão', () => {
   const view = { width: 1280, height: 800, headerBottom: 64 };
   const card = { width: 360, height: 220 };
 
-  it('celular: folha inferior; sem alvo: centralizado', () => {
-    expect(placeCard({ top: 100, left: 10, width: 50, height: 40 }, card, view, true)).toEqual({
-      kind: 'sheet',
-    });
+  it('sem alvo: centralizado no computador, folha embaixo no celular', () => {
     expect(placeCard(null, card, view, false)).toEqual({ kind: 'center' });
+    expect(placeCard(null, card, view, true)).toEqual({ kind: 'sheet', side: 'bottom' });
   });
 
   it('abaixo do alvo quando cabe, senão acima, sem cobrir o alvo e dentro da janela', () => {
@@ -305,6 +305,10 @@ describe('posição do cartão', () => {
     });
   });
 
+  it('rolagem no computador: a janela inteira abaixo do cabeçalho', () => {
+    expect(scrollArea(view, card, false)).toEqual({ top: 76, bottom: 788 });
+  });
+
   it('rolagem: zero quando visível, centraliza quando cabe, alinha o topo quando não cabe', () => {
     const area = { top: 64, bottom: 500 };
     expect(scrollDelta({ top: 100, left: 0, width: 10, height: 40 }, area)).toBe(0);
@@ -312,5 +316,85 @@ describe('posição do cartão', () => {
       900 - 64 - (436 - 36) / 2,
     );
     expect(scrollDelta({ top: 900, left: 0, width: 10, height: 1000 }, area)).toBe(900 - 64);
+  });
+});
+
+describe('posição do cartão no celular', () => {
+  // iPhone em pé: 402 x 681, cabeçalho até 76, indicador de início de 34px.
+  const insets = { top: 0, right: 0, bottom: 34, left: 0 };
+  const phone = { width: 402, height: 681, headerBottom: 76, insets };
+  const card = { width: 370, height: 220 };
+
+  it('balão logo abaixo de um alvo pequeno, com a largura da tela menos as margens', () => {
+    const tabs = { top: 100, left: 16, width: 370, height: 50 };
+    const placed = placeCard(tabs, card, phone, true);
+    expect(placed).toMatchObject({ kind: 'anchored', side: 'below', left: 16, width: 370 });
+    if (placed.kind !== 'anchored') throw new Error('anchored');
+    expect(placed.top).toBeGreaterThanOrEqual(tabs.top + tabs.height);
+    expect(placed.top + card.height).toBeLessThanOrEqual(681 - 34 - 8);
+  });
+
+  it('alvo preso embaixo (barra do painel, barra de ações): balão ACIMA dele, sem cobri-lo', () => {
+    const bar = { top: 616, left: 0, width: 402, height: 65 };
+    const placed = placeCard(bar, card, phone, true);
+    expect(placed).toMatchObject({ kind: 'anchored', side: 'above' });
+    if (placed.kind !== 'anchored') throw new Error('anchored');
+    expect(placed.top + card.height).toBeLessThanOrEqual(bar.top);
+    expect(placed.top).toBeGreaterThanOrEqual(76 + 8);
+  });
+
+  it('o "?" no cabeçalho: balão logo abaixo dele', () => {
+    const help = { top: 16, left: 300, width: 44, height: 44 };
+    expect(placeCard(help, card, phone, true)).toMatchObject({ kind: 'anchored', side: 'below' });
+  });
+
+  it('as áreas seguras do celular deitado afastam o balão do entalhe', () => {
+    const landscape = {
+      width: 844,
+      height: 390,
+      headerBottom: 70,
+      insets: { top: 0, right: 47, bottom: 21, left: 47 },
+    };
+    const placed = placeCard(
+      { top: 90, left: 60, width: 200, height: 44 },
+      { width: 750, height: 150 },
+      landscape,
+      true,
+    );
+    expect(placed).toMatchObject({ kind: 'anchored', left: 47, width: 844 - 47 - 47 });
+  });
+
+  it('alvo alto (lista inteira): folha embaixo, para o começo da lista ficar à vista', () => {
+    const list = { top: 88, left: 16, width: 370, height: 3000 };
+    expect(placeCard(list, card, phone, true)).toEqual({ kind: 'sheet', side: 'bottom' });
+  });
+
+  it('alvo grande na metade de baixo: folha EM CIMA', () => {
+    const lower = { top: 300, left: 16, width: 370, height: 381 };
+    expect(placeCard(lower, card, phone, true)).toEqual({ kind: 'sheet', side: 'top' });
+  });
+
+  it('a trava mantém a folha até o fim do passo (sem alternar com o balão)', () => {
+    const tabs = { top: 100, left: 16, width: 370, height: 50 };
+    expect(placeCard(tabs, card, phone, true, 'sheet')).toEqual({ kind: 'sheet', side: 'bottom' });
+  });
+
+  it('rolagem no celular: deixa espaço para o balão abaixo do alvo; cartão enorme vale a tela toda', () => {
+    expect(scrollArea(phone, card, true)).toEqual({ top: 88, bottom: 681 - 42 - 220 - 14 });
+    expect(scrollArea(phone, { width: 370, height: 600 }, true)).toEqual({ top: 88, bottom: 669 });
+  });
+
+  it('o destaque é recortado à janela e some quando o alvo está fora dela', () => {
+    expect(
+      clipToView({ top: -500, left: 10, width: 380, height: 9000 }, { width: 402, height: 681 }, 6),
+    ).toEqual({
+      top: -2,
+      left: 4,
+      width: 392,
+      height: 685,
+    });
+    expect(
+      clipToView({ top: 900, left: 0, width: 10, height: 10 }, { width: 402, height: 681 }, 6),
+    ).toBeNull();
   });
 });
