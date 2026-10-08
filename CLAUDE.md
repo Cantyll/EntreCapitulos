@@ -474,6 +474,15 @@ Medido em 16 telas e 7 tamanhos (celular em pé e deitado, iPad em pé e deitado
 - **Testes:** o axe roda com WCAG 2.0, 2.1 e 2.2 A e AA (`target-size` incluso); `e2e/tests/adaptacao.spec.ts` (fita com pílulas, Membros em 1024, 1280 e 1920px, editor no iPad deitado, cabeçalhos no celular deitado e em pé); campos com 16px ou mais no iPhone e alvos de 44px também em `/privacidade` e `/termos` (`acessibilidade.spec.ts`).
 - **NÃO verificado:** Safari real, iPad real (em pé e deitado, com e sem teclado) e o app instalado; os projetos WebKit do Playwright rodam só no CI.
 
+## Desempenho (impeccable optimize)
+
+Medido num celular emulado (390x844, 4G lento do Lighthouse, CPU 4x), no build de produção com o Supabase local. Sem migration.
+
+- **Serifa sem tamanho óptico (decisão do dono):** a Newsreader é carregada sem `axes: ['opsz']`. Com o eixo, a romana e a itálica somavam 273 KB e chegavam por volta de 3,7 s, depois de a página aparecer (os títulos trocavam de fonte na frente da leitora); sem ele, 120 KB, por volta de 2,2 s. O traço dos títulos grandes fica um pouco mais encorpado; o texto dos relatos fica igual. A itálica continua pré-carregada, porque o logotipo a usa em toda página. Não volte o eixo sem medir de novo.
+- **`zod` importado como namespace:** `import * as z from 'zod'`, nunca `import { z } from 'zod'`. Com a importação nomeada o bundler leva todas as traduções do zod (o pedaço do editor de sessão e da Página Sobre caía de 88,8 para 29,8 KB comprimidos com o namespace). `zod-setup.ts` continua vindo antes.
+- **Cliente do Supabase no navegador sob demanda:** os envios de capa (`upload-cover.ts`) e de foto (`upload-photo.ts`) importam `@/lib/supabase/browser` com `await import(...)` só na hora do envio (uns 67 KB comprimidos, com o Realtime). O formulário do livro e o editor da Sobre abrem sem ele. Componente novo que precise do cliente no navegador só para uma ação: faça o mesmo.
+- **Testado e recusado:** `experimental.cssChunking: 'graph'` deixa o CSS de cada página menor, mas o divide em 9 ou 10 arquivos, e no 4G lento a primeira pintura piorou (o padrão junta quase tudo num arquivo de uns 16,5 KB comprimidos).
+
 ## Dados de exemplo
 
 O livro atual é **O Livro de Azrael**, de Amber V. Nicole. O total de capítulos (52) é uma estimativa a confirmar. Os outros livros e membros do protótipo são fictícios e servem só como seed de desenvolvimento. **Nunca inventar citações do livro:** trechos reais são inseridos pela Agatha no editor.
