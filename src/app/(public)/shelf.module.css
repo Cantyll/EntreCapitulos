@@ -91,6 +91,11 @@
   display: block;
 }
 
+/* A capa tem largura fixa (172px); em tela de 320 a 360px a coluna é mais estreita e a capa encolhe junto. */
+.tile a > :first-child {
+  max-width: 100%;
+}
+
 .next {
   display: grid;
   gap: 14px;

@@ -162,6 +162,8 @@
 
 .noteList {
   display: grid;
+  /* Coluna presa à largura: um link colado no trecho ou na referência não estica a lista (nem a página). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   margin: 0;
   padding: 0;
@@ -206,7 +208,7 @@
 
 .questions li {
   display: grid;
-  grid-template-columns: 34px 1fr;
+  grid-template-columns: 34px minmax(0, 1fr);
   gap: 10px;
   padding: 12px 0;
   border-top: 1px solid var(--line);

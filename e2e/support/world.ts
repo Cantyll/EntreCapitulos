@@ -19,6 +19,21 @@ export const WORLD = {
   },
   /** Quantidade de livros do "pool": cada teste que comenta pega um livro só dele. */
   poolSize: 80,
+  /** Livro com textos no limite (ver `LONG_TEXT` e `e2e/tests/resistencia.spec.ts`). */
+  longSlug: 'e2e-longo',
+} as const;
+
+/**
+ * Texto real no limite, do jeito que chega do painel ou de quem comenta: uma palavra enorme no título, um link
+ * colado na sinopse, um nome de 60 letras sem espaço. Fica no livro `WORLD.longSlug`, criado com o mundo.
+ */
+const LONG_WORD = 'Pneumoultramicroscopicossilicovulcanoconiótico';
+export const LONG_TEXT = {
+  word: LONG_WORD,
+  link: 'https://www.exemplo.com.br/um/caminho/muito/longo/sem/espaco/nenhum/no/meio?utm_source=whatsapp&utm_medium=grupo',
+  name: 'AnaCarolinaAlbuquerqueVasconcellosCavalcantiPessoaLeitora123',
+  bookTitle: `O inverno das mulheres que esqueceram o próprio nome ${LONG_WORD} e outras histórias 📚`,
+  sessionTitle: `Quando o ${LONG_WORD} encontrou a carta`,
 } as const;
 
 export const poolSlug = (slot: number) => `e2e-pool-${slot}`;
