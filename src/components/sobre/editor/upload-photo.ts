@@ -8,7 +8,6 @@ import {
   COVER_MIME_TYPES,
   extensionFor,
 } from '@/lib/books/cover-path';
-import { createClient } from '@/lib/supabase/browser';
 
 /** Confere tipo e tamanho antes de enviar (o servidor confere o formato REAL e as dimensões depois). */
 export function validatePhotoFile(file: File): string | null {
@@ -18,6 +17,15 @@ export function validatePhotoFile(file: File): string | null {
   if (file.size > COVER_MAX_BYTES) return 'A foto passa de 5 MB. Escolha um arquivo menor.';
   if (file.size === 0) return 'Esse arquivo está vazio.';
   return null;
+}
+
+/**
+ * O cliente do Supabase (uns 66 KB comprimidos, com o Realtime) só é baixado quando alguém envia uma foto: o
+ * editor abre sem ele.
+ */
+async function photoBucket() {
+  const { createClient } = await import('@/lib/supabase/browser');
+  return createClient().storage.from(COVER_BUCKET);
 }
 
 export type UploadPhotoResult = { ok: true; path: string } | { ok: false; message: string };
@@ -34,8 +42,9 @@ export async function uploadAboutPhoto(file: File): Promise<UploadPhotoResult> {
   const path = ext ? sitePhotoUploadPath(crypto.randomUUID(), ext) : null;
   if (!path) return { ok: false, message: 'Envie uma imagem PNG, JPG ou WEBP.' };
 
-  const bucket = createClient().storage.from(COVER_BUCKET);
+  let bucket: Awaited<ReturnType<typeof photoBucket>>;
   try {
+    bucket = await photoBucket();
     const { error } = await bucket.upload(path, file, { contentType: file.type, upsert: false });
     if (error) return { ok: false, message: 'Não foi possível enviar a foto. Tente de novo.' };
   } catch {

@@ -8,7 +8,6 @@ import {
   coverFolder,
   extensionFor,
 } from '@/lib/books/cover-path';
-import { createClient } from '@/lib/supabase/browser';
 
 /** Confere tipo e tamanho antes de enviar (o servidor confere o formato real depois). */
 export function validateCoverFile(file: File): string | null {
@@ -18,6 +17,15 @@ export function validateCoverFile(file: File): string | null {
   if (file.size > COVER_MAX_BYTES) return 'A imagem passa de 5 MB. Escolha um arquivo menor.';
   if (file.size === 0) return 'Esse arquivo está vazio.';
   return null;
+}
+
+/**
+ * O cliente do Supabase (uns 66 KB comprimidos, com o Realtime) só é baixado quando alguém envia uma capa: o
+ * formulário do livro abre sem ele.
+ */
+async function coverBucket() {
+  const { createClient } = await import('@/lib/supabase/browser');
+  return createClient().storage.from(COVER_BUCKET);
 }
 
 export type UploadCoverResult =
@@ -35,10 +43,9 @@ export async function uploadCover(bookId: string, file: File): Promise<UploadCov
   if (!ext) return { ok: false, message: 'Envie uma imagem PNG, JPG ou WEBP.' };
 
   const path = `${coverFolder(bookId)}/${crypto.randomUUID()}.${ext}`;
-  const supabase = createClient();
-  const bucket = supabase.storage.from(COVER_BUCKET);
-
+  let bucket: Awaited<ReturnType<typeof coverBucket>>;
   try {
+    bucket = await coverBucket();
     const { error } = await bucket.upload(path, file, { contentType: file.type, upsert: false });
     if (error) return { ok: false, message: 'Não foi possível enviar a imagem. Tente de novo.' };
   } catch {
