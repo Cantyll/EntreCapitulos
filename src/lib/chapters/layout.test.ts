@@ -85,10 +85,7 @@ describe('blocos da fita por sessão', () => {
       ['unread', 7, 50, 44],
     ]);
     expect(blocks[0]!.ariaLabel).toBe('Sessão 1, capítulos 1 a 3');
-    expect(blocks[0]!.label).toBe('S1');
-    expect(blocks[1]!.label).toBe('próx.');
     expect(blocks[1]!.ariaLabel).toBeNull();
-    expect(blocks[2]!.label).toBeNull();
   });
 
   it('300 capítulos e 100 sessões: um bloco por sessão, e cada um fica com 3px ou mais', () => {

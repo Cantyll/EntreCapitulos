@@ -567,7 +567,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     chapter: 'leitoras',
     kind: 'info',
     title: 'A fita de capítulos',
-    body: 'A fita mostra os capítulos lidos, as sessões (a última em destaque) e a próxima, tracejada. No celular, cada sessão vira um botão logo abaixo da fita.',
+    body: 'A fita mostra os capítulos lidos, as sessões (a última em destaque) e a próxima, tracejada. Cada sessão tem um botão logo abaixo da fita, que abre a sessão.',
     since: 1,
   },
   {

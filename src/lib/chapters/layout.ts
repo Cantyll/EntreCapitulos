@@ -43,8 +43,6 @@ export type StripBlock = {
   span: number;
   session?: StripSession;
   tone: 0 | 1;
-  /** Rótulo de baixo ("S4", "próx."), quando o bloco tem um. */
-  label: string | null;
   /** Nome acessível, só nos blocos que são links. */
   ariaLabel: string | null;
 };
@@ -81,18 +79,12 @@ export function buildStripBlocks(strip: ChapterStrip): StripBlock[] {
       span: 1,
       session: segment.session,
       tone: segment.tone,
-      label: null,
       ariaLabel: null,
     });
   }
 
   for (const block of blocks) {
-    if (block.session) {
-      block.label = `S${block.session.number}`;
-      block.ariaLabel = blockAriaLabel(block.session, block.from, block.to);
-    } else if (block.kind === 'next') {
-      block.label = 'próx.';
-    }
+    if (block.session) block.ariaLabel = blockAriaLabel(block.session, block.from, block.to);
   }
   return blocks;
 }

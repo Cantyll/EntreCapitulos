@@ -52,13 +52,6 @@ describe('buildChapterStrip', () => {
     ).toBe(true);
     expect(strip.last?.number).toBe(4);
     expect(strip.nextRange).toEqual({ from: 13, to: 15 });
-    expect(strip.labels.map((l) => [l.text, l.kind, l.from, l.to])).toEqual([
-      ['S1', 'session', 1, 3],
-      ['S2', 'session', 4, 6],
-      ['S3', 'session', 7, 9],
-      ['S4', 'last', 10, 12],
-      ['próx.', 'next', 13, 15],
-    ]);
   });
 
   it('sem sessões: o que já foi lido aparece como lido, sem link', () => {
@@ -77,7 +70,7 @@ describe('buildChapterStrip', () => {
     ]);
     expect(strip.segments.every((x) => x.session === undefined)).toBe(true);
     expect(strip.last).toBeNull();
-    expect(strip.labels).toEqual([{ kind: 'next', text: 'próx.', from: 5, to: 7 }]);
+    expect(strip.nextRange).toEqual({ from: 5, to: 7 });
   });
 
   it('total 1', () => {
@@ -97,7 +90,6 @@ describe('buildChapterStrip', () => {
     const strip = buildChapterStrip({ total: 5, current: 5, sessions: [s(1, 1, 2)] });
     expect(kinds(strip)).toEqual(['last', 'last', 'read', 'read', 'read']);
     expect(strip.nextRange).toBeNull();
-    expect(strip.labels.some((l) => l.kind === 'next')).toBe(false);
   });
 
   it('atual acima do total é limitado ao total', () => {
@@ -128,7 +120,7 @@ describe('buildChapterStrip', () => {
     expect(strip.segments[3]!.kind).toBe('session');
   });
 
-  it('uma sessão por cima da próxima sessão vence, e o rótulo "próx." só cobre o que sobra', () => {
+  it('uma sessão por cima da próxima sessão vence, e a próxima sessão só cobre o que sobra', () => {
     const strip = buildChapterStrip({ total: 20, current: 5, sessions: [s(1, 1, 5), s(2, 7, 7)] });
     expect(strip.segments[5]!.kind).toBe('next'); // capítulo 6
     expect(strip.segments[6]!.kind).toBe('last'); // capítulo 7 tem sessão
@@ -140,7 +132,7 @@ describe('buildChapterStrip', () => {
     const strip = buildChapterStrip({ total: 4, current: 4, sessions: [s(1, 3, 9), s(2, 6, 8)] });
     expect(strip.segments).toHaveLength(4);
     expect(strip.segments[3]!.session?.number).toBe(1);
-    expect(strip.labels.map((l) => l.text)).toEqual(['S1']);
+    expect(strip.last?.number).toBe(1);
   });
 
   it('sessão sobreposta: a primeira (menor número) fica com o capítulo', () => {
