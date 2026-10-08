@@ -7,6 +7,14 @@
   white-space: nowrap;
 }
 
+/*
+ * O esqueleto ocupa pelo menos a altura da tela: assim o rodapé fica fora da tela enquanto a página carrega e não
+ * salta para baixo quando o conteúdo chega (deslocamento de layout).
+ */
+.frame {
+  min-height: var(--app-height);
+}
+
 .bar,
 .cover {
   display: block;
