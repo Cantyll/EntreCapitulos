@@ -520,6 +520,16 @@ Passada final de interface antes do lançamento, no celular e no computador, com
 - **Títulos:** em `/sessoes` o título de cada cartão é `h2` (`SessionCard headingLevel={2}`), logo abaixo do `h1`; na home continua `h3`. Os cartões de `/conta` usam a serifa (20px, peso 500), como os outros cartões do site.
 - **NÃO verificado:** Safari real e app instalado; os projetos WebKit do Playwright rodam só no CI.
 
+## Página Sobre escrita a lápis (impeccable overdrive)
+
+Direção escolhida pelo dono entre três ("Escrito a lápis"), aprovada por prints de antes e depois. Sem migration e sem dependência nova.
+
+- **Título** (`AboutView`): dividido em palavras por `titleWords` (`src/lib/about/pencil.ts`), cada uma revelada da esquerda para a direita só com CSS (`clip-path`, `--d`/`--t`), em no máximo ~1,8 s. O texto do `<h1>` continua idêntico (o leitor de tela lê o título inteiro).
+- **Traços** (`PencilMarks`, Client Component, camada SVG `aria-hidden` e sem eventos de ponteiro dentro de `[data-about-root]`): desenha o que tem `data-pencil` (`underline`, `circle`, `auto` = negrito do texto, curto vira círculo e longo, sublinhado; `arrow` com `data-pencil-to`; `mark` = itálico, que vira marca-texto só por CSS) quando o trecho aparece na tela (IntersectionObserver), uma vez só. Caminhos de funções PURAS com semente estável (`pencil.ts`, testado). Refeito ao mudar o tamanho, ao chegar a fonte e ao mudar o texto (pré-visualização do painel, que mede dividindo pela escala); DOM direto, sem estado do React. Traço em `--rose` (Marca-texto: só forma), marca-texto em `--soft-2`.
+- **Onde:** sublinhado do título (só a última linha, depois da escrita) e da chamada final; negrito e itálico da abertura e das seções extras (`RichText annotate`); números de "Como funciona" circulados (os passos deixaram de ser cartões); a bio vira nota na margem (itálica, levemente torta) com seta até o retrato. O texto padrão ganhou itálico e negrito por `SOBRE.emphasis` (as palavras não mudam; teste em `pencil.test.ts`).
+- **Sem animação:** menos movimento mostra tudo pronto; impressão mostra os traços; cores forçadas usam `CanvasText` e `Mark`. Sem JavaScript, a página é a de antes, sem traços.
+- **Testes:** `src/lib/about/pencil.test.ts` e `e2e/tests/sobre-lapis.spec.ts`. **NÃO verificado:** Safari real e app instalado (`clip-path` no `inline-block`, filtro de grão do SVG), WebKit só no CI.
+
 ## Dados de exemplo
 
 O livro atual é **O Livro de Azrael**, de Amber V. Nicole. O total de capítulos (52) é uma estimativa a confirmar. Os outros livros e membros do protótipo são fictícios e servem só como seed de desenvolvimento. **Nunca inventar citações do livro:** trechos reais são inseridos pela Agatha no editor.
