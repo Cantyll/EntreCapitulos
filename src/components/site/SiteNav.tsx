@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { ScrollStrip } from '@/components/ui/ScrollStrip';
 import { cx } from '@/lib/cx';
 import { getPublicNav } from '@/lib/navigation';
 
@@ -12,7 +13,7 @@ export function SiteNav({ currentBookSlug }: { currentBookSlug: string | null })
   const pathname = usePathname();
 
   return (
-    <nav className={styles.nav} aria-label="Principal">
+    <ScrollStrip className={styles.nav} aria-label="Principal" revealKey={pathname}>
       {getPublicNav({ currentBookSlug }).map((item) => {
         const active = item.isActive(pathname);
         return (
@@ -26,6 +27,6 @@ export function SiteNav({ currentBookSlug }: { currentBookSlug: string | null })
           </Link>
         );
       })}
-    </nav>
+    </ScrollStrip>
   );
 }

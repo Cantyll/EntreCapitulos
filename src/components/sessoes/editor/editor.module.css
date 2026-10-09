@@ -261,8 +261,10 @@
     height: var(--tap);
   }
 
+  /* Botões de 44px quase encostados: a barra do relato (7 botões) cabe inteira num iPhone de 390px. Abaixo disso ela
+     rola, com a borda esfumada (ScrollStrip). */
   .sep {
-    margin: 8px 3px;
+    margin: 8px 2px;
   }
 
   .linkBtn,
@@ -285,6 +287,7 @@
   /* Uma linha só, com ou sem teclado: a altura da barra não muda quando ela sobe, e a página não pula. */
   .toolRow {
     flex-wrap: nowrap;
+    gap: 1px;
     overflow-x: auto;
     scrollbar-width: none;
   }

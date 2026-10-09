@@ -39,6 +39,11 @@
   white-space: nowrap;
 }
 
+/* A faixa rola de lado e cortaria um anel de foco por fora: o anel fica por dentro (como no menu do site). */
+.tab:focus-visible {
+  outline-offset: -2px;
+}
+
 .tab[aria-current='page'] {
   border-color: var(--rose-2);
   color: var(--ink);
