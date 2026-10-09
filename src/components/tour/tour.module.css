@@ -274,6 +274,39 @@
   background: color-mix(in srgb, var(--ink) 20%, transparent);
 }
 
+/* O menu do "?" acende junto do botão (popover) ou sobe (folha), e sai mais depressa (ver ConfirmDialog). */
+.menu {
+  animation: menu-in var(--dur-overlay) var(--ease-out);
+  transition-property: opacity, transform, overlay, display;
+  transition-duration: var(--dur-exit);
+  transition-timing-function: var(--ease-in);
+  transition-behavior: allow-discrete;
+}
+
+.menu:not([open]) {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu {
+    animation: menu-fade var(--dur-state) linear !important;
+  }
+}
+
+@keyframes menu-fade {
+  from {
+    opacity: 0;
+  }
+}
+
 .menuBody {
   padding: 10px 10px 8px;
 }
@@ -356,6 +389,11 @@
     border-width: 1px 0 0;
     border-radius: 16px 16px 0 0;
     padding-bottom: env(safe-area-inset-bottom);
+    animation-name: menu-up;
+  }
+
+  .menu:not([open]) {
+    transform: translateY(24px);
   }
 
   .menuBody {
@@ -411,7 +449,15 @@
 }
 
 .pulse {
-  animation: tour-pulse 1.6s ease-in-out infinite;
+  /* Três pulsos e para: chama o olho uma vez, sem ficar piscando enquanto a dica está aberta. */
+  animation: tour-pulse 1.6s ease-in-out 3;
+}
+
+@keyframes menu-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
 }
 
 @keyframes tour-pulse {

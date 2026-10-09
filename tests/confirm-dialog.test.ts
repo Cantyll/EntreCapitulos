@@ -78,14 +78,18 @@ describe('ConfirmDialog (folha inferior no toque)', () => {
     expect(css).toMatch(/overflow-y:\s*auto/);
   });
 
-  it('campos de 16px, botões de 44px e sem animação com prefers-reduced-motion', () => {
+  it('campos de 16px, botões de 44px e só um esmaecer com prefers-reduced-motion', () => {
     // O corpo da regra dos campos (não qualquer `font-size: 16px` que venha depois, como o do `.error`).
     expect(touch).toMatch(
       /\.body input,\s*\.body select,\s*\.body textarea\s*\{[^}]*font-size:\s*16px/,
     );
     expect(touch).toMatch(/\.body\s*\{[^}]*font-size:\s*16px/);
     expect(touch).toMatch(/min-height:\s*44px/);
-    expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*animation:\s*none/);
+    // Menos movimento: a folha não sobe; só acende (opacidade), e a regra vence a de base.css.
+    expect(css).toMatch(
+      /prefers-reduced-motion: reduce\)\s*\{\s*dialog\.dialog\s*\{\s*animation:\s*dialog-fade[^}]*!important/,
+    );
+    expect(css).toMatch(/@keyframes dialog-fade\s*\{\s*from\s*\{\s*opacity:\s*0;\s*\}\s*\}/);
   });
 
   it('um título com palavra longa (nome sem espaço) não alarga a folha', () => {

@@ -8,6 +8,9 @@
   background: var(--surface);
   position: relative;
   flex: none;
+  transition:
+    border-color var(--dur-press),
+    transform var(--dur-press) var(--ease-out);
 }
 
 .sm {
@@ -23,6 +26,10 @@
 
 .iconBtn:active {
   border-color: var(--rose);
+}
+
+.iconBtn:active:not(:disabled) {
+  transform: scale(0.94);
 }
 
 .dot {

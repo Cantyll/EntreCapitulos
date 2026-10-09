@@ -134,13 +134,49 @@
   background: var(--surface);
   color: var(--ink);
   box-shadow: var(--shadow-sheet);
-  animation: sheet-up 0.22s ease-out;
+  /* Sobe em 240ms e desce em 160ms (a saída exige Safari 17.4 ou mais novo; antes disso só some). */
+  animation: sheet-up var(--dur-overlay) var(--ease-out);
+  transition-property: opacity, transform, overlay, display;
+  transition-duration: var(--dur-exit);
+  transition-timing-function: var(--ease-in);
+  transition-behavior: allow-discrete;
+}
+
+.sheet:not([open]) {
+  opacity: 0;
+  transform: translateY(24px);
 }
 
 .sheet::backdrop {
   background: var(--scrim);
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
+  animation: scrim-in var(--dur-overlay) var(--ease-out);
+  transition-property: opacity, overlay, display;
+  transition-duration: var(--dur-exit);
+  transition-behavior: allow-discrete;
+}
+
+.sheet:not([open])::backdrop {
+  opacity: 0;
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: sheet-fade var(--dur-state) linear !important;
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
 }
 
 @keyframes sheet-up {
