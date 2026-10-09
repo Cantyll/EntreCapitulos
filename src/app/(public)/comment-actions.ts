@@ -93,10 +93,11 @@ export async function createComment(
     });
 
     // Lista fixa de campos. Nunca `status`.
+    const commentId = randomUUID();
     const { data, error } = await supabase
       .from('comments')
       .insert({
-        id: randomUUID(),
+        id: commentId,
         session_id: row.id,
         author_id: user.id,
         parent_id: rawParent === '' ? null : rawParent,
@@ -121,6 +122,8 @@ export async function createComment(
     return {
       status: 'ok',
       outcome,
+      // Só o id do comentário da própria pessoa: a lista o marca quando ele aparece (marca-texto).
+      commentId,
       message:
         outcome === 'approved'
           ? 'Comentário publicado.'

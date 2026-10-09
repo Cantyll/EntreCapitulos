@@ -9,6 +9,7 @@ import { COMMENT_MAX_LENGTH, commentLength } from '@/lib/comments';
 import { IDLE_COMMENT_STATE, type CommentActionState } from '@/lib/comments/action-state';
 
 import styles from './comments.module.css';
+import { usePostedComment } from './PostedComment';
 
 type Props = {
   sessionId: string;
@@ -66,9 +67,12 @@ export function CommentForm({
     }
   }
 
+  const { markPosted } = usePostedComment();
   useEffect(() => {
-    if (state.status === 'ok') onPosted?.(state.message);
-  }, [state, onPosted]);
+    if (state.status !== 'ok') return;
+    markPosted(state.commentId);
+    onPosted?.(state.message);
+  }, [state, onPosted, markPosted]);
 
   const length = commentLength(body);
   const over = length > COMMENT_MAX_LENGTH;

@@ -2,6 +2,7 @@
 
 import { useCallback, useId, useRef, useState } from 'react';
 
+import { useCoverPhase } from '@/components/public/useCoverPhase';
 import { useReveal } from '@/components/public/useReveal';
 import { Avatar } from '@/components/ui/Avatar';
 import { Icon } from '@/components/ui/Icon';
@@ -10,6 +11,7 @@ import { isCommentCovered } from '@/lib/comments';
 import type { DisplayComment } from '@/lib/comments/display';
 
 import { CommentForm } from './CommentForm';
+import { usePostedComment } from './PostedComment';
 import { RetractButton } from './RetractButton';
 import styles from './comments.module.css';
 
@@ -62,13 +64,16 @@ export function CommentBody({
   });
   const focusBody = useCallback(() => bodyRef.current?.focus(), []);
   const { hidden, reveal } = useReveal(covered, progress, focusBody);
+  // A névoa do comentário: só anima quando a cobertura muda com a página aberta, nunca ao carregar.
+  const { phase, settle } = useCoverPhase(hidden);
 
   if (comment.spoilerUpTo !== null && hidden) {
+    const veiling = phase === 'veiling';
     return (
       <>
         <button
           type="button"
-          className={styles.spoilerCover}
+          className={veiling ? `${styles.spoilerCover} ${styles.coverIn}` : styles.spoilerCover}
           aria-expanded={false}
           aria-controls={bodyId}
           onClick={reveal}
@@ -83,7 +88,7 @@ export function CommentBody({
         </button>
         <div
           id={bodyId}
-          className={`${styles.body} ${styles.bodyCovered}`}
+          className={`${styles.body} ${styles.bodyCovered}${veiling ? ` ${styles.bodyVeil}` : ''}`}
           inert
           aria-hidden="true"
         >
@@ -94,7 +99,15 @@ export function CommentBody({
   }
 
   return (
-    <div id={bodyId} ref={bodyRef} tabIndex={-1} className={styles.body}>
+    <div
+      id={bodyId}
+      ref={bodyRef}
+      tabIndex={-1}
+      className={phase === 'unveiling' ? `${styles.body} ${styles.bodyUnveil}` : styles.body}
+      onAnimationEnd={(event) => {
+        if (event.target === event.currentTarget) settle();
+      }}
+    >
       {comment.spoilerUpTo !== null && (
         <span className={styles.spoilerTag}>spoiler do cap. {comment.spoilerUpTo}</span>
       )}
@@ -114,6 +127,7 @@ export function CommentArticle({
   replyCount = 0,
 }: Props) {
   const [deleted, setDeleted] = useState(false);
+  const { postedId } = usePostedComment();
   const badge = comment.authorRole === 'member' ? null : ROLE_BADGE[comment.authorRole];
 
   // Já excluído: some da lista na hora (o aviso fica na região de status acima da lista).
@@ -122,7 +136,15 @@ export function CommentArticle({
   const canReply = reply.canReply && !comment.pending && onToggleReply;
 
   return (
-    <article id={`comentario-${comment.id}`} className={isReply ? styles.reply : styles.comment}>
+    <article
+      id={`comentario-${comment.id}`}
+      className={[
+        isReply ? styles.reply : styles.comment,
+        postedId === comment.id && styles.justPosted,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <Avatar name={comment.authorName} />
       <div className={styles.main}>
         <div className={styles.head}>
