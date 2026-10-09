@@ -6,7 +6,7 @@
   place-items: center;
   font-weight: 600;
   font-size: 13.5px;
-  background: var(--av, #f7dde4);
+  background: var(--av, var(--soft-2));
   color: var(--rose-deep);
   flex: none;
 }
