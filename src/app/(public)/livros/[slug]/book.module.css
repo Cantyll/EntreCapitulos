@@ -35,6 +35,11 @@
   padding: 30px 0 44px;
 }
 
+/* A capa (240px) acompanha a coluna: entre 761 e 1020px a coluna tem 180px, e a capa passava por cima do título. */
+.head > :first-child {
+  max-width: 100%;
+}
+
 .live {
   display: inline-flex;
   align-items: center;
