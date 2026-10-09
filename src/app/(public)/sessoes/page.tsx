@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { SessionCard } from '@/components/public/SessionCard';
 import { Container } from '@/components/ui/Container';
+import { ScrollStrip } from '@/components/ui/ScrollStrip';
 import { getVisibleSessions, loadShelf } from '@/lib/public/loaders';
 import { parseBookParam } from '@/lib/public/params';
 import { isRecent } from '@/lib/site';
@@ -49,7 +50,7 @@ export default async function SessionsPage({ searchParams }: Props) {
       </section>
 
       {tabs.length > 1 && (
-        <nav className={styles.tabs} aria-label="Livros">
+        <ScrollStrip className={styles.tabs} aria-label="Livros" revealKey={selected?.id}>
           {tabs.map((book) => {
             const count =
               book.id === selected?.id ? sessions.length : (shelf.counts.get(book.id) ?? 0);
@@ -67,7 +68,7 @@ export default async function SessionsPage({ searchParams }: Props) {
               </Link>
             );
           })}
-        </nav>
+        </ScrollStrip>
       )}
 
       {selected && sessions.length > 0 ? (

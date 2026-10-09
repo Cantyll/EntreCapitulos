@@ -4,6 +4,7 @@ import { useEditorState, type Editor } from '@tiptap/react';
 import { useRef, useState, type FormEvent, type MouseEvent } from 'react';
 
 import { Icon, type IconName } from '@/components/ui/Icon';
+import { ScrollStrip } from '@/components/ui/ScrollStrip';
 import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 import { isSafeHref } from '@/lib/session-body';
 
@@ -154,7 +155,7 @@ export function Toolbar({
         aria-label={label}
         data-tour="editor-toolbar"
       >
-        <div className={styles.toolRow}>
+        <ScrollStrip as="div" className={styles.toolRow}>
           <ToolButton
             label="Negrito"
             icon="bold"
@@ -232,7 +233,7 @@ export function Toolbar({
               </ToolButton>
             </>
           )}
-        </div>
+        </ScrollStrip>
 
         {linkOpen && (
           <form className={styles.linkRow} onSubmit={applyLink}>
