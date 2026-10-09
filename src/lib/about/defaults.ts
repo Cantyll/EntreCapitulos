@@ -9,13 +9,24 @@ import type { RichDoc } from './rich-text';
  * novo (o editor pode mexer nele à vontade).
  */
 export function defaultAbout(): AboutContent {
-  const paragraph = (text: string) => ({
-    type: 'paragraph' as const,
-    content: [{ type: 'text' as const, text }],
-  });
+  const paragraph = (text: string, index: number) => {
+    const found = SOBRE.emphasis.find((e) => e.paragraph === index && text.includes(e.text));
+    if (!found) return { type: 'paragraph' as const, content: [{ type: 'text' as const, text }] };
+    const at = text.indexOf(found.text);
+    const before = text.slice(0, at);
+    const after = text.slice(at + found.text.length);
+    return {
+      type: 'paragraph' as const,
+      content: [
+        ...(before ? [{ type: 'text' as const, text: before }] : []),
+        { type: 'text' as const, text: found.text, marks: [{ type: found.mark }] },
+        ...(after ? [{ type: 'text' as const, text: after }] : []),
+      ],
+    };
+  };
   const intro: RichDoc = {
     type: 'doc',
-    content: [paragraph(SOBRE.lead), ...SOBRE.paragraphs.map(paragraph)],
+    content: [SOBRE.lead, ...SOBRE.paragraphs].map(paragraph),
   };
   return {
     v: 1,

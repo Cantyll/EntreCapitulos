@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import type { CSSProperties } from 'react';
 
 import { InstallGuide } from '@/components/install/InstallGuide';
 import { Avatar } from '@/components/ui/Avatar';
@@ -8,9 +9,11 @@ import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { COMMUNITY_RULES } from '@/content/legal/community-rules';
 import { SOBRE } from '@/content/sobre';
 import { isSafeLinkUrl, sitePhotoUrl, type AboutContent, type AboutFact } from '@/lib/about';
+import { titleWords } from '@/lib/about/pencil';
 import { AUTHOR } from '@/lib/site';
 
 import styles from './about.module.css';
+import { PencilMarks } from './PencilMarks';
 import { RichText } from './RichText';
 
 /*
@@ -23,6 +26,11 @@ import { RichText } from './RichText';
  * "Como funciona", estatísticas, Combinados da comunidade, "Leia como aplicativo" e a chamada final. Os Combinados
  * (`COMMUNITY_RULES`, em código, versionados com os Termos) e "Leia como aplicativo" (etapa 8e) NÃO são editáveis nem
  * ocultáveis: não há campo no conteúdo para eles. Estatísticas, "Como funciona" e a chamada final se ocultam.
+ *
+ * "Escrito a lápis" (impeccable overdrive): o título se escreve palavra por palavra (só CSS, `titleWords` dá o ritmo)
+ * e `PencilMarks` desenha à mão o que leva `data-pencil`: o sublinhado do título e da chamada final, o negrito do texto,
+ * os números de "Como funciona" e a seta da nota da autora até o retrato. O itálico do texto vira marca-texto. Tudo é
+ * enfeite: sem JavaScript, ou com menos movimento, o conteúdo e a ordem são os mesmos.
  */
 export function AboutView({
   content,
@@ -38,30 +46,61 @@ export function AboutView({
   const photoUrl = content.photo ? sitePhotoUrl(content.photo.path) : null;
   // O conteúdo vem do banco, mas a página não confia nele: só desenha link https de verdade.
   const links = content.links.filter((link) => isSafeLinkUrl(link.url));
+  const title = titleWords(content.title);
 
   return (
     <div className={styles.root} data-about-root="">
+      <PencilMarks />
       <section className={styles.about} aria-labelledby="sobre-titulo">
         <h1 id="sobre-titulo" className={styles.title} data-about="presentation">
-          {content.title}
+          <span
+            className={styles.titleInk}
+            data-pencil="underline"
+            data-pencil-lines="last"
+            data-pencil-delay={title.total}
+          >
+            {title.words.map((word, i) => (
+              <span key={i}>
+                {i > 0 && ' '}
+                <span
+                  className={styles.word}
+                  style={{ '--d': `${word.delay}ms`, '--t': `${word.duration}ms` } as CSSProperties}
+                >
+                  {word.text}
+                </span>
+              </span>
+            ))}
+          </span>
         </h1>
 
         <aside className={styles.card} aria-label="A autora" data-about="presentation">
-          {photoUrl && content.photo ? (
-            <Image
-              src={photoUrl}
-              alt={content.photo.alt}
-              width={120}
-              height={120}
-              unoptimized
-              className={styles.photo}
-              data-about-photo=""
-            />
-          ) : (
-            <Avatar name={AUTHOR.name} size="lg" className={styles.avatar} />
-          )}
+          <div className={styles.portrait} data-about-portrait="">
+            {photoUrl && content.photo ? (
+              <Image
+                src={photoUrl}
+                alt={content.photo.alt}
+                width={120}
+                height={120}
+                unoptimized
+                className={styles.photo}
+                data-about-photo=""
+              />
+            ) : (
+              <Avatar name={AUTHOR.name} size="lg" className={styles.avatar} />
+            )}
+          </div>
           <h2>{AUTHOR.name}</h2>
-          {content.bio !== '' && <p className={styles.bio}>{content.bio}</p>}
+          {content.bio !== '' && (
+            <p className={styles.bio}>
+              <span
+                data-pencil="arrow"
+                data-pencil-to="[data-about-portrait]"
+                data-pencil-delay={title.total}
+              >
+                {content.bio}
+              </span>
+            </p>
+          )}
           {links.length > 0 && (
             <ul className={styles.links} aria-label="Links da autora">
               {links.map((link, index) => (
@@ -77,7 +116,7 @@ export function AboutView({
         </aside>
 
         <div className={styles.text} data-about="text">
-          <RichText doc={content.intro} className={`${styles.prose} ${styles.intro}`} />
+          <RichText doc={content.intro} className={`${styles.prose} ${styles.intro}`} annotate />
         </div>
 
         {content.sections.length > 0 && (
@@ -90,7 +129,7 @@ export function AboutView({
                 data-about-section={index + 1}
               >
                 <h2 id={`sobre-secao-${index + 1}`}>{section.title}</h2>
-                <RichText doc={section.body} className={styles.prose} />
+                <RichText doc={section.body} className={styles.prose} annotate />
               </section>
             ))}
           </div>
@@ -106,7 +145,9 @@ export function AboutView({
             {content.howItWorks.steps.map((step, i) => (
               <li key={i} className={styles.step}>
                 <span className={styles.n} aria-hidden="true">
-                  {i + 1}
+                  <span data-pencil="circle" data-pencil-delay={i * 180}>
+                    {i + 1}
+                  </span>
                 </span>
                 <h3>{step.title}</h3>
                 <p>{step.text}</p>
@@ -154,7 +195,9 @@ export function AboutView({
       {content.cta.visible && showCta && (
         <div className={styles.cta} data-about="cta">
           <div>
-            <h2>{SOBRE.cta.title}</h2>
+            <h2>
+              <span data-pencil="underline">{SOBRE.cta.title}</span>
+            </h2>
             <p>{content.cta.text}</p>
           </div>
           <ButtonLink href="/entrar">{SOBRE.cta.button}</ButtonLink>

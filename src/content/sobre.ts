@@ -16,6 +16,14 @@ export const SOBRE = {
   paragraphs: [
     'O Entre Capítulos nasceu daí: eu leio um livro por vez, escrevo sobre cada trecho em sessões curtas e abro a conversa. Você acompanha no seu ritmo, sem medo de spoiler.',
   ],
+  /*
+   * Ênfases do texto padrão (as palavras não mudam): o trecho em itálico vira marca-texto e o em negrito ganha um
+   * sublinhado a lápis na página (ver `AboutView`). Cada trecho precisa existir, idêntico, no parágrafo indicado.
+   */
+  emphasis: [
+    { paragraph: 0, text: 'as anotações nas margens eram a melhor parte', mark: 'italic' },
+    { paragraph: 1, text: 'sem medo de spoiler', mark: 'bold' },
+  ],
   bio: 'Leitora, anotadora compulsiva, apaixonada por fantasia sombria',
   steps: [
     {
