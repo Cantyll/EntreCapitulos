@@ -12,6 +12,16 @@
   background: var(--rose-tint);
 }
 
+/* Dentro de um cartão ou faixa: sem a segunda caixa, só um filete de Pauta por cima. Ocupa a linha inteira. */
+.prompt.embedded {
+  flex: 1 1 100%;
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+}
+
 .prompt .question {
   margin: 0;
   font-family: var(--serif);
