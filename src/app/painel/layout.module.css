@@ -10,7 +10,7 @@
 
 .main {
   padding: 30px 34px 70px;
-  max-width: 1240px;
+  max-width: var(--panel-max);
 }
 
 /* Abaixo de 1020px: sem barra lateral, e a barra inferior fixa não pode cobrir o fim da página. */
