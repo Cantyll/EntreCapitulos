@@ -10,11 +10,16 @@
 }
 
 .generated {
+  /*
+   * Tudo dentro da capa gerada mede em cqi (1% da largura da própria capa): quando a página encolhe a capa no
+   * celular (max-width), título, respiro e autor encolhem junto, como um livro de verdade. O respiro fica nos
+   * filhos, não aqui: padding em % conta a largura do PAI, e na página do livro no celular ele comia metade da capa.
+   */
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 16% 12% 12%;
   text-align: center;
   background: linear-gradient(165deg, var(--c0), var(--c1));
   color: var(--cover-ink);
@@ -46,10 +51,14 @@
   position: relative;
   z-index: 1;
   font-family: var(--serif);
-  /* --ct: o tamanho já reduzido para títulos longos (coverTitleScale); --cs é o tamanho pedido. */
-  font-size: var(--ct, var(--cs, 20px));
+  /*
+   * --ct: o tamanho já reduzido para títulos longos (coverTitleScale); --cs é o tamanho pedido. Os dois são
+   * frações da largura da capa (fontSize / width), então o título acompanha a capa quando ela encolhe.
+   */
+  font-size: calc(var(--ct, var(--cs, 0.115)) * 100cqi);
   font-weight: 500;
-  width: 100%;
+  align-self: stretch;
+  margin: 0 12cqi;
   line-height: 1.05;
   letter-spacing: -0.01em;
   overflow-wrap: anywhere;
@@ -58,12 +67,20 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 6;
   overflow: hidden;
+  /*
+   * Com a entrelinha de 1,05 o acento de maiúscula ("Última", "Âmbar", "É") passa do topo da linha, e o
+   * overflow do corte o apagava. O respiro entra por dentro (padding) e sai da margem de cima: o acento
+   * aparece e o título fica no mesmo lugar. Só em cima: embaixo, o padding mostraria o começo da 7ª linha
+   * de um título cortado.
+   */
+  padding-top: 0.2em;
+  margin-top: calc(16cqi - 0.2em);
 }
 
 .ornament {
   position: relative;
   z-index: 1;
-  width: 30%;
+  width: 23cqi;
   height: 1px;
   background: currentColor;
   opacity: 0.4;
@@ -73,9 +90,10 @@
   position: relative;
   z-index: 1;
   font-family: var(--serif);
-  font-size: calc(var(--cs, 20px) * 0.52);
+  font-size: calc(var(--cs, 0.115) * 52cqi);
   font-style: italic;
-  width: 100%;
+  align-self: stretch;
+  margin: 0 12cqi 12cqi;
   overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-box-orient: vertical;

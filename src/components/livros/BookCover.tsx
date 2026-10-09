@@ -13,7 +13,7 @@ type BookCoverProps = {
   coverUrl: string | null;
   /** Largura em px. */
   width?: number;
-  /** Tamanho da fonte do título na capa gerada, em px. */
+  /** Tamanho da fonte do título na capa gerada, em px, quando a capa tem a largura `width`. */
   fontSize?: number;
   /** Só a imagem ou o gradiente, sem texto (miniatura de tabela). */
   tiny?: boolean;
@@ -67,8 +67,9 @@ export function BookCover({
     '--c0': hsl(hue, 0.6, 0.9),
     '--c1': hsl(hue, 0.5, 0.78),
     '--cover-ink': hsl(hue, 0.4, 0.2),
-    '--cs': `${fontSize}px`,
-    '--ct': `${Math.round(fontSize * coverTitleScale(title) * 10) / 10}px`,
+    // Tamanhos como fração da largura: a página encolhe a capa no celular (max-width) e o texto encolhe junto.
+    '--cs': (fontSize / width).toFixed(4),
+    '--ct': ((fontSize * coverTitleScale(title)) / width).toFixed(4),
   } as CSSProperties;
 
   return (
