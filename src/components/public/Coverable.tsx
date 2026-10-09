@@ -66,6 +66,10 @@ export function CoverFrame({
             </span>
             <small>{buttonLabel}</small>
           </button>
+          {/* Só no papel (o botão não serve impresso). Na tela fica escondido, também do leitor de tela. */}
+          <p className={styles.printNote}>
+            Trecho coberto pelo filtro de spoiler. Para imprimi-lo, mostre-o na tela antes.
+          </p>
         </div>
       )}
     </div>

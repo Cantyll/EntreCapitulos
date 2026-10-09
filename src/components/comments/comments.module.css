@@ -558,3 +558,27 @@
     padding-left: 10px;
   }
 }
+
+/*
+ * Impressão: a conversa sai, os controles não (escolher o capítulo, a ordem, o campo de comentar, responder, carregar
+ * mais e o convite de quando ninguém comentou ainda).
+ */
+@media print {
+  .discControls,
+  .card,
+  .actions,
+  .replyBox,
+  .more,
+  .empty {
+    display: none;
+  }
+
+  .thread {
+    break-inside: avoid;
+  }
+
+  /* Sem nenhum comentário, nem o título da discussão vai para o papel. */
+  .disc:has(.empty) {
+    display: none;
+  }
+}

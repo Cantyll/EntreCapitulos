@@ -278,3 +278,10 @@
     margin-block: -6px;
   }
 }
+
+/* Impressão: a lateral (progresso e entrar) sai, e a coluna das sessões ocupa a página inteira. */
+@media print {
+  .layout {
+    display: block;
+  }
+}

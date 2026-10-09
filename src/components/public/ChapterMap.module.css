@@ -99,3 +99,11 @@ a.tile.last {
     outline-color: CanvasText;
   }
 }
+
+/* Impressão: os blocos das sessões são fundos coloridos, que o navegador não imprime por padrão. */
+@media print {
+  .tile {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

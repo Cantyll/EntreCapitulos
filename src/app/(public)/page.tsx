@@ -199,7 +199,7 @@ async function HomeContent() {
             )}
           </div>
 
-          <aside className={styles.aside} aria-label="Lateral">
+          <aside className={styles.aside} aria-label="Lateral" data-print="hide">
             <section
               className={`${styles.card} ${styles.progressCard}`}
               aria-labelledby="progresso-titulo"

@@ -24,7 +24,7 @@ type BackButtonProps = {
  */
 export function BackButton({ href, children = 'Voltar', className }: BackButtonProps) {
   return (
-    <ButtonLink href={href} variant="ghost" size="sm" className={className}>
+    <ButtonLink href={href} variant="ghost" size="sm" className={className} data-print="hide">
       <Icon name="left" size="sm" />
       <span className={styles.label}>{children}</span>
     </ButtonLink>

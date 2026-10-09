@@ -431,3 +431,11 @@
     min-height: var(--tap);
   }
 }
+
+/* Impressão: a lateral sai (data-print), e o relato ocupa a página inteira. */
+@media print {
+  .layout {
+    display: block;
+    padding-bottom: 0;
+  }
+}

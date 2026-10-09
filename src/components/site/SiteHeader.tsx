@@ -14,7 +14,7 @@ export async function SiteHeader({ currentBookSlug }: { currentBookSlug: string 
   const user = await getCurrentUserOrNull('SiteHeader');
 
   return (
-    <header className={styles.header}>
+    <header className={styles.header} data-print="hide">
       <Container>
         <div className={styles.inner}>
           <Logo className={styles.logo} />

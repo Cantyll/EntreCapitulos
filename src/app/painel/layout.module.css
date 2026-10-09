@@ -28,3 +28,14 @@
     padding-bottom: calc(var(--safe-bottom) + 70px);
   }
 }
+
+/* Impressão: a barra lateral, o topo e a barra de baixo saem (data-print), e o conteúdo ocupa a página. */
+@media print {
+  .admin {
+    display: block;
+  }
+
+  .main {
+    padding: 0;
+  }
+}

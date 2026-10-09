@@ -387,3 +387,13 @@ a.pill:focus-visible {
     outline-color: CanvasText;
   }
 }
+
+/* Impressão: a fita é desenho feito de fundos, que o navegador não imprime por padrão. Ela e a legenda saem com cor. */
+@media print {
+  .seg,
+  .swatch,
+  .pill_last {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
