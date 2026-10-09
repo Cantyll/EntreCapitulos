@@ -335,3 +335,55 @@ a.pill:focus-visible {
   height: 14px;
   border-radius: 3px;
 }
+
+/*
+ * Alto contraste: o sistema apaga os fundos, e a fita e a legenda sumiam. Cada estado ganha uma cor do sistema (que
+ * atravessa o modo): sessões no tom do texto, a última no destaque do sistema, o lido sem sessão em cinza, a próxima
+ * tracejada e o que falta ler só contornado.
+ */
+@media (forced-colors: active) {
+  .unread {
+    background: Canvas;
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+
+  .read {
+    background: GrayText;
+  }
+
+  .session,
+  .session.alt {
+    background: CanvasText;
+  }
+
+  .last {
+    background: Highlight;
+  }
+
+  .next {
+    background: Canvas;
+    border-color: CanvasText;
+  }
+
+  .compact .next {
+    outline: 1.5px solid CanvasText;
+    outline-offset: -1.5px;
+  }
+
+  /* Texto sobre o Highlight: fora do ajuste do navegador, senão a placa atrás das letras as apaga. */
+  .pill_last {
+    forced-color-adjust: none;
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .pill_last small {
+    color: HighlightText;
+  }
+
+  a.pill_last:focus-visible {
+    outline-color: CanvasText;
+  }
+}
