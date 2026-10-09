@@ -1,0 +1,311 @@
+/*
+ * A página da direita do livro aberto (home). A folha que vira é uma segunda `.sheet` por cima da primeira; as duas
+ * têm o mesmo papel, com a sombra do miolo à esquerda (embaixo, no celular). Só tokens do tema.
+ */
+.page {
+  position: relative;
+  display: grid;
+  perspective: 2200px;
+  touch-action: pan-y;
+  /* O canto da folha levantada (`.curl`) recorta o papel do canto de baixo. */
+  border-radius: 0 6px 6px 0;
+}
+
+.sheet {
+  grid-area: 1 / 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 560px;
+  padding: 34px 54px 22px 50px;
+  border-radius: inherit;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--rose-deep) 12%, transparent),
+      color-mix(in srgb, var(--rose-deep) 3%, transparent) 26px,
+      transparent 70px
+    ),
+    var(--surface);
+}
+
+.leaf {
+  z-index: 1;
+  transform-origin: left center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.page[data-turning='x'] .leaf {
+  transform-origin: center top;
+}
+
+/* A sombra na folha que levanta e a que ela joga na página de baixo: começam apagadas (o Motion as acende). */
+.shade,
+.cast {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.shade {
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--ink) 55%, transparent),
+    color-mix(in srgb, var(--ink) 10%, transparent)
+  );
+}
+
+.cast {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--ink) 45%, transparent),
+    transparent 60%
+  );
+}
+
+.page[data-turning='x'] .shade {
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--ink) 55%, transparent),
+    color-mix(in srgb, var(--ink) 10%, transparent)
+  );
+}
+
+.page[data-turning='x'] .cast {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--ink) 45%, transparent),
+    transparent 60%
+  );
+}
+
+.running {
+  margin: 0 0 30px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.meta {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.prose {
+  margin: 22px 0 0;
+  max-width: 36ch;
+  font-family: var(--serif);
+  font-size: 19.5px;
+  line-height: 1.72;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+/* A capitular da abertura do relato, aqui na primeira letra do trecho. */
+.prose::first-letter {
+  float: left;
+  margin: 7px 10px 0 0;
+  font-size: 3.4em;
+  line-height: 0.8;
+  font-weight: 500;
+  color: var(--rose-2);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.soon {
+  margin: auto 0 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 24px;
+  color: var(--ink-2);
+}
+
+.soon + .actions {
+  margin-bottom: auto;
+}
+
+.foot {
+  margin-top: auto;
+  padding-top: 26px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.turnBtn {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  margin-left: -10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-state) var(--ease-out),
+    color var(--dur-state) var(--ease-out);
+}
+
+.turnBtn[hidden] {
+  display: none;
+}
+
+.turnNewer {
+  grid-column: 3;
+  justify-self: end;
+  margin-left: 0;
+  /* Longe do canto levantado da folha. */
+  margin-right: 6px;
+}
+
+.folio {
+  grid-column: 2;
+  font-family: var(--serif);
+  font-size: 15px;
+  color: var(--ink-3);
+  font-variant-numeric: oldstyle-nums;
+}
+
+@media (hover: hover) {
+  .turnBtn:hover {
+    background: var(--rose-tint);
+    color: var(--rose-deep);
+  }
+}
+
+/* A ponta da folha levantada, no canto de baixo: diz que a página vira. */
+.curl {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 0 0 6px 0;
+  pointer-events: none;
+  background: linear-gradient(
+    315deg,
+    var(--bg) 0 49%,
+    color-mix(in srgb, var(--rose-deep) 16%, var(--surface)) 50%,
+    var(--surface) 70%
+  );
+  filter: drop-shadow(-3px -3px 4px color-mix(in srgb, var(--ink) 12%, transparent));
+}
+
+/* Fita marcadora de seda: presa no alto do miolo, sai por baixo do livro. Só desenho. */
+.ribbon {
+  position: absolute;
+  z-index: 3;
+  top: -6px;
+  left: -11px;
+  width: 22px;
+  height: calc(100% + 54px);
+  background: linear-gradient(
+    90deg,
+    var(--rose-deep),
+    color-mix(in srgb, var(--rose-deep) 78%, var(--rose)) 50%,
+    var(--rose-deep)
+  );
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 12px), 0 100%);
+  pointer-events: none;
+}
+
+.live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (pointer: coarse) {
+  .turnBtn {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 860px) {
+  .page {
+    border-radius: 0 0 6px 6px;
+  }
+
+  .sheet {
+    min-height: 0;
+    padding: 30px 22px 14px;
+    background:
+      linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--rose-deep) 10%, transparent),
+        transparent 34px
+      ),
+      var(--surface);
+  }
+
+  .running {
+    margin-bottom: 18px;
+    padding-right: 40px;
+  }
+
+  /* No celular o miolo fica em cima: a fita cai pelo canto de cima da página. */
+  .ribbon {
+    top: -3px;
+    left: auto;
+    right: 24px;
+    width: 18px;
+    height: 112px;
+  }
+
+  .prose {
+    font-size: 18px;
+  }
+}
+
+@media print {
+  .sheet {
+    min-height: 0;
+    background: none;
+  }
+
+  .curl {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .sheet {
+    border: 1px solid CanvasText;
+  }
+}

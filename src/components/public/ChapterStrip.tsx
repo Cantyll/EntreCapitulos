@@ -24,16 +24,19 @@ export function ChapterStrip({
   strip,
   bookSlug,
   size = 'hero',
+  links = true,
 }: {
   strip: Strip;
   bookSlug: string;
   size?: 'hero' | 'compact';
+  /** Sem as pílulas: quando a página já leva às sessões por outro caminho (o sumário da home). */
+  links?: boolean;
 }) {
   if (strip.total < 1) return null;
   const compact = size === 'compact';
   const step = chapterModeStep(strip.total, compact ? 1 : 2);
   const blocks = buildStripBlocks(strip);
-  const pills = blocks.filter((block) => block.session || block.kind === 'next');
+  const pills = links ? blocks.filter((block) => block.session || block.kind === 'next') : [];
   const rootClass = [styles.strip, compact && styles.compact, step !== null && styles[`need${step}`]]
     .filter(Boolean)
     .join(' ');

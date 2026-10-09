@@ -1,132 +1,128 @@
-/* Home (protótipo: .hero-band, .hero, .last-session, .layout, .mini-shelf). Só tokens do tema. */
-.band {
+/*
+ * Home, "A página aberta" (impeccable overdrive). O livro atual aberto no topo (a página da direita é o
+ * `SessionLeaf`), o sumário, a nota na margem e a estante em lombadas. Só tokens do tema.
+ */
+.stage {
+  padding-block: 48px 70px;
   border-bottom: 1px solid var(--line);
   background:
-    radial-gradient(900px 380px at 12% 0%, var(--soft-2), transparent 62%),
-    linear-gradient(180deg, var(--soft), var(--bg) 85%);
+    radial-gradient(1100px 420px at 50% -10%, var(--soft-2), transparent 70%),
+    linear-gradient(180deg, var(--soft), var(--bg) 90%);
 }
 
-.hero {
+/* O livro aberto: duas páginas e, embaixo, a borda das folhas do miolo. */
+.spread {
+  position: relative;
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr);
-  gap: 56px;
-  align-items: center;
-  padding-block: 52px 46px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  max-width: 1080px;
+  margin-inline: auto;
+  border-radius: 6px;
+  box-shadow:
+    0 1px 0 var(--line-2),
+    0 3px 0 -1px var(--surface),
+    0 4px 0 -1px var(--line-2),
+    0 6px 0 -2px var(--surface),
+    0 7px 0 -2px var(--line-2),
+    0 30px 60px -30px color-mix(in srgb, var(--rose-deep) 45%, transparent);
 }
 
-.coverWrap {
-  transform: rotate(-1.5deg);
+.left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 34px 50px 30px 54px;
+  border-radius: 6px 0 0 6px;
+  background:
+    linear-gradient(
+      to left,
+      color-mix(in srgb, var(--rose-deep) 12%, transparent),
+      color-mix(in srgb, var(--rose-deep) 3%, transparent) 26px,
+      transparent 70px
+    ),
+    var(--surface);
 }
 
-.live {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13.5px;
+.running {
+  margin: 0 0 30px;
+  text-align: center;
+  font-size: 12px;
   font-weight: 500;
-  color: var(--rose-deep);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
 }
 
-.live i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--rose-2);
-  box-shadow: 0 0 0 4px var(--rose-tint);
+.frontis {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 26px;
+  text-align: center;
+}
+
+.cover {
+  max-width: 100%;
+}
+
+.cover > * {
+  max-width: 100%;
+}
+
+.titleBlock {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
 }
 
 .title {
-  margin: 14px 0 8px;
+  margin: 0;
   font-family: var(--serif);
-  font-size: clamp(36px, 5.2vw, 60px);
+  font-size: clamp(34px, 4.2vw, 50px);
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.02;
   letter-spacing: -0.025em;
+  text-wrap: balance;
+  overflow-wrap: break-word;
 }
 
 .by {
+  margin: 0;
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: 19px;
   font-style: italic;
   color: var(--ink-2);
 }
 
-.stripBlock {
-  max-width: 620px;
-  margin: 26px 0 8px;
+.foot {
   display: grid;
-  gap: 8px;
-}
-
-.stripCap {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 13px;
-  color: var(--ink-2);
-}
-
-.stripCap b {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.last {
-  max-width: 620px;
-  margin-top: 22px;
-  display: grid;
-  gap: 6px;
-  padding: 20px 22px;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.lastTop {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-}
-
-.muted {
-  color: var(--ink-3);
-  font-size: 13px;
-}
-
-.lastTitle {
-  margin: 4px 0 0;
-  font-family: var(--serif);
-  font-size: 26px;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-.lastExcerpt {
-  margin: 0;
-  color: var(--ink-2);
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
   gap: 10px;
-  margin-top: 8px;
+  margin-top: 28px;
 }
 
-.soon {
-  margin: 0;
+.where {
+  margin: 0 0 2px;
+  text-align: center;
   font-family: var(--serif);
-  font-size: 22px;
+  font-size: 17px;
+  font-style: italic;
   color: var(--ink-2);
 }
 
-.layout {
+.where b {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--rose-deep);
+}
+
+.lower {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 52px;
-  padding-block: 44px 70px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 64px;
+  max-width: 1080px;
+  margin-inline: auto;
+  padding-block: 60px 20px;
 }
 
 .secHead {
@@ -134,19 +130,19 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 14px;
 }
 
 .h2 {
   margin: 0;
   font-family: var(--serif);
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 500;
-  letter-spacing: -0.01em;
   line-height: 1.15;
+  letter-spacing: -0.015em;
 }
 
-.link {
+.more {
   display: inline-flex;
   align-items: center;
   min-height: 32px;
@@ -155,54 +151,207 @@
   font-weight: 500;
 }
 
-.shelfHead {
-  margin-top: 44px;
+/* O sumário: número, título, pontilhado até os capítulos, e a data embaixo do título. */
+.tocList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
 }
 
-.miniShelf {
+.tocList li {
+  border-bottom: 1px solid var(--line);
+}
+
+.entry {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
-  margin: 18px 0 0;
-  padding: 0;
+  grid-template-columns: 88px auto minmax(24px, 1fr) auto;
+  align-items: baseline;
+  column-gap: 14px;
+  row-gap: 2px;
+  padding: 15px 4px 14px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.num {
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.entryTitle {
+  min-width: 0;
+  font-family: var(--serif);
+  font-size: 22px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  transition: color var(--dur-state) var(--ease-out);
+}
+
+.leader {
+  align-self: end;
+  margin-bottom: 7px;
+  border-bottom: 2px dotted var(--line-2);
+  transition: border-color var(--dur-state) var(--ease-out);
+}
+
+.chapters {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.entryMeta {
+  grid-column: 2 / -1;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.entryMeta b {
+  font-weight: 600;
+  color: var(--rose-deep);
+}
+
+.latest .num,
+.latest .entryTitle {
+  color: var(--rose-deep);
+}
+
+.upcoming .entryTitle {
+  font-style: italic;
+  color: var(--ink-3);
+}
+
+@media (hover: hover) {
+  a.entry:hover .entryTitle,
+  .more:hover {
+    color: var(--rose-deep);
+  }
+
+  a.entry:hover .leader {
+    border-bottom-color: var(--rose);
+  }
+}
+
+/* A nota na margem: o progresso e o convite, sem caixa, com um filete de lápis à esquerda. */
+.margin {
+  display: grid;
+  gap: 26px;
+  align-content: start;
+  padding-top: 58px;
+}
+
+.note {
+  padding-left: 18px;
+  border-left: 1px solid var(--line-2);
+}
+
+.noteTitle {
+  margin: 0 0 4px;
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.noteText {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.join {
+  margin: 0;
+  padding-left: 18px;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.join a {
+  color: var(--rose-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* A estante em lombadas, em pé numa prateleira. */
+.shelfSection {
+  max-width: 1080px;
+  margin: 40px auto 76px;
+}
+
+.shelfScroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 10px solid var(--line-2);
+  border-radius: 0 0 3px 3px;
+}
+
+.shelf {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  width: max-content;
+  margin: 0;
+  padding: 18px 24px 0;
   list-style: none;
 }
 
-.miniShelf a {
-  display: grid;
-  gap: 8px;
+.spine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: var(--spine-w);
+  height: var(--spine-h);
+  padding: 14px 0 12px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(
+    90deg,
+    var(--spine-c1),
+    var(--spine-c0) 28%,
+    var(--spine-c0) 72%,
+    var(--spine-c1)
+  );
+  color: var(--spine-ink);
+  text-decoration: none;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--spine-ink) 12%, transparent);
+  transition: translate var(--dur-state) var(--ease-out);
 }
 
-/* A capa tem largura fixa (150px); em tela estreita a coluna é menor e a capa encolhe junto. */
-.miniShelf a > :first-child {
-  max-width: 100%;
-}
-
-.aside {
-  display: grid;
-  gap: 18px;
-  align-content: start;
-}
-
-.card {
-  padding: 22px;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.card h2 {
-  margin: 0 0 4px;
+.spineTitle {
+  min-height: 0;
+  overflow: hidden;
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: var(--spine-font);
   font-weight: 500;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.card p {
-  margin: 0 0 14px;
-  font-size: 13px;
-  color: var(--ink-3);
+.spineAuthor {
+  flex: none;
+  font-family: var(--serif);
+  font-size: 12px;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* Tirar o livro da estante: ele sobe um pouco. */
+@media (hover: hover) {
+  .spine:hover {
+    translate: 0 -8px;
+  }
 }
 
 .empty {
@@ -224,64 +373,148 @@
   font-size: 16px;
 }
 
-@media (hover: hover) {
-  .link:hover {
-    color: var(--rose-deep);
+/* Uma página só: a da esquerda em cima, a da direita embaixo, com o miolo entre elas. */
+@media (max-width: 860px) {
+  .stage {
+    padding-block: 26px 46px;
   }
-}
 
-@media (max-width: 1020px) {
-  .layout {
+  .spread {
     grid-template-columns: minmax(0, 1fr);
-    gap: 28px;
-    padding-block: 28px 56px;
   }
 
-  /* No celular o seletor de progresso vem antes da lista, não perdido no fim da página. */
-  .aside {
-    display: contents;
+  .left {
+    padding: 24px 22px 20px;
+    border-radius: 6px 6px 0 0;
+    background:
+      linear-gradient(
+        to top,
+        color-mix(in srgb, var(--rose-deep) 10%, transparent),
+        transparent 34px
+      ),
+      var(--surface);
   }
 
-  .progressCard {
+  .running {
+    margin-bottom: 18px;
+  }
+
+  .frontis {
+    grid-template-columns: 104px minmax(0, 1fr);
+    justify-items: start;
+    align-items: center;
+    gap: 18px;
+    text-align: left;
+  }
+
+  .cover {
+    width: 104px;
+  }
+
+  .title {
+    font-size: clamp(28px, 7.4vw, 34px);
+  }
+
+  .by {
+    font-size: 16px;
+  }
+
+  .where {
+    text-align: left;
+    font-size: 16px;
+  }
+
+  .lower {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 34px;
+    padding-top: 40px;
+  }
+
+  /* O seletor de progresso vem antes do sumário, não perdido no fim da página. */
+  .margin {
     order: -1;
+    padding-top: 0;
   }
 
-  .joinCard {
-    order: 2;
+  .entry {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 10px;
+  }
+
+  .num {
+    grid-column: 1 / 3;
+  }
+
+  .entryTitle {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    font-size: 20px;
+  }
+
+  .leader {
+    display: none;
+  }
+
+  .chapters {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .entryMeta {
+    grid-row: 3;
+    grid-column: 1 / -1;
+  }
+
+  .shelf {
+    padding-inline: 12px;
   }
 }
 
-@media (max-width: 760px) {
-  .hero {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 24px;
-    padding-block: 28px 30px;
-  }
-
-  .coverWrap {
-    width: 150px;
-  }
-
-  .coverWrap > * {
-    max-width: 100%;
-  }
-
-  .miniShelf {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* Alvos de toque de 44px (etapa 8k): "Ver todas" e "Ver estante" crescem sem mexer no cabeçalho da seção. */
 @media (pointer: coarse) {
-  .link {
+  .more {
     min-height: var(--tap);
     margin-block: -6px;
   }
 }
 
-/* Impressão: a lateral (progresso e entrar) sai, e a coluna das sessões ocupa a página inteira. */
 @media print {
-  .layout {
+  .stage {
+    background: none;
+    padding-block: 0 20px;
+  }
+
+  .spread {
+    box-shadow: none;
+  }
+
+  .left {
+    background: none;
+  }
+
+  .lower {
     display: block;
+  }
+
+  .shelfScroll {
+    border-bottom-width: 4px;
+  }
+
+  .spine {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+@media (forced-colors: active) {
+  .left {
+    border: 1px solid CanvasText;
+  }
+
+  .spine {
+    border: 1px solid CanvasText;
+  }
+
+  .shelfScroll {
+    border-bottom-color: CanvasText;
   }
 }
