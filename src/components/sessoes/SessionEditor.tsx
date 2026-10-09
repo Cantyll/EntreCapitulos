@@ -13,6 +13,7 @@ import {
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/Icon';
+import { useAutoGrow } from '@/hooks/useAutoGrow';
 import {
   autoExcerpt,
   checkDividers,
@@ -135,6 +136,7 @@ export function SessionEditor({
   const [sessionId, setSessionId] = useState(session.id);
   const [number, setNumber] = useState(session.number);
   const editorRef = useRef<Editor | null>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [tab, setTab] = useState<'write' | 'preview'>('write');
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -158,6 +160,7 @@ export function SessionEditor({
 
   const current = state.current;
   const locked = !ready || prompt !== null || publishing;
+  useAutoGrow(titleRef, current.title);
 
   const update = useCallback(
     (patch: Partial<SessionSnapshot>) => {
@@ -434,15 +437,27 @@ export function SessionEditor({
           </p>
         )}
 
-        <input
+        {/*
+          Caixa de várias linhas: num campo de uma linha, um título longo rolava escondido dentro do campo (no celular,
+          com a fonte de 28px, cabiam umas 15 letras). Continua sendo uma linha só de texto: Enter vai para o relato e
+          uma quebra colada vira espaço.
+        */}
+        <textarea
+          ref={titleRef}
           className={styles.title}
-          type="text"
+          rows={1}
           maxLength={200}
           placeholder="Dê um título para esta sessão"
           aria-label="Título da sessão"
+          enterKeyHint="next"
           value={current.title}
           disabled={locked}
-          onChange={(event) => update({ title: event.target.value })}
+          onChange={(event) => update({ title: event.target.value.replace(/[\r\n]+/g, ' ') })}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+            event.preventDefault();
+            if (tab === 'write') editorRef.current?.commands.focus('start');
+          }}
         />
         {current.title.trim() === '' && (
           <p className={styles.suggest}>
