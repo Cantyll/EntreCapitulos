@@ -89,11 +89,16 @@
 }
 
 .title {
+  display: block;
   width: 100%;
   padding: 6px 0;
   border: 0;
   outline: none;
   background: none;
+  /* Caixa que cresce com o título (useAutoGrow faz o mesmo onde field-sizing não existe): nada rola por dentro. */
+  field-sizing: content;
+  resize: none;
+  overflow: hidden;
   font-family: var(--serif);
   font-weight: 500;
   font-size: clamp(28px, 3.4vw, 40px);
