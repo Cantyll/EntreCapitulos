@@ -167,7 +167,7 @@ export function AdminTabBar({ pendingComments, role }: { pendingComments: number
                     tour.setMenuOpen(true);
                   }}
                 >
-                  <Icon name="help" />
+                  <Icon name="helpCircle" />
                   Tutorial
                 </button>
               </li>
