@@ -238,6 +238,14 @@ export const iconPaths = {
       <path d="M12 17h.01" />
     </>
   ),
+  // O mesmo "?" dentro de um círculo: numa lista de itens (a folha "Mais"), o "?" solto parecia menor que os vizinhos.
+  helpCircle: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" />
+      <path d="M12 17h.01" />
+    </>
+  ),
   user: (
     <>
       <circle cx="12" cy="8" r="4" />
