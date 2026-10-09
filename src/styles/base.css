@@ -132,3 +132,74 @@ summary,
     animation: none !important;
   }
 }
+
+/*
+ * Alto contraste do Windows (cores forçadas): o sistema troca as cores do site pelas do tema dele e apaga fundos e
+ * sombras. O que só se distinguia pelo fundo some junto: o item atual do menu, a aba escolhida, o botão ligado e o
+ * interruptor. Cores do sistema (Highlight, ButtonText…) atravessam o modo e devolvem esses estados. O `:root` dá peso
+ * para vencer as classes dos módulos.
+ */
+@media (forced-colors: active) {
+  /*
+   * `forced-color-adjust: none` só aqui, onde há texto sobre o Highlight: com o ajuste ligado, o navegador desenha uma
+   * placa na cor do fundo atrás de cada letra, e o texto claro sumia sobre ela.
+   */
+  :root
+    :is(a[aria-current='page'], [role='tab'][aria-selected='true'], button[aria-pressed='true']) {
+    forced-color-adjust: none;
+    background-color: Highlight;
+    color: HighlightText;
+  }
+
+  /* Anel de foco por dentro, na cor do texto do item: aparece sobre o Highlight mesmo onde a faixa corta o de fora. */
+  :root
+    :is(
+      a[aria-current='page'],
+      [role='tab'][aria-selected='true'],
+      button[aria-pressed='true']
+    ):focus-visible {
+    outline: 2px solid HighlightText;
+    outline-offset: -4px;
+  }
+
+  /* Por dentro (ícone, contagem, selo), tudo na cor do item: sem o ajuste, cada um manteria a cor própria. */
+  :root
+    :is(a[aria-current='page'], [role='tab'][aria-selected='true'], button[aria-pressed='true'])
+    * {
+    background-color: transparent;
+    color: HighlightText;
+  }
+
+  :root [role='switch'] {
+    background-color: ButtonFace;
+    outline: 1px solid ButtonText;
+    outline-offset: -1px;
+  }
+
+  :root [role='switch']::after {
+    background-color: ButtonText;
+  }
+
+  :root [role='switch'][aria-checked='true'] {
+    background-color: Highlight;
+    outline-color: Highlight;
+  }
+
+  :root [role='switch'][aria-checked='true']::after {
+    background-color: HighlightText;
+  }
+
+  :root [role='switch']:disabled {
+    outline-color: GrayText;
+  }
+
+  :root [role='switch']:disabled::after {
+    background-color: GrayText;
+  }
+
+  /* O contorno acima faz as vezes de borda; o foco volta a ser o anel de 2px por fora. */
+  :root [role='switch']:focus-visible {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
+  }
+}

@@ -595,3 +595,14 @@ dialog.dialog::backdrop {
     transform: translateX(24px);
   }
 }
+
+/* Alto contraste: o sistema apaga o fundo da barra de progresso; a trilha fica contornada e o lido, no tom do texto. */
+@media (forced-colors: active) {
+  .progress {
+    outline: 1px solid CanvasText;
+  }
+
+  .progress > span {
+    background: CanvasText;
+  }
+}

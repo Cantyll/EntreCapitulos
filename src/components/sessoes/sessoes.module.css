@@ -111,6 +111,14 @@
   box-shadow: 0 2px 0 var(--rose-2);
 }
 
+/* Alto contraste: a sombra some, então o foco do título volta a ser um contorno. */
+@media (forced-colors: active) {
+  .title:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
 .suggest {
   margin: -6px 0 0;
   font-size: 13px;

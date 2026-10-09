@@ -69,3 +69,33 @@ a.tile.last {
     grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
   }
 }
+
+/*
+ * Alto contraste: as mesmas cores do sistema da fita (sessão no tom do texto, a última no destaque, lido em cinza). O
+ * número fica sobre fundo colorido, então sai do ajuste do navegador (senão ele desenha uma placa atrás do texto).
+ */
+@media (forced-colors: active) {
+  a.tile,
+  .read {
+    forced-color-adjust: none;
+  }
+
+  a.tile {
+    background: CanvasText;
+    color: Canvas;
+  }
+
+  a.tile.last {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .read {
+    background: GrayText;
+    color: Canvas;
+  }
+
+  a.tile:focus-visible {
+    outline-color: CanvasText;
+  }
+}
