@@ -46,6 +46,8 @@
   gap: 6px;
 }
 
+  /* Numa linha de campos, o mais curto não estica: rótulo e campo ficam no alto, alinhados aos vizinhos. */
+  align-content: start;
 .field label {
   font-size: 13px;
   font-weight: 600;

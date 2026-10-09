@@ -590,6 +590,11 @@ p.muted {
   border-bottom: 0;
 }
 
+/* Título sem espaço (uma palavra enorme) quebra em qualquer ponto: senão a coluna não encolhe e a tabela transborda. */
+.tTitle {
+  overflow-wrap: anywhere;
+}
+
 .tTitle b {
   display: block;
 }
@@ -668,8 +673,19 @@ p.muted {
   }
 }
 
-@media (max-width: 1020px) {
-  /* Celular: a lista vira cartões (a tabela de 680px forçaria rolagem lateral). */
+/*
+ * A lista decide pela largura dela, não da janela (como Membros): a tabela só com 900px de lista, onde o título,
+ * as colunas e as ações cabem numa linha; abaixo disso, cartões. Com a barra lateral do painel, uma janela de
+ * 1100px dava uma tabela de 780px com o título quebrando a cada duas palavras.
+ */
+.listArea {
+  container: sessionlist / inline-size;
+  /* A página do painel alinha os filhos ao início (justify-items: start): sem largura, o contêiner teria 0px. */
+  width: 100%;
+  min-width: 0;
+}
+
+@container sessionlist (max-width: 899.98px) {
   .tableWrap {
     display: none;
   }
@@ -677,7 +693,9 @@ p.muted {
   .cards {
     display: grid;
   }
+}
 
+@media (max-width: 1020px) {
   .previewPaper {
     padding: 18px 16px 22px;
   }
@@ -751,4 +769,10 @@ p.muted {
   .switch[aria-checked='true']::after {
     transform: translateX(24px);
   }
+}
+
+/* Na tabela, as ações ficam numa linha: quebrando, o "Voltar para rascunho" caía embaixo dos ícones e dobrava a altura da linha. */
+.table .rowActions {
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }

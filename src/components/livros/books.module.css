@@ -98,6 +98,8 @@
 .field {
   display: grid;
   gap: 6px;
+  /* Numa linha de campos, o mais curto não estica: rótulo e campo ficam no alto, alinhados aos vizinhos. */
+  align-content: start;
   min-width: 0;
 }
 
@@ -400,6 +402,11 @@
 
 .table tr:last-child td {
   border-bottom: 0;
+}
+
+/* "12 de 52 capítulos" e "em 10/02/2026" numa linha cada: quebrando, a linha da tabela triplicava de altura. */
+.tProgress {
+  white-space: nowrap;
 }
 
 .tBook {
