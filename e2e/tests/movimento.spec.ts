@@ -18,16 +18,22 @@ const path = sessionPath(readingSlug, sessions.public.number);
 const contentOf = (page: Page, chapter: number) =>
   page.locator(`#ch-${chapter} > div > div`).first();
 
-/** Clica no botão e devolve as animações que estão rodando dentro da seção logo depois (dois quadros). */
+/**
+ * Clica no botão e devolve as animações que começaram dentro da seção. Conta pelo evento `animationstart`, não
+ * pelas animações em curso num quadro: no WebKit do CI os quadros demoram, e a saída do cartão (160ms) já pode ter
+ * acabado quando o quadro seguinte chega.
+ */
 async function clickAndReadAnimations(button: Locator, sectionId: string) {
   await untilHydrated(button);
   return button.evaluate(async (element, id) => {
-    (element as HTMLButtonElement).click();
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const section = document.getElementById(id)!;
-    return section
-      .getAnimations({ subtree: true })
-      .map((animation) => (animation as CSSAnimation).animationName ?? '');
+    const names: string[] = [];
+    const record = (event: AnimationEvent) => names.push(event.animationName);
+    section.addEventListener('animationstart', record);
+    (element as HTMLButtonElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    section.removeEventListener('animationstart', record);
+    return names;
   }, sectionId);
 }
 
