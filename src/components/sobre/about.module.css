@@ -11,37 +11,88 @@
 }
 
 /*
- * O título se escreve palavra por palavra: cada palavra se revela da esquerda para a direita, no ritmo de
- * `titleWords` (`--d` = quando começa, `--t` = quanto demora). O recorte sobra para cima, para baixo e para os lados,
- * para não cortar acento, descendente nem a itálica. Sem animação (menos movimento, impressão), o título já está lá.
+ * O título se escreve palavra por palavra, com uma ponta de grafite na frente. Cada palavra (`.word`) é uma janela
+ * que desliza da esquerda para a direita enquanto o texto (`.ink`) desliza o mesmo tanto ao contrário: a letra fica
+ * parada e a janela a descobre. Só `transform` anima, então a escrita roda no compositor e não para quando o
+ * navegador está ocupado (no Safari do iPhone, a escrita por `clip-path` começava antes de a página aparecer e saltava).
+ *
+ * Quem escreve é `PencilMarks`, quando a página já está sendo desenhada (`data-pen` na raiz; ritmo de `titleWords`:
+ * `--d` = quando começa, `--t` = quanto demora); ao terminar, `data-pen-done`. Sem JavaScript, ou se ele demorar
+ * demais, a animação de reserva mostra o título depois de 3,2 s. O recorte (`clip-path` fixo, que não anima) sobra
+ * para cima, para baixo e para os lados, para não cortar acento nem descendente. Sem animação (menos movimento,
+ * impressão), o título já está lá.
  */
 .titleInk {
   position: relative;
 }
 
-.word {
+.word,
+.ink {
   display: inline-block;
+}
+
+.tip {
+  display: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .word {
-    animation: write var(--t) cubic-bezier(0.45, 0.05, 0.55, 0.95) var(--d) both;
+    position: relative;
+    clip-path: inset(-0.3em -0.3em -0.35em -0.12em);
+    transform: translateX(calc(-100% - 0.45em));
+    animation: penFallback 1ms linear 3.2s forwards;
+  }
+
+  .ink {
+    transform: translateX(calc(100% + 0.45em));
+    animation: penFallback 1ms linear 3.2s forwards;
+  }
+
+  /* A ponta do lápis: um grão de grafite na beira da janela, só enquanto a palavra se escreve. */
+  .tip {
+    display: block;
+    position: absolute;
+    right: -0.12em;
+    bottom: 0.2em;
+    width: 0.13em;
+    height: 0.13em;
+    border-radius: 50%;
+    background: var(--ink-2);
+    opacity: 0;
+  }
+
+  :global([data-pen]) .word,
+  :global([data-pen]) .ink {
+    animation: none;
+  }
+
+  :global([data-pen-done]) .word,
+  :global([data-pen-done]) .ink {
+    transform: none;
   }
 }
 
-@keyframes write {
-  from {
-    clip-path: inset(-0.3em 100% -0.35em -0.2em);
-  }
-
+@keyframes penFallback {
   to {
-    clip-path: inset(-0.3em -0.2em -0.35em -0.2em);
+    transform: none;
   }
+}
+
+/* `PencilMarks` mede o título como ele fica no fim (o `!important` vence até a animação em curso). */
+:global([data-pen-measure]) .word,
+:global([data-pen-measure]) .ink {
+  transform: none !important;
 }
 
 @media print {
-  .word {
+  .word,
+  .ink {
     animation: none;
+    transform: none !important;
+  }
+
+  .tip {
+    display: none;
   }
 }
 
@@ -101,8 +152,8 @@
 }
 
 /*
- * Itálico = marca-texto passado à mão: o Realce entra da esquerda para a direita quando o trecho aparece na tela
- * (`data-drawn`, posto por `PencilMarks`). Ocupa a metade de baixo da linha, como uma caneta que não cobre as
+ * Itálico = marca-texto passado à mão: o Realce entra da esquerda para a direita na vez dele (`data-drawn` e a
+ * animação, postos por `PencilMarks`). Ocupa a metade de baixo da linha, como uma caneta que não cobre as
  * ascendentes; em quebra de linha, cada pedaço ganha o seu (`box-decoration-break: clone`).
  */
 .prose em[data-pencil] {
@@ -123,13 +174,6 @@
 
 .prose em[data-drawn] {
   background-size: 100% 100%;
-  transition: background-size 900ms cubic-bezier(0.55, 0.1, 0.3, 1) 120ms;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .prose em[data-drawn] {
-    transition: none;
-  }
 }
 
 @media print {

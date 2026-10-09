@@ -1,8 +1,8 @@
 import { expect, test } from '../support/fixtures';
 
 /*
- * "Escrito a lápis" (impeccable overdrive da página Sobre): o título se escreve e `PencilMarks` desenha os traços
- * quando cada trecho aparece na tela. Só lê `/sobre` (com o texto padrão: o `globalSetup` apaga o publicado), então
+ * "Escrito a lápis" (impeccable overdrive e animate da página Sobre): `PencilMarks` escreve o título quando a página já
+ * está sendo desenhada e depois desenha os traços, um por vez, quando cada trecho aparece na tela. Só lê `/sobre` (com o texto padrão: o `globalSetup` apaga o publicado), então
  * roda em paralelo com os outros.
  */
 
@@ -17,6 +17,12 @@ test.describe('página Sobre escrita a lápis', () => {
 
     const layer = page.locator('[data-about-root] > svg');
     await expect(layer).toHaveAttribute('aria-hidden', 'true');
+
+    // O título termina escrito: a raiz ganha `data-pen-done` e as palavras ficam no lugar, sem deslocamento.
+    await expect(page.locator('[data-about-root]')).toHaveAttribute('data-pen-done', '');
+    const words = page.locator('h1 [data-pen-word]');
+    await expect(words).toHaveCount(5);
+    for (const word of await words.all()) await expect(word).toHaveCSS('transform', 'none');
 
     // No topo, o título já tem o traço; a chamada final, lá embaixo, ainda não.
     await expect(page.locator('h1 [data-pencil][data-drawn]')).toHaveCount(1);
@@ -49,15 +55,15 @@ test.describe('página Sobre escrita a lápis', () => {
     guard.watchContext(context);
     const page = await context.newPage();
     await page.goto('/sobre');
-    const animation = await page
-      .locator('h1 [style*="--d"]')
-      .first()
-      .evaluate((el) => getComputedStyle(el).animationName);
-    expect(animation).toBe('none');
-    // `toHaveCSS` espera: a camada é refeita quando a fonte chega, e um caminho antigo sai do DOM.
+    const word = page.locator('h1 [data-pen-word]').first();
+    expect(await word.evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
+    await expect(word).toHaveCSS('transform', 'none');
+    // Os traços aparecem prontos: nenhum caminho fica tracejado (escondido). `toHaveCSS` espera: a camada é refeita
+    // quando a fonte chega, e um caminho antigo sai do DOM.
+    await expect(page.locator('h1 [data-pencil][data-drawn]')).toHaveCount(1);
     await expect(page.locator('[data-about-root] > svg g[data-drawn] path').first()).toHaveCSS(
-      'transition-duration',
-      '0s',
+      'stroke-dasharray',
+      'none',
     );
     await context.close();
   });
