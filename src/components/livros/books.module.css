@@ -420,6 +420,81 @@
   color: var(--ink-3);
 }
 
+/* Título e autor quebram em qualquer ponto: uma palavra enorme no título não alarga a tabela (como em Sessões). */
+.tBook > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * A lista decide pela largura dela, não da janela (como Sessões e Membros): a tabela só com 720px de lista, onde as seis
+ * colunas cabem sem rolar; abaixo disso, cartões com o "Editar" à vista. No celular a tabela rolava de lado e o botão de
+ * editar, na última coluna, ficava fora da tela.
+ */
+.listArea {
+  container: booklist / inline-size;
+  width: 100%;
+  min-width: 0;
+}
+
+.cards {
+  display: none;
+  /* Coluna presa à largura: um título com uma palavra enorme não estica a lista (nem a página). */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bookCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+
+.bookCardText {
+  display: grid;
+  gap: 2px;
+}
+
+.bookCardText b {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.bookCardText small {
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin-top: 6px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+@container booklist (max-width: 719.98px) {
+  .tableWrap {
+    display: none;
+  }
+
+  .cards {
+    display: grid;
+  }
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
