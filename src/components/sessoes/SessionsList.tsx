@@ -81,7 +81,7 @@ export function SessionsList({
             : 'Nenhuma sessão neste filtro.'}
         </p>
       ) : (
-        <>
+        <div className={styles.listArea}>
           <div className={styles.tableWrap} data-tour="sessions-list">
             <table className={styles.table}>
               <caption>
@@ -160,7 +160,7 @@ export function SessionsList({
               </li>
             ))}
           </ul>
-        </>
+        </div>
       )}
     </>
   );

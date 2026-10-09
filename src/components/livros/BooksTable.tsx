@@ -62,7 +62,7 @@ export function BooksTable({ books, dataTour }: { books: AdminBook[]; dataTour?:
                 </div>
               </td>
               <td>{STATUS_LABEL[book.status]}</td>
-              <td>
+              <td className={styles.tProgress}>
                 {book.status === 'reading' ? (
                   `${book.currentChapter} de ${book.totalChapters} capítulos`
                 ) : book.status === 'finished' && book.rating !== null ? (
