@@ -12,6 +12,7 @@ O protótipo aprovado está em `docs/prototype/entre-capitulos.html`. Ele é a *
 - **Estilo:** CSS com variáveis (tokens abaixo) e CSS Modules. Não usar bibliotecas de componentes prontas; os componentes seguem o protótipo.
 - **Editor do relato:** Tiptap, com um nó próprio de "divisória de capítulo".
 - **Imagens:** `sharp` no servidor, para processar a capa e extrair a paleta.
+- **Animação:** Motion (`motion`, versão fixa), só pelo `motion/mini` (`animate` sobre a Web Animations API, que o Safari anima sem depender de uma transição CSS começar). Hoje só a virada de página da home o usa.
 - **E-mail:** Resend, para enviar cada sessão aos inscritos (fase 2).
 - **Testes:** Vitest para a lógica (spoiler, tema, contraste) e Playwright para os fluxos principais.
 
@@ -517,7 +518,7 @@ Passada final de interface antes do lançamento, no celular e no computador, com
 - **Sem cartão dentro de cartão:** `ProgressPrompt embedded` (a lateral da home e a faixa de spoiler da sessão) perde a caixa rosa e fica separado por um filete; na página do livro, solto, a caixa continua.
 - **Lista de Sessões do painel por contêiner:** tabela só com 900px de lista (`.listArea`, `@container sessionlist`), com as ações numa linha; abaixo disso, cartões. O título da tabela quebra em qualquer ponto (`overflow-wrap: anywhere`): uma palavra enorme não alarga a tabela.
 - **Campos lado a lado:** `.field` (livros, Sobre, conta, entrar) tem `align-content: start`; sem isso, o campo mais curto de uma linha esticava e o select ficava mais alto e mais baixo que o vizinho.
-- **Títulos:** em `/sessoes` o título de cada cartão é `h2` (`SessionCard headingLevel={2}`), logo abaixo do `h1`; na home continua `h3`. Os cartões de `/conta` usam a serifa (20px, peso 500), como os outros cartões do site.
+- **Títulos:** em `/sessoes` o título de cada cartão é `h2` (`SessionCard headingLevel={2}`), logo abaixo do `h1`; a home não usa mais `SessionCard` (tem o sumário do livro aberto). Os cartões de `/conta` usam a serifa (20px, peso 500), como os outros cartões do site.
 - **NÃO verificado:** Safari real e app instalado; os projetos WebKit do Playwright rodam só no CI.
 
 ## Página Sobre escrita a lápis (impeccable overdrive)
@@ -529,6 +530,17 @@ Direção escolhida pelo dono entre três ("Escrito a lápis"), aprovada por pri
 - **Onde:** sublinhado do título (só a última linha, depois da escrita) e da chamada final; negrito e itálico da abertura e das seções extras (`RichText annotate`); números de "Como funciona" circulados (os passos deixaram de ser cartões); a bio vira nota na margem (itálica, levemente torta) com seta até o retrato. O texto padrão ganhou itálico e negrito por `SOBRE.emphasis` (as palavras não mudam; teste em `pencil.test.ts`).
 - **Sem animação:** menos movimento mostra tudo pronto; impressão mostra os traços; cores forçadas usam `CanvasText` e `Mark`. Sem JavaScript, a página é a de antes, sem traços.
 - **Testes:** `src/lib/about/pencil.test.ts` e `e2e/tests/sobre-lapis.spec.ts`. **NÃO verificado:** Safari real e app instalado (`clip-path` no `inline-block`, filtro de grão do SVG), WebKit só no CI.
+
+## Página inicial: a página aberta (impeccable overdrive)
+
+Direção escolhida pelo dono entre duas ("A página aberta" e "A régua da leitura"), a partir de esboços com prints (`inicio-overdrive/` nos arquivos do projeto). Sem migration. Dependência nova: `motion`.
+
+- **Livro aberto** (`src/app/(public)/page.tsx`, `home.module.css`): página da esquerda com a capa, o título (`h1`), onde a Agatha está e a fita de capítulos SEM pílulas (`ChapterStrip links={false}`, mais a legenda); página da direita = `SessionLeaf` (`src/components/home/`, Client Component). Abaixo de 861px (`SPREAD_MEDIA` no componente, igual ao CSS) as páginas ficam uma sobre a outra. A fita marcadora e a ponta da folha são desenho (`aria-hidden`, `data-print="hide"`).
+- **Folhear** (`SessionLeaf`): a página da direita abre na sessão mais recente; os botões "Folhear para a sessão N" (no pé, com o fólio no meio) e o arrasto para o lado (só toque e caneta: `swipeIntent`, arrasto horizontal de 48px ou mais; `touch-action: pan-y` deixa a rolagem vertical com o navegador) passam pelas 8 sessões do sumário. Ordem do livro: a seta e o arrasto para a direita voltam para a sessão anterior. A folha que vira é uma segunda `.sheet` por cima (`inert`, `aria-hidden`); avançar põe a página nova embaixo e levanta a antiga; voltar deita a nova por cima e só depois a troca. O estado final mora no React (`shown`); a animação só desenha. Se o botão some (chegou na ponta), o foco vai para o outro. Uma região `aria-live` anuncia "Sessão N: título".
+- **Motion** (`motion/mini`): quadros-chave puros em `src/lib/home/leaf.ts` (`turnFrames`, testado): `rotateY` em torno do miolo no computador, `rotateX` em torno da borda de cima no celular, 560ms (levantar acelera, pousar desacelera), sombra na folha e na página de baixo; a sombra da página de baixo TERMINA em 0 (o Motion mantém o último quadro na tela). Com menos movimento, só esmaece em 200ms. O efeito do React só para as animações na limpeza (no modo estrito ele roda duas vezes; quem termina a virada é a animação).
+- **Sumário** (lista ordenada, 8 sessões, "Ver todas" se houver mais): número, título, pontilhado e capítulos, com data, "só para membros" e comentários embaixo; a próxima sessão sem link. **Nota na margem:** "Seu progresso" com o `ProgressPrompt embedded` e o convite para entrar (só visitante); no celular vem antes do sumário. **Estante em lombadas** (até 10): tamanho por `spineFor` (`src/lib/home/spine.ts`, puro e testado) e cores da capa gerada (`hueFromTitle`), dentro de `ScrollStrip`. As notas dos livros terminados não aparecem na home (só em `/estante`).
+- **Testes:** `src/lib/home/home.test.ts` e `e2e/tests/inicio.spec.ts` (folhear pelos botões e pelo arrasto, foco, giro e versão sem movimento por `document.getAnimations()`, sumário e 320px). O primeiro teste de `adaptacao.spec.ts` confere que a home não tem as pílulas da fita.
+- **NÃO verificado:** Safari real e app instalado (o giro 3D com `backface-visibility`, o arrasto no iPhone), VoiceOver; os projetos WebKit do Playwright rodam só no CI.
 
 ## Dados de exemplo
 

@@ -218,7 +218,7 @@ Uma paleta de papel e tinta, com um único tom de destaque que muda com a capa d
 
 ### Hierarchy
 
-- **Display** (Newsreader 500, de 36 a 60px, entrelinha 1, espaçamento -0,025em): o título do livro atual no topo da home.
+- **Display** (Newsreader 500, de 34 a 50px, entrelinha 1,02, espaçamento -0,025em): o título do livro atual, na página da esquerda do livro aberto da home.
 - **Headline** (Newsreader 500, de 34 a 52px, entrelinha 1,05, espaçamento -0,025em): o título de cada página (`PageHeader`).
 - **Title** (Newsreader 500, 28px, entrelinha 1,15): títulos de seção. Títulos de cartão de sessão usam 25 a 26px (21px no celular); títulos de cartões laterais e de diálogos, 20 a 22px.
 - **Capítulo** (Newsreader itálica 500, 25px, Tinta profunda): a divisória de capítulo dentro do relato, com o rótulo "Capítulo N" em sans 13px acima. Intertítulos do relato usam a mesma itálica em 22px.
@@ -236,12 +236,12 @@ Uma paleta de papel e tinta, com um único tom de destaque que muda com a capa d
 ## Layout
 
 - **Contêiner:** largura máxima de 1160px, centralizado, com margem lateral de 28px (18px abaixo de 760px).
-- **Grades de duas colunas:** a home usa conteúdo + coluna lateral de 320px (vão de 52px); a página da sessão usa o relato (coluna de até 700px) + lateral de 290px com a fita e o índice de capítulos. Abaixo de 1020px tudo vira uma coluna.
+- **Grades de duas colunas:** a home usa o sumário + a nota na margem de 300px (vão de 64px), abaixo do livro aberto; a página da sessão usa o relato (coluna de até 700px) + lateral de 290px com a fita e o índice de capítulos. Abaixo de 1020px tudo vira uma coluna.
 - **Pontos de quebra:** 1020px (duas colunas viram uma; o painel troca a barra lateral pela barra inferior), 760px (margens menores, navegação do site em faixa rolável abaixo do logotipo) e 640px (prosa menor). A fita de capítulos, a página Sobre, Membros e a lista de Sessões do painel usam consultas de contêiner (`@container`), não a largura da janela: em Membros, a tabela só aparece com 800px de lista (abaixo disso, cartões, dois por linha no tablet) e o cartão de cargos fica embaixo da lista, com os três cargos lado a lado; em Sessões, a tabela só aparece com 900px de lista, com as ações numa linha; em Livros, com 720px de lista (abaixo disso, cartões com capa, estado, progresso e o editar sempre à vista). O editor de sessão põe as opções ao lado do texto só quando o texto fica com 560px ou mais; no iPad deitado, com a barra lateral do painel, elas vão para baixo.
 - **Tela larga:** o conteúdo do painel para em 1240px (`--panel-max`), e o "?" e o sino do topo param no mesmo ponto, em vez de irem para a borda da tela. Na página do livro, a capa acompanha a coluna (180px entre 761 e 1020px).
 - **Tela baixa (até 500px de altura, o celular deitado):** o cabeçalho do site e o topo do painel deixam de ser fixos e rolam com a página; em pé, continuam fixos.
 - **Medida do texto de ajuda:** parágrafos de ajuda e explicação param em uns 70 caracteres por linha, mesmo em coluna larga.
-- **Ritmo:** cartões com 22px de respiro interno; seções separadas por 44px; o topo da home com 52px acima e 46px abaixo; títulos de página com 40px acima.
+- **Ritmo:** cartões com 22px de respiro interno; seções separadas por 44px; o livro aberto da home com 48px acima e 70px abaixo; títulos de página com 40px acima.
 - **Toque (`pointer: coarse`):** todo alvo cresce para 44x44px, campos passam a 16px de fonte e o hover dá lugar ao estado pressionado (`:active`).
 - **Impressão:** sai o texto da página. Cabeçalho, menu do rodapé, "Voltar", barras e lateral do painel, convites, controles de leitura e a discussão sem comentários levam `data-print="hide"` (ou uma regra `@media print` do próprio módulo); as grades de duas colunas viram uma. O trecho coberto pelo filtro de spoiler não sai borrado: no lugar dele vai um aviso tracejado ("Trecho coberto pelo filtro de spoiler. Para imprimi-lo, mostre-o na tela antes."). Título não fica sozinho no pé da página, e a fita, o mapa de capítulos e os botões imprimem com cor.
 - **Alto contraste (cores forçadas do Windows):** o sistema apaga fundos e sombras, então o que só se distinguia pelo fundo ganha cores do sistema: item atual do menu, aba escolhida e botão ligado em `Highlight` com texto `HighlightText` (com `forced-color-adjust: none`, senão o navegador desenha uma placa atrás das letras); interruptor com contorno e bolinha em `ButtonText`, ligado em `Highlight`; na fita e no mapa, sessão em `CanvasText`, a última em `Highlight`, o lido sem sessão em `GrayText`, a próxima tracejada e o que falta ler só contornado. O foco do título do editor (uma sombra) vira contorno.
@@ -274,7 +274,7 @@ Toda sombra e todo véu são tokens de `tokens.css`, tingidos pelas cores do tem
 - **Cantos:** 16px para cartões, diálogos e caixas de leitura (`--r`); 10px para campos, mensagens de status e itens da barra lateral do painel (`--r-sm`); pílula (999px) para botões, chips, navegação do site e selos; círculo para avatares e botões de ícone; 2px para os segmentos da fita (1px na compacta).
 - **A capa:** proporção 2:3, cantos de 3px na lombada e 9px na borda de fora, como um livro de verdade. Sem imagem, a capa é gerada por CSS: degradê de duas cores tiradas do título, moldura fina interna, título em Newsreader e autor em itálica.
 - **Bordas:** sempre de 1px (Pauta ou Pauta marcada). Filetes de destaque têm 2px e só aparecem em citações.
-- **Inclinação:** a capa do livro atual, no topo da home, gira -1,5°. É a única peça fora do prumo.
+- **O livro aberto (home):** duas páginas de Folha lado a lado (até 1080px), cantos de 6px por fora e retos no miolo, com a sombra do miolo em Tinta profunda a 12% esmaecendo em 70px, a borda das folhas embaixo (filetes alternados de Pauta marcada e Folha) e a sombra da mesa. Abaixo de 861px vira uma página sobre a outra, com o miolo em cima. A fita marcadora (Tinta profunda, 22px, ponta em forquilha) é a única peça que sai do livro.
 
 ## Components
 
@@ -337,6 +337,16 @@ O livro inteiro numa linha: um segmento por capítulo, agrupado por sessão.
 - **Só desenho:** a fita não tem links (o segmento de um capítulo mede uns 10x16px). Logo abaixo dela, em qualquer aparelho, uma pílula por sessão ("Sessão N · cap. a–b") abre a sessão: a última em Realce com texto Tinta profunda, a próxima tracejada e sem link. A pílula tem 44px no toque e 34px com mouse, com a borda em Marca-texto no hover.
 - **Variações:** a grade de blocos de 44px na página do livro (`ChapterMap`), a fita compacta nos cartões do painel.
 
+### Livro aberto (home)
+
+A home é o livro atual aberto ("A página aberta", impeccable overdrive).
+
+- **Página da esquerda:** cabeçalho corrido "Lendo agora" (12px, maiúsculas espaçadas, Tinta de nota), a capa, o título (Display) e o autor em itálica; no pé, "A Agatha está no capítulo N de T." em itálica serifada, a fita de capítulos sem pílulas e a legenda. No celular, capa de 104px ao lado do título.
+- **Página da direita:** a sessão mais recente impressa como página: cabeçalho corrido ("Sessão N · capítulos a a b"), título serifado de 28 a 38px, data, o trecho em prosa (19,5px) com capitular em Tinta de destaque, "Ler a sessão" e "Sobre o livro". No pé, os botões de folhear ("Sessão N" com seta, em texto, Realce no hover) e o fólio (o último capítulo da sessão, em algarismos de texto). No canto de baixo, a ponta da folha levantada diz que a página vira.
+- **Sumário:** as sessões como num índice de livro: "SESSÃO N" (12,5px, maiúsculas), o título em serifa de 22px, um pontilhado em Pauta marcada até "cap. a–b", e a data e os comentários embaixo. A mais recente em Tinta profunda; a próxima, sem link, em itálica de Tinta de nota ("A Agatha ainda está lendo"). Sem pontilhado no celular.
+- **Nota na margem:** "Seu progresso" (itálica serifada) e o convite para entrar, sem caixa, com um filete de Pauta marcada à esquerda.
+- **Estante em lombadas:** cada livro terminado em pé, com altura e largura que variam pelo título (`spineFor`), as cores da capa gerada, título e autor na vertical, sobre uma prateleira de 10px em Pauta marcada. No hover, o livro sobe 8px. No celular, a estante rola de lado (`ScrollStrip`).
+
 ### Cobertura de spoiler
 
 - O trecho coberto fica desfocado (7px) e a 70% de opacidade, inerte, com altura mínima de 150px. No centro, um cartão-botão de Folha (cantos de 16px, Folha apoiada, ícone de olho fechado em Tinta de destaque) lembra até que capítulo a pessoa disse ter lido; a ação, embaixo, vem em 13px peso 600 Tinta profunda. Revelar é o momento do site: a névoa se desfaz em 480ms e o cartão recua e some antes dela (ver Movimento). Na impressão, o trecho coberto sai como aviso tracejado, nunca borrado.
@@ -353,6 +363,7 @@ O movimento é o do lápis na margem: pouco, calmo e sempre dizendo alguma coisa
 - **A névoa (o momento do site).** Mostrar um trecho coberto desfaz o desfoque em 480ms, desacelerando, e o cartão de revelar recua (96%) e some em 160ms. Quando a pessoa sobe o "Li até o" e vários capítulos aparecem de uma vez, eles se descobrem na ordem de leitura, 70ms um depois do outro (no máximo 4 passos). Cobrir de novo embaça em 200ms e o cartão volta. Nos comentários com spoiler, a mesma névoa, menor. Só anima quando a cobertura muda com a página aberta (`useCoverPhase`).
 - **O marca-texto.** Chegar a um capítulo por um link `#ch-N` (índice, pílulas, endereço) risca o rótulo "Capítulo N" da esquerda para a direita com o Marca-texto a 28%, segura e esmaece (2,4s). O comentário que a pessoa acabou de publicar recebe o mesmo traço, em Papel tingido, por trás da linha inteira. Diz onde o olho pousa depois de um salto.
 - **Folhas e diálogos.** Sobem 8px (caixa) ou 24px (folha) e acendem em 240ms, com o véu acendendo junto; saem em 160ms (a saída usa `display` e `overlay` discretos, Safari 17.4 ou mais novo; antes disso só somem).
+- **A virada de página (home).** Folhear a página da direita do livro aberto (pelos botões ou arrastando para o lado) vira uma folha de verdade: no computador ela gira em torno do miolo, no celular em torno da borda de cima, em 560ms, com uma sombra na folha e outra na página de baixo. Avançar levanta a folha acelerando; voltar a deita desacelerando. É feita com o Motion (`motion/mini`, Web Animations API), que o Safari anima sem esperar uma transição CSS começar. Com menos movimento, a folha só esmaece em 200ms.
 - **Toque.** Botões cedem a 97% (botões de ícone a 94%) enquanto pressionados, em 120ms.
 - **Menos movimento.** `base.css` desliga tudo por padrão; o que carrega estado volta como esmaecer de opacidade (`!important` no módulo): a névoa só esmaece, sem desfoque animado nem cascata; o marca-texto acende e apaga sem correr; diálogos e folhas acendem sem subir.
 
@@ -360,7 +371,7 @@ O movimento é o do lápis na margem: pouco, calmo e sempre dizendo alguma coisa
 
 **A regra do estado parado.** O estado final mora na classe, não na animação: se a animação não rodar (menos movimento, navegador antigo), a tela fica certa do mesmo jeito.
 
-**A regra de uma névoa só.** Movimento longo (mais de 300ms) é só o da névoa. Todo o resto é retorno ou troca de estado.
+**A regra de uma névoa só.** Movimento longo (mais de 300ms) é só o da névoa, o da virada de página da home e o do lápis da página Sobre, cada um na sua página. Todo o resto é retorno ou troca de estado.
 
 ## Do's and Don'ts
 
