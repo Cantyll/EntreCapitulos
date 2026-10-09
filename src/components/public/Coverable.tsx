@@ -1,10 +1,11 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import { useId, type AnimationEvent, type CSSProperties, type ReactNode } from 'react';
 
 import { Icon } from '@/components/ui/Icon';
 
 import styles from './Coverable.module.css';
+import { useCoverPhase } from './useCoverPhase';
 import { useReveal } from './useReveal';
 
 /*
@@ -23,6 +24,11 @@ type CoverProps = {
   /** Frase acima do botão. Sem ela, uma padrão sobre o progresso. */
   hint?: string;
   className?: string;
+  /**
+   * Atraso da névoa ao se desfazer, em passos (0 a 4). Quando o progresso sobe e vários capítulos aparecem de uma
+   * vez, eles se descobrem na ordem de leitura.
+   */
+  unveilStep?: number;
   children: ReactNode;
 };
 
@@ -35,21 +41,44 @@ export function CoverFrame({
   buttonLabel,
   hint,
   className,
+  unveilStep = 0,
   children,
 }: CoverProps) {
   const contentId = useId();
+  const { phase, settle } = useCoverPhase(hidden);
+  // O cartão de revelar continua na tela (inerte) enquanto some; depois sai do HTML.
+  const leaving = !hidden && phase === 'unveiling';
+  const onContentAnimationEnd = (event: AnimationEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) settle();
+  };
+
   return (
     <div className={[styles.coverable, className].filter(Boolean).join(' ')}>
       <div
         id={contentId}
-        className={hidden ? styles.covered : undefined}
+        className={hidden ? styles.covered : leaving ? styles.unveil : undefined}
+        style={
+          leaving && unveilStep > 0
+            ? ({ '--unveil-step': unveilStep } as CSSProperties)
+            : undefined
+        }
         inert={hidden}
         aria-hidden={hidden ? true : undefined}
+        onAnimationEnd={leaving ? onContentAnimationEnd : undefined}
       >
         {children}
       </div>
-      {hidden && (
-        <div className={styles.veil}>
+      {(hidden || leaving) && (
+        <div
+          className={[
+            styles.veil,
+            leaving ? styles.veilOut : phase === 'veiling' ? styles.veilIn : null,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          inert={leaving}
+          aria-hidden={leaving ? true : undefined}
+        >
           <button
             type="button"
             className={styles.reveal}

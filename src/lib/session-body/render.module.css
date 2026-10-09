@@ -46,6 +46,103 @@
   margin-bottom: 4px;
 }
 
+/*
+ * Marca-texto: ao chegar a um capítulo pelo índice, pelas pílulas ou por um link com #ch-N, o rótulo "Capítulo N"
+ * é riscado da esquerda para a direita com o Marca-texto (`--rose` a 28% sobre a Folha, como a tinta de uma
+ * caneta), fica um instante e esmaece. Diz onde o olho deve pousar depois do salto. Só transform e opacity; o texto
+ * passa a Tinta profunda enquanto está marcado (6,8:1 no tema rosa; o par garantido é Tinta profunda sobre Realce,
+ * um pouco mais claro).
+ */
+.section:target > .chapter small {
+  position: relative;
+  isolation: isolate;
+  width: fit-content;
+  animation: mark-ink 2.4s 250ms both;
+}
+
+.section:target > .chapter small::before {
+  content: '';
+  position: absolute;
+  inset: -2px -6px;
+  z-index: -1;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--rose) 28%, var(--surface));
+  transform-origin: left center;
+  animation: mark-sweep 2.4s 250ms both;
+}
+
+@keyframes mark-sweep {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+    animation-timing-function: var(--ease-out);
+  }
+
+  20% {
+    transform: none;
+    opacity: 1;
+  }
+
+  70% {
+    transform: none;
+    opacity: 1;
+    animation-timing-function: var(--ease-in);
+  }
+
+  100% {
+    transform: none;
+    opacity: 0;
+  }
+}
+
+@keyframes mark-ink {
+  0%,
+  70% {
+    color: var(--rose-deep);
+  }
+
+  100% {
+    color: var(--ink-3);
+  }
+}
+
+/* Menos movimento: a marca não corre pela linha; só acende e apaga. */
+@media (prefers-reduced-motion: reduce) {
+  .section:target > .chapter small {
+    animation: mark-ink 2.4s both !important;
+  }
+
+  .section:target > .chapter small::before {
+    animation: mark-glow 2.4s both !important;
+  }
+}
+
+@keyframes mark-glow {
+  0% {
+    opacity: 0;
+  }
+
+  10%,
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@media print {
+  .section:target > .chapter small,
+  .section:target > .chapter small::before {
+    animation: none;
+  }
+
+  .section:target > .chapter small::before {
+    display: none;
+  }
+}
+
 .prose h3 {
   font-family: var(--serif);
   font-style: italic;

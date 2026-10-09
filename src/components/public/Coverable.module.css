@@ -11,9 +11,109 @@
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .covered {
-    transition: filter 0.25s ease;
+/*
+ * Movimento: a névoa. Cobrir de novo (a pessoa diminuiu o progresso) embaça em 200ms. Mostrar é o momento do site:
+ * a névoa se desfaz em 480ms, desacelerando, e o cartão de revelar recua e some antes dela (160ms). Quando vários
+ * capítulos aparecem de uma vez (o progresso subiu), cada um começa 70ms depois do anterior, na ordem de leitura
+ * (`--unveil-step`, no máximo 4 passos). O estado parado não tem animação: nada se mexe ao abrir a página.
+ */
+.covered {
+  transition:
+    filter var(--dur-state) var(--ease-out),
+    opacity var(--dur-state) var(--ease-out);
+}
+
+.unveil {
+  animation: unveil var(--dur-unveil) var(--ease-out) both;
+  animation-delay: calc(var(--unveil-step, 0) * 70ms);
+  /* Só enquanto a névoa se desfaz: o desfoque de um capítulo longo vai para a placa de vídeo. */
+  will-change: filter, opacity;
+}
+
+@keyframes unveil {
+  from {
+    filter: blur(7px);
+    opacity: 0.7;
+  }
+
+  to {
+    filter: none;
+    opacity: 1;
+  }
+}
+
+/* O estado final fica na própria classe: se a animação não rodar, o cartão some do mesmo jeito. */
+.veilOut {
+  opacity: 0;
+  pointer-events: none;
+  animation: veil-out var(--dur-exit) var(--ease-in);
+}
+
+@keyframes veil-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.veilIn {
+  animation: veil-in var(--dur-overlay) var(--ease-out) 80ms both;
+}
+
+@keyframes veil-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Menos movimento: sem desfoque animado, sem escala e sem a cascata. O trecho e o cartão só trocam de opacidade, para
+ * a troca ainda se ver. (`!important` vence a regra geral de `base.css`, que desliga todo o resto.)
+ */
+@media (prefers-reduced-motion: reduce) {
+  .unveil {
+    animation: unveil-fade var(--dur-state) linear !important;
+  }
+
+  .veilOut {
+    animation: fade-out var(--dur-exit) linear !important;
+  }
+
+  .veilIn {
+    animation: fade-in var(--dur-state) linear !important;
+  }
+}
+
+@keyframes unveil-fade {
+  from {
+    opacity: 0.6;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
   }
 }
 
