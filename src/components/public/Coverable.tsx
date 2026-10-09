@@ -46,7 +46,8 @@ export function CoverFrame({
 }: CoverProps) {
   const contentId = useId();
   const { phase, settle } = useCoverPhase(hidden);
-  // O cartão de revelar continua na tela (inerte) enquanto some; depois sai do HTML.
+  // O cartão de revelar continua na tela enquanto some (desabilitado e fora do leitor de tela); depois sai do HTML.
+  // Sem `inert`: a área inerte é só o conteúdo coberto.
   const leaving = !hidden && phase === 'unveiling';
   const onContentAnimationEnd = (event: AnimationEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) settle();
@@ -76,7 +77,6 @@ export function CoverFrame({
           ]
             .filter(Boolean)
             .join(' ')}
-          inert={leaving}
           aria-hidden={leaving ? true : undefined}
         >
           <button
@@ -84,6 +84,7 @@ export function CoverFrame({
             className={styles.reveal}
             aria-expanded={false}
             aria-controls={contentId}
+            disabled={leaving}
             onClick={onReveal}
           >
             <Icon name="eyeOff" />

@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import type { BrowserContext, Page } from '@playwright/test';
 
 import { expect, test } from '../support/fixtures';
+import { untilMotionSettles } from '../support/motion';
 import { createAdmin, createModerator, createUser } from '../support/users';
 import { WORLD, sessionPath } from '../support/world';
 
@@ -230,9 +231,11 @@ test.describe('alvos de toque de 44px (iPhone) @mobile', () => {
     expect(await smallTargets(page), 'botão "?"').toEqual([]);
     await help.click();
     await expect(page.locator('dialog[data-tour-menu]')).toBeVisible();
+    await untilMotionSettles(page);
     expect(await smallTargets(page), 'menu do "?"').toEqual([]);
     await page.getByRole('button', { name: 'Ajuda desta tela' }).click();
     await expect(page.locator('[data-tour-card]')).toBeVisible();
+    await untilMotionSettles(page);
     expect(await smallTargets(page), 'cartão do tutorial').toEqual([]);
   });
 

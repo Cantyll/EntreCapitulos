@@ -6,6 +6,7 @@ import { TOUR_VERSION } from '../../src/content/tour/version';
 import { lit, sqlNumber } from '../support/db';
 import { expect, test } from '../support/fixtures';
 import { untilHydrated } from '../support/hydration';
+import { untilMotionSettles } from '../support/motion';
 import { createAdmin, createModerator } from '../support/users';
 
 /*
@@ -545,12 +546,14 @@ test.describe('tutorial do painel', () => {
     const { page } = await openAs(await createAdmin());
     await openPanel(page, '/painel/membros');
     await openMenu(page);
+    await untilMotionSettles(page);
     let results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
     expect(
       results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical'),
     ).toEqual([]);
     await menu(page).getByRole('button', { name: 'Ajuda desta tela' }).click();
     await checkStep(page);
+    await untilMotionSettles(page);
     results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
     expect(
       results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical'),
