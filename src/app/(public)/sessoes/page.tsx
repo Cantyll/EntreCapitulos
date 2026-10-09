@@ -78,6 +78,7 @@ export default async function SessionsPage({ searchParams }: Props) {
               session={session}
               bookSlug={selected.slug}
               isNew={isRecent(session.publishedAt, now)}
+              headingLevel={2}
             />
           ))}
         </div>
