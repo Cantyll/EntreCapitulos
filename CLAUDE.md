@@ -497,6 +497,17 @@ Medido num celular emulado (390x844, 4G lento do Lighthouse, CPU 4x), no build d
 - **Cliente do Supabase no navegador sob demanda:** os envios de capa (`upload-cover.ts`) e de foto (`upload-photo.ts`) importam `@/lib/supabase/browser` com `await import(...)` só na hora do envio (uns 67 KB comprimidos, com o Realtime). O formulário do livro e o editor da Sobre abrem sem ele. Componente novo que precise do cliente no navegador só para uma ação: faça o mesmo.
 - **Testado e recusado:** `experimental.cssChunking: 'graph'` deixa o CSS de cada página menor, mas o divide em 9 ou 10 arquivos, e no 4G lento a primeira pintura piorou (o padrão junta quase tudo num arquivo de uns 16,5 KB comprimidos).
 
+## Movimento (impeccable animate)
+
+Sem migration e sem dependência. Detalhes visuais em "Movimento" no `DESIGN.md`; tempos e curvas em `tokens.css` (`--ease-*`, `--dur-*`).
+
+- **Névoa do spoiler:** `useCoverPhase` (`src/components/public/`) dá a fase (`still`, `unveiling`, `veiling`) a partir das mudanças de `hidden` com a página aberta (ajuste de estado na renderização; nada anima no carregamento) e encerra a fase no `animationend` ou num prazo de reserva de 1,2s (com menos movimento o evento pode não vir). `CoverFrame` mantém o cartão de revelar na tela, `inert` e `aria-hidden`, enquanto ele some; por isso `#ch-N [inert]` ainda casa por um instante depois de revelar (os testes usam `toHaveCount`, que espera). `ChapterSection` calcula `unveilStep` (cascata) a partir do progresso anterior; mostrar pelo botão não tem atraso. Comentário: o coberto e o descoberto são árvores diferentes, então a névoa é animação de entrada (`bodyUnveil`/`bodyVeil`).
+- **Marca-texto:** `:target` em `render.module.css` (rótulo "Capítulo N") e `justPosted` no comentário recém-publicado: `createComment` devolve `commentId` (o id do próprio comentário) e `PostedCommentProvider` (em `Discussion`) o passa do formulário à lista.
+- **Diálogos:** `ConfirmDialog`, a folha "Mais" do painel e o menu do "?" saem com transição (`dialog:not([open])` + `transition-behavior: allow-discrete` em `display` e `overlay`, propriedades longas para navegador antigo não descartar a regra). O pulso do "?" roda 3 vezes e para.
+- **Menos movimento:** a regra geral de `base.css` continua; cada módulo devolve um esmaecer de opacidade com `!important`. O estado final mora na classe, nunca só na animação.
+- **Testes:** `e2e/tests/movimento.spec.ts` (névoa e cartão, cascata, marca-texto por endereço, comentário recém-publicado, saída do menu no Chromium, e o caminho de menos movimento).
+- **NÃO verificado:** Safari real e app instalado (desfoque animado num capítulo longo no iPhone, saída discreta dos diálogos no iOS 17.4+); os projetos WebKit rodam só no CI.
+
 ## Acabamento (impeccable polish)
 
 Passada final de interface antes do lançamento, no celular e no computador, com o tema rosa e um tema azul. Sem migration.
