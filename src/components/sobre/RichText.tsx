@@ -11,11 +11,17 @@ import type { InlineNode, TextNode } from '@/lib/session-body';
  * `rel="noopener noreferrer"`; o que não está na lista de permissões não é desenhado.
  */
 
-function renderText(node: TextNode, key: number): ReactNode {
+/*
+ * `annotate` (página Sobre): o negrito ganha `data-pencil="auto"` (sublinhado ou círculo a lápis) e o itálico,
+ * `data-pencil="mark"` (marca-texto). Os traços são de `PencilMarks`; sem ele, os atributos não fazem nada.
+ */
+function renderText(node: TextNode, key: number, annotate: boolean): ReactNode {
   let out: ReactNode = node.text;
   for (const mark of node.marks ?? []) {
-    if (mark.type === 'bold') out = <strong>{out}</strong>;
-    else if (mark.type === 'italic') out = <em>{out}</em>;
+    if (mark.type === 'bold')
+      out = <strong data-pencil={annotate ? 'auto' : undefined}>{out}</strong>;
+    else if (mark.type === 'italic')
+      out = <em data-pencil={annotate ? 'mark' : undefined}>{out}</em>;
     else if (mark.type === 'link' && isSafeHref(mark.attrs.href)) {
       const external = !mark.attrs.href.toLowerCase().startsWith('mailto:');
       out = (
@@ -32,20 +38,22 @@ function renderText(node: TextNode, key: number): ReactNode {
   return <span key={key}>{out}</span>;
 }
 
-function renderInline(content: InlineNode[] | undefined): ReactNode {
+function renderInline(content: InlineNode[] | undefined, annotate: boolean): ReactNode {
   return content?.map((node, i) =>
-    node.type === 'hardBreak' ? <br key={i} /> : renderText(node, i),
+    node.type === 'hardBreak' ? <br key={i} /> : renderText(node, i, annotate),
   );
 }
 
-function renderBlock(block: RichBlock, key: number): ReactNode {
-  if (block.type === 'paragraph') return <p key={key}>{renderInline(block.content)}</p>;
+function renderBlock(block: RichBlock, key: number, annotate: boolean): ReactNode {
+  if (block.type === 'paragraph') return <p key={key}>{renderInline(block.content, annotate)}</p>;
   return (
     <ul key={key}>
       {block.content.map((item, i) => (
         <li key={i}>
           {item.content.map((child, j) =>
-            child.type === 'paragraph' ? <p key={j}>{renderInline(child.content)}</p> : null,
+            child.type === 'paragraph' ? (
+              <p key={j}>{renderInline(child.content, annotate)}</p>
+            ) : null,
           )}
         </li>
       ))}
@@ -53,6 +61,18 @@ function renderBlock(block: RichBlock, key: number): ReactNode {
   );
 }
 
-export function RichText({ doc, className }: { doc: RichDoc; className?: string }) {
-  return <div className={className}>{(doc.content ?? []).map(renderBlock)}</div>;
+export function RichText({
+  doc,
+  className,
+  annotate = false,
+}: {
+  doc: RichDoc;
+  className?: string;
+  annotate?: boolean;
+}) {
+  return (
+    <div className={className}>
+      {(doc.content ?? []).map((block, i) => renderBlock(block, i, annotate))}
+    </div>
+  );
 }
