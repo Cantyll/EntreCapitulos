@@ -17,6 +17,7 @@ import { getTermsStatus } from '@/lib/terms/server';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 import { CommentSort } from './CommentSort';
+import { PostedCommentProvider } from './PostedComment';
 import { RetractNoticeProvider } from './RetractNotice';
 import styles from './comments.module.css';
 
@@ -79,84 +80,86 @@ export async function Discussion({
   const welcomeHref = `/boas-vindas?next=${encodeURIComponent(here)}`;
 
   return (
-    <section id="discussao" className={styles.disc} aria-labelledby="discussao-titulo">
-      <div className={styles.discHead}>
-        <h2 id="discussao-titulo" className={styles.discTitle}>
-          Discussão <span className={styles.discCount}>{page.total}</span>
-        </h2>
-        <div className={styles.discControls}>
-          <ProgressSelect bookSlug={bookSlug} total={totalChapters} progress={progress} />
-          <CommentSort order={order} basePath={here} />
+    <PostedCommentProvider>
+      <section id="discussao" className={styles.disc} aria-labelledby="discussao-titulo">
+        <div className={styles.discHead}>
+          <h2 id="discussao-titulo" className={styles.discTitle}>
+            Discussão <span className={styles.discCount}>{page.total}</span>
+          </h2>
+          <div className={styles.discControls}>
+            <ProgressSelect bookSlug={bookSlug} total={totalChapters} progress={progress} />
+            <CommentSort order={order} basePath={here} />
+          </div>
         </div>
-      </div>
 
-      {!commentsOpen ? (
-        <p className={styles.notice} role="note">
-          Os comentários desta sessão estão fechados.{' '}
-          {page.total > 0 ? 'A conversa que já aconteceu continua aqui embaixo.' : ''}
-        </p>
-      ) : viewer === null ? (
-        <div className={`${styles.card} ${styles.guest}`}>
-          <p>Entre para comentar e responder às sessões.</p>
-          <ButtonLink href={signInPath(here) as never} size="sm">
-            Entrar para comentar
-          </ButtonLink>
-        </div>
-      ) : !viewer.nameConfirmed ? (
-        <div className={`${styles.card} ${styles.guest}`}>
-          <p>Falta escolher o nome que aparece nos seus comentários.</p>
-          <ButtonLink href={welcomeHref as never} size="sm">
-            Escolher meu nome
-          </ButtonLink>
-        </div>
-      ) : termsBlocked ? (
-        // O banco recusa o comentário de quem nunca aceitou os Termos (a equipe é isenta): aqui só se convida.
-        <div className={`${styles.card} ${styles.guest}`} data-terms-required>
-          <p role="note">{COMMENT_MESSAGES.terms_not_accepted}</p>
-          <ButtonLink href={welcomeHref as never} size="sm">
-            Aceitar os Termos
-          </ButtonLink>
-        </div>
-      ) : suspended ? (
-        <div className={`${styles.card} ${styles.guest}`} data-comments-suspended>
-          <p role="note">
-            {COMMENT_MESSAGES.comments_suspended}{' '}
-            <Link href="/privacidade#quem-controla">Ver o e-mail de contato</Link>
+        {!commentsOpen ? (
+          <p className={styles.notice} role="note">
+            Os comentários desta sessão estão fechados.{' '}
+            {page.total > 0 ? 'A conversa que já aconteceu continua aqui embaixo.' : ''}
           </p>
-        </div>
-      ) : (
-        <div className={`${styles.card} ${styles.composer}`}>
-          <Avatar name={viewer.displayName} />
-          <CommentForm
-            sessionId={sessionId}
-            spoilerChoices={choices}
-            chapterTo={chapterTo}
-            welcomeHref={welcomeHref}
-            placeholder={`O que você achou dos capítulos ${chapterFrom} a ${chapterTo}?`}
-            label="Seu comentário"
-            submitLabel="Publicar comentário"
-          />
-        </div>
-      )}
+        ) : viewer === null ? (
+          <div className={`${styles.card} ${styles.guest}`}>
+            <p>Entre para comentar e responder às sessões.</p>
+            <ButtonLink href={signInPath(here) as never} size="sm">
+              Entrar para comentar
+            </ButtonLink>
+          </div>
+        ) : !viewer.nameConfirmed ? (
+          <div className={`${styles.card} ${styles.guest}`}>
+            <p>Falta escolher o nome que aparece nos seus comentários.</p>
+            <ButtonLink href={welcomeHref as never} size="sm">
+              Escolher meu nome
+            </ButtonLink>
+          </div>
+        ) : termsBlocked ? (
+          // O banco recusa o comentário de quem nunca aceitou os Termos (a equipe é isenta): aqui só se convida.
+          <div className={`${styles.card} ${styles.guest}`} data-terms-required>
+            <p role="note">{COMMENT_MESSAGES.terms_not_accepted}</p>
+            <ButtonLink href={welcomeHref as never} size="sm">
+              Aceitar os Termos
+            </ButtonLink>
+          </div>
+        ) : suspended ? (
+          <div className={`${styles.card} ${styles.guest}`} data-comments-suspended>
+            <p role="note">
+              {COMMENT_MESSAGES.comments_suspended}{' '}
+              <Link href="/privacidade#quem-controla">Ver o e-mail de contato</Link>
+            </p>
+          </div>
+        ) : (
+          <div className={`${styles.card} ${styles.composer}`}>
+            <Avatar name={viewer.displayName} />
+            <CommentForm
+              sessionId={sessionId}
+              spoilerChoices={choices}
+              chapterTo={chapterTo}
+              welcomeHref={welcomeHref}
+              placeholder={`O que você achou dos capítulos ${chapterFrom} a ${chapterTo}?`}
+              label="Seu comentário"
+              submitLabel="Publicar comentário"
+            />
+          </div>
+        )}
 
-      <RetractNoticeProvider>
-        <CommentList
-          key={order}
-          sessionId={sessionId}
-          order={order}
-          initialItems={items}
-          initialCursor={page.nextCursor}
-          progress={effectiveProgress(progress)}
-          progressKnown={progress !== null}
-          reply={{
-            sessionId,
-            chapterTo,
-            spoilerChoices: choices,
-            welcomeHref,
-            canReply: canComment,
-          }}
-        />
-      </RetractNoticeProvider>
-    </section>
+        <RetractNoticeProvider>
+          <CommentList
+            key={order}
+            sessionId={sessionId}
+            order={order}
+            initialItems={items}
+            initialCursor={page.nextCursor}
+            progress={effectiveProgress(progress)}
+            progressKnown={progress !== null}
+            reply={{
+              sessionId,
+              chapterTo,
+              spoilerChoices: choices,
+              welcomeHref,
+              canReply: canComment,
+            }}
+          />
+        </RetractNoticeProvider>
+      </section>
+    </PostedCommentProvider>
   );
 }

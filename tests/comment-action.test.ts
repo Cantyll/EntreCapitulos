@@ -228,6 +228,7 @@ describe('createComment: resultado', () => {
     expect(await send({})).toEqual({
       status: 'ok',
       outcome: 'approved',
+      commentId: inserted[0]!.id,
       message: 'Comentário publicado.',
     });
     expect(calls).toContain(`invalidate:${SESSION}`);
@@ -238,6 +239,7 @@ describe('createComment: resultado', () => {
     expect(await send({})).toEqual({
       status: 'ok',
       outcome: 'pending',
+      commentId: inserted[0]!.id,
       message: 'Recebemos seu comentário. Ele aparece depois que a moderação aprovar.',
     });
   });
