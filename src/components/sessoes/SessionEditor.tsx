@@ -456,7 +456,13 @@ export function SessionEditor({
           onKeyDown={(event) => {
             if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
             event.preventDefault();
-            if (tab === 'write') editorRef.current?.commands.focus('start');
+            const target = editorRef.current;
+            if (tab !== 'write' || !target || target.isDestroyed) return;
+            // Foco antes do comando: no Safari o `focus()` do Tiptap foca o editor no meio do
+            // comando, e a transação do foco (que num relato vazio acrescenta o parágrafo final)
+            // deixa a do comando velha ("Applying a mismatched transaction").
+            target.view.focus();
+            target.commands.focus('start');
           }}
         />
         {current.title.trim() === '' && (
