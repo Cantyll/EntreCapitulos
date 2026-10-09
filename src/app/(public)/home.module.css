@@ -290,7 +290,6 @@
   overflow-x: auto;
   scrollbar-width: none;
   border-bottom: 10px solid var(--line-2);
-  border-radius: 0 0 3px 3px;
 }
 
 .shelf {
