@@ -13,7 +13,7 @@ dialog.dialog {
 }
 
 dialog.dialog::backdrop {
-  background: rgba(42, 30, 36, 0.45);
+  background: var(--scrim);
 }
 
 /* Uma coluna que pode encolher: um título com palavra longa (um nome, por exemplo) não alarga a folha. */
@@ -61,7 +61,7 @@ dialog.dialog::backdrop {
       max(16px, var(--safe-left));
     border-width: 1px 0 0;
     border-radius: var(--r) var(--r) 0 0;
-    box-shadow: 0 -20px 50px -20px rgba(42, 30, 36, 0.4);
+    box-shadow: var(--shadow-sheet);
     animation: sheet-up 0.22s ease-out;
   }
 

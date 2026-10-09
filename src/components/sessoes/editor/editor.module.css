@@ -279,7 +279,7 @@
     border-width: 1px 0 0;
     padding-left: max(5px, var(--safe-left));
     padding-right: max(5px, var(--safe-right));
-    box-shadow: 0 -6px 18px -12px rgba(42, 30, 36, 0.35);
+    box-shadow: var(--shadow-bar);
   }
 
   /* Uma linha só, com ou sem teclado: a altura da barra não muda quando ela sobe, e a página não pula. */

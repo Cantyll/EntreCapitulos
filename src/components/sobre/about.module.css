@@ -147,7 +147,7 @@
   display: block;
   padding: 9px 12px;
   border: 1px solid var(--line-2);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: var(--surface);
   color: var(--rose-deep);
   font-size: 14px;

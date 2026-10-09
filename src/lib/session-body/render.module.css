@@ -93,7 +93,7 @@
 .theory {
   margin: 28px 0;
   background: var(--soft);
-  border-radius: 16px;
+  border-radius: var(--r);
   padding: 18px 22px;
   font-family: var(--sans);
   font-size: 15.5px;
