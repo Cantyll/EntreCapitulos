@@ -483,6 +483,18 @@ Medido num celular emulado (390x844, 4G lento do Lighthouse, CPU 4x), no build d
 - **Cliente do Supabase no navegador sob demanda:** os envios de capa (`upload-cover.ts`) e de foto (`upload-photo.ts`) importam `@/lib/supabase/browser` com `await import(...)` só na hora do envio (uns 67 KB comprimidos, com o Realtime). O formulário do livro e o editor da Sobre abrem sem ele. Componente novo que precise do cliente no navegador só para uma ação: faça o mesmo.
 - **Testado e recusado:** `experimental.cssChunking: 'graph'` deixa o CSS de cada página menor, mas o divide em 9 ou 10 arquivos, e no 4G lento a primeira pintura piorou (o padrão junta quase tudo num arquivo de uns 16,5 KB comprimidos).
 
+## Acabamento (impeccable polish)
+
+Passada final de interface antes do lançamento, no celular e no computador, com o tema rosa e um tema azul. Sem migration.
+
+- **Sombras e véu são tokens** (`tokens.css`): `--shadow`, `--shadow-sm`, `--shadow-book`, `--shadow-sheet`, `--shadow-bar`, `--shadow-float` e `--scrim`, tingidos com `color-mix` sobre `--rose-deep` ou `--ink`. Como o tema fica no próprio `<html>`, as variáveis já saem com a cor da capa. Nunca escreva `rgba(...)` de sombra ou véu num módulo; o único preto fixo é o da lombada da capa. Raios iguais a um token usam o token (`--r`, `--r-sm`, `--r-pill`).
+- **Capa gerada em `cqi`:** `BookCover` passa `--cs`/`--ct` como FRAÇÃO da largura (`fontSize / width`), e título, autor, respiro e ornamento medem em `cqi` (`container-type: inline-size` na capa). Padding em % contava a largura do PAI: na página do livro no celular (capa de 160px numa coluna de 346px) ele comia metade da capa e o título saía uma palavra por linha. O título tem folga em cima para o acento de maiúscula ("Última", "Âmbar"), que a entrelinha de 1,05 com `overflow: hidden` cortava.
+- **Sem cartão dentro de cartão:** `ProgressPrompt embedded` (a lateral da home e a faixa de spoiler da sessão) perde a caixa rosa e fica separado por um filete; na página do livro, solto, a caixa continua.
+- **Lista de Sessões do painel por contêiner:** tabela só com 900px de lista (`.listArea`, `@container sessionlist`), com as ações numa linha; abaixo disso, cartões. O título da tabela quebra em qualquer ponto (`overflow-wrap: anywhere`): uma palavra enorme não alarga a tabela.
+- **Campos lado a lado:** `.field` (livros, Sobre, conta, entrar) tem `align-content: start`; sem isso, o campo mais curto de uma linha esticava e o select ficava mais alto e mais baixo que o vizinho.
+- **Títulos:** em `/sessoes` o título de cada cartão é `h2` (`SessionCard headingLevel={2}`), logo abaixo do `h1`; na home continua `h3`. Os cartões de `/conta` usam a serifa (20px, peso 500), como os outros cartões do site.
+- **NÃO verificado:** Safari real e app instalado; os projetos WebKit do Playwright rodam só no CI.
+
 ## Dados de exemplo
 
 O livro atual é **O Livro de Azrael**, de Amber V. Nicole. O total de capítulos (52) é uma estimativa a confirmar. Os outros livros e membros do protótipo são fictícios e servem só como seed de desenvolvimento. **Nunca inventar citações do livro:** trechos reais são inseridos pela Agatha no editor.

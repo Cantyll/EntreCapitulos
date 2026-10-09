@@ -237,7 +237,7 @@ Uma paleta de papel e tinta, com um único tom de destaque que muda com a capa d
 
 - **Contêiner:** largura máxima de 1160px, centralizado, com margem lateral de 28px (18px abaixo de 760px).
 - **Grades de duas colunas:** a home usa conteúdo + coluna lateral de 320px (vão de 52px); a página da sessão usa o relato (coluna de até 700px) + lateral de 290px com a fita e o índice de capítulos. Abaixo de 1020px tudo vira uma coluna.
-- **Pontos de quebra:** 1020px (duas colunas viram uma; o painel troca a barra lateral pela barra inferior), 760px (margens menores, navegação do site em faixa rolável abaixo do logotipo) e 640px (prosa menor). A fita de capítulos, a página Sobre e Membros usam consultas de contêiner (`@container`), não a largura da janela: em Membros, a tabela só aparece com 800px de lista (abaixo disso, cartões, dois por linha no tablet) e o cartão de cargos fica embaixo da lista, com os três cargos lado a lado. O editor de sessão põe as opções ao lado do texto só quando o texto fica com 560px ou mais; no iPad deitado, com a barra lateral do painel, elas vão para baixo.
+- **Pontos de quebra:** 1020px (duas colunas viram uma; o painel troca a barra lateral pela barra inferior), 760px (margens menores, navegação do site em faixa rolável abaixo do logotipo) e 640px (prosa menor). A fita de capítulos, a página Sobre, Membros e a lista de Sessões do painel usam consultas de contêiner (`@container`), não a largura da janela: em Membros, a tabela só aparece com 800px de lista (abaixo disso, cartões, dois por linha no tablet) e o cartão de cargos fica embaixo da lista, com os três cargos lado a lado; em Sessões, a tabela só aparece com 900px de lista, com as ações numa linha. O editor de sessão põe as opções ao lado do texto só quando o texto fica com 560px ou mais; no iPad deitado, com a barra lateral do painel, elas vão para baixo.
 - **Tela baixa (até 500px de altura, o celular deitado):** o cabeçalho do site e o topo do painel deixam de ser fixos e rolam com a página; em pé, continuam fixos.
 - **Medida do texto de ajuda:** parágrafos de ajuda e explicação param em uns 70 caracteres por linha, mesmo em coluna larga.
 - **Ritmo:** cartões com 22px de respiro interno; seções separadas por 44px; o topo da home com 52px acima e 46px abaixo; títulos de página com 40px acima.
@@ -250,13 +250,21 @@ O sistema é plano e em camadas de papel: a profundidade vem do contraste entre 
 
 ### Shadow Vocabulary
 
-- **Folha apoiada** (`box-shadow: 0 1px 2px rgba(126, 51, 80, 0.05), 0 14px 34px -18px rgba(126, 51, 80, 0.28)`, token `--shadow`): cartões em destaque (última sessão, cartões laterais), diálogos e o botão de revelar spoiler.
-- **Livro na estante** (`box-shadow: inset 7px 0 0 rgba(0, 0, 0, 0.05), inset 9px 0 10px -7px rgba(0, 0, 0, 0.2), 0 16px 30px -20px rgba(90, 30, 50, 0.55)`): só a capa do livro, com a lombada desenhada por sombras internas.
-- **Folha inferior** (`box-shadow: 0 -20px 50px -20px rgba(42, 30, 36, 0.4)`): diálogos que viram folha inferior no celular e a folha "Mais" da barra inferior do painel, que sobe em 0,22s.
+Toda sombra e todo véu são tokens de `tokens.css`, tingidos pelas cores do tema com `color-mix` sobre Tinta profunda (`--rose-deep`) ou Tinta (`--ink`): com a capa azul, a sombra é azulada. Nenhuma sombra leva cor escrita à mão.
+
+- **Folha apoiada** (`--shadow`: Tinta profunda a 5% e a 28%, `0 1px 2px` e `0 14px 34px -18px`): cartões em destaque (última sessão, cartões laterais), diálogos e o botão de revelar spoiler.
+- **Marcador** (`--shadow-sm`: Tinta profunda a 12%, `0 1px 3px`): a pílula escolhida de um seletor segmentado (abas de Comentários e Membros, filtros de Sessões, Escrever/Pré-visualizar).
+- **Livro na estante** (`--shadow-book`): só a capa do livro, com a lombada desenhada por sombras internas pretas e a sombra de fora em Tinta profunda escurecida.
+- **Folha inferior** (`--shadow-sheet`: Tinta a 40%, `0 -20px 50px -20px`): diálogos que viram folha inferior no celular e a folha "Mais" da barra inferior do painel, que sobe em 0,22s.
+- **Barra presa** (`--shadow-bar`: Tinta a 35%, `0 -8px 20px -14px`): barras grudadas no fim da tela, a de formatação do editor no celular e a de ações da Página Sobre.
+- **Bilhete solto** (`--shadow-float`: Tinta a 18%, `0 18px 50px`): o que flutua sobre a página sem ser diálogo (o cartão e o menu do tutorial, a dica do "?").
+- **Véu** (`--scrim`: Tinta a 42%): o fundo escurecido atrás de diálogos e folhas.
 
 ### Named Rules
 
 **A regra da sombra única.** Há uma sombra de cartão (`--shadow`), e ela não se empilha nem cresce no hover. Uma lista de itens (sessões, comentários) se separa por filetes de Pauta, sem sombra.
+
+**A regra da caixa única.** Nada de cartão dentro de cartão. Um bloco que já tem caixa própria (a pergunta "Até que capítulo você leu?") perde a caixa quando entra num cartão ou numa faixa e fica separado por um filete de Pauta.
 
 ## Shapes
 
@@ -315,7 +323,7 @@ Pílulas leves, de peso 500, que se distinguem pela tinta, não pelo tamanho.
 
 ### Diálogos
 
-- Caixa de até 480px, Folha, borda em Pauta marcada, cantos de 16px, Folha apoiada, fundo da página escurecido com Tinta a 45%. No toque, vira folha inferior encostada embaixo (acima do teclado), com rolagem interna e botões empilhados de 44px.
+- Caixa de até 480px, Folha, borda em Pauta marcada, cantos de 16px, Folha apoiada, fundo da página escurecido pelo Véu (`--scrim`). No toque, vira folha inferior encostada embaixo (acima do teclado), com rolagem interna e botões empilhados de 44px.
 
 ### Fita de capítulos (componente-assinatura)
 
@@ -333,6 +341,7 @@ O livro inteiro numa linha: um segmento por capítulo, agrupado por sessão.
 ### Capa do livro
 
 - Proporção 2:3, cantos de livro (3px e 9px) e a sombra "Livro na estante". Com imagem enviada, `object-fit: cover`; sem imagem, a capa gerada descrita em Shapes.
+- **A capa gerada escala inteira:** título, autor, respiro e ornamento medem em `cqi` (a largura da própria capa). Quando a página encolhe a capa no celular, tudo encolhe junto, como uma foto do livro; o tamanho pedido em px vale para a largura pedida. Os acentos de maiúscula ("Última", "Âmbar") têm folga em cima do título.
 
 ## Do's and Don'ts
 
