@@ -145,7 +145,12 @@ export default async function SessionPage({ params, searchParams }: Props) {
               <b>Spoilers até o capítulo {session.chapterTo}.</b>{' '}
               <span>Conte até onde você leu e a gente esconde o resto.</span>
             </div>
-            <ProgressPrompt bookSlug={book.slug} total={book.totalChapters} progress={progress} />
+            <ProgressPrompt
+              bookSlug={book.slug}
+              total={book.totalChapters}
+              progress={progress}
+              embedded
+            />
           </div>
 
           {dividers.length > 0 && (

@@ -206,7 +206,12 @@ async function HomeContent() {
             >
               <h2 id="progresso-titulo">Seu progresso</h2>
               <p>Conte até onde você leu e a gente esconde o resto.</p>
-              <ProgressPrompt bookSlug={book.slug} total={book.totalChapters} progress={progress} />
+              <ProgressPrompt
+                bookSlug={book.slug}
+                total={book.totalChapters}
+                progress={progress}
+                embedded
+              />
             </section>
             {!viewer && (
               <section
