@@ -339,12 +339,28 @@ O livro inteiro numa linha: um segmento por capítulo, agrupado por sessão.
 
 ### Cobertura de spoiler
 
-- O trecho coberto fica desfocado (7px) e a 70% de opacidade, inerte, com altura mínima de 150px. No centro, um cartão-botão de Folha (cantos de 16px, Folha apoiada, ícone de olho fechado em Tinta de destaque) lembra até que capítulo a pessoa disse ter lido; a ação, embaixo, vem em 13px peso 600 Tinta profunda. Revelar remove o desfoque em 0,25s, sem animação quando a pessoa pede menos movimento. Na impressão, o trecho coberto sai como aviso tracejado, nunca borrado.
+- O trecho coberto fica desfocado (7px) e a 70% de opacidade, inerte, com altura mínima de 150px. No centro, um cartão-botão de Folha (cantos de 16px, Folha apoiada, ícone de olho fechado em Tinta de destaque) lembra até que capítulo a pessoa disse ter lido; a ação, embaixo, vem em 13px peso 600 Tinta profunda. Revelar é o momento do site: a névoa se desfaz em 480ms e o cartão recua e some antes dela (ver Movimento). Na impressão, o trecho coberto sai como aviso tracejado, nunca borrado.
 
 ### Capa do livro
 
 - Proporção 2:3, cantos de livro (3px e 9px) e a sombra "Livro na estante". Com imagem enviada, `object-fit: cover`; sem imagem, a capa gerada descrita em Shapes.
 - **A capa gerada escala inteira:** título, autor, respiro e ornamento medem em `cqi` (a largura da própria capa). Quando a página encolhe a capa no celular, tudo encolhe junto, como uma foto do livro; o tamanho pedido em px vale para a largura pedida. Os acentos de maiúscula ("Última", "Âmbar") têm folga em cima do título.
+
+## Movimento
+
+O movimento é o do lápis na margem: pouco, calmo e sempre dizendo alguma coisa. Nada se mexe ao abrir uma página, nada fica piscando e nada salta (sem mola). Os tempos e as curvas são tokens de `tokens.css` (`--ease-out`, `--ease-in`, `--dur-press` 120ms, `--dur-state` 200ms, `--dur-overlay` 240ms, `--dur-exit` 160ms, `--dur-unveil` 480ms); a saída é sempre mais curta que a entrada.
+
+- **A névoa (o momento do site).** Mostrar um trecho coberto desfaz o desfoque em 480ms, desacelerando, e o cartão de revelar recua (96%) e some em 160ms. Quando a pessoa sobe o "Li até o" e vários capítulos aparecem de uma vez, eles se descobrem na ordem de leitura, 70ms um depois do outro (no máximo 4 passos). Cobrir de novo embaça em 200ms e o cartão volta. Nos comentários com spoiler, a mesma névoa, menor. Só anima quando a cobertura muda com a página aberta (`useCoverPhase`).
+- **O marca-texto.** Chegar a um capítulo por um link `#ch-N` (índice, pílulas, endereço) risca o rótulo "Capítulo N" da esquerda para a direita com o Marca-texto a 28%, segura e esmaece (2,4s). O comentário que a pessoa acabou de publicar recebe o mesmo traço, em Papel tingido, por trás da linha inteira. Diz onde o olho pousa depois de um salto.
+- **Folhas e diálogos.** Sobem 8px (caixa) ou 24px (folha) e acendem em 240ms, com o véu acendendo junto; saem em 160ms (a saída usa `display` e `overlay` discretos, Safari 17.4 ou mais novo; antes disso só somem).
+- **Toque.** Botões cedem a 97% (botões de ícone a 94%) enquanto pressionados, em 120ms.
+- **Menos movimento.** `base.css` desliga tudo por padrão; o que carrega estado volta como esmaecer de opacidade (`!important` no módulo): a névoa só esmaece, sem desfoque animado nem cascata; o marca-texto acende e apaga sem correr; diálogos e folhas acendem sem subir.
+
+### Named Rules
+
+**A regra do estado parado.** O estado final mora na classe, não na animação: se a animação não rodar (menos movimento, navegador antigo), a tela fica certa do mesmo jeito.
+
+**A regra de uma névoa só.** Movimento longo (mais de 300ms) é só o da névoa. Todo o resto é retorno ou troca de estado.
 
 ## Do's and Don'ts
 
@@ -370,4 +386,5 @@ O livro inteiro numa linha: um segmento por capítulo, agrupado por sessão.
 - **Don't** usar `100vh`, nem bloquear o zoom por pinça.
 - **Don't** usar Newsreader em botões, chips, rótulos ou campos.
 - **Don't** empilhar ou aumentar sombras no hover.
+- **Don't** animar nada ao carregar a página, nem usar mola, rolagem com paralaxe ou revelação de seções ao rolar.
 - **Don't** usar `black-translucent` na barra de status do iOS: o tema é claro.
