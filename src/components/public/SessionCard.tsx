@@ -17,17 +17,21 @@ export { chaptersText };
 
 /**
  * Cartão de sessão (home, /sessoes). O título é o link e o cartão inteiro é clicável. Mostra só o que
- * existe: data, minutos de leitura e resumo aparecem se estiverem preenchidos.
+ * existe: data, minutos de leitura e resumo aparecem se estiverem preenchidos. `headingLevel` segue a página:
+ * h3 na home (abaixo do h2 da seção) e h2 em /sessoes (logo abaixo do h1), para a ordem dos títulos não pular.
  */
 export function SessionCard({
   session,
   bookSlug,
   isNew,
+  headingLevel = 3,
 }: {
   session: SessionSummary;
   bookSlug: string;
   isNew?: boolean;
+  headingLevel?: 2 | 3;
 }) {
+  const Heading = headingLevel === 2 ? 'h2' : 'h3';
   return (
     <article className={styles.card}>
       <div className={styles.num} aria-hidden="true">
@@ -40,12 +44,12 @@ export function SessionCard({
           {session.membersOnly && <Chip>Só membros</Chip>}
           {isNew && <Chip>Nova</Chip>}
         </div>
-        <h3 className={styles.title}>
+        <Heading className={styles.title}>
           <Link href={sessionHref(bookSlug, session.number)} className={styles.link}>
             <span className={styles.visually}>Sessão {session.number}: </span>
             {session.title}
           </Link>
-        </h3>
+        </Heading>
         {session.excerpt && <p className={styles.excerpt}>{session.excerpt}</p>}
         <div className={styles.meta}>
           {session.publishedAt && (
