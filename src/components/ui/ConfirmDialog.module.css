@@ -10,10 +10,43 @@ dialog.dialog {
   background: var(--surface);
   color: var(--ink);
   box-shadow: var(--shadow);
+  /* Entra subindo 8px e acendendo (240ms); sai mais depressa (160ms). A saída precisa do `display` e do `overlay`
+     discretos (Safari 17.4 ou mais novo); antes disso o diálogo só some, como sempre. */
+  animation: dialog-in var(--dur-overlay) var(--ease-out);
+  transition-property: opacity, transform, overlay, display;
+  transition-duration: var(--dur-exit);
+  transition-timing-function: var(--ease-in);
+  transition-behavior: allow-discrete;
+}
+
+dialog.dialog:not([open]) {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 dialog.dialog::backdrop {
   background: var(--scrim);
+  animation: scrim-in var(--dur-overlay) var(--ease-out);
+  transition-property: opacity, overlay, display;
+  transition-duration: var(--dur-exit);
+  transition-behavior: allow-discrete;
+}
+
+dialog.dialog:not([open])::backdrop {
+  opacity: 0;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
 }
 
 /* Uma coluna que pode encolher: um título com palavra longa (um nome, por exemplo) não alarga a folha. */
@@ -62,7 +95,11 @@ dialog.dialog::backdrop {
     border-width: 1px 0 0;
     border-radius: var(--r) var(--r) 0 0;
     box-shadow: var(--shadow-sheet);
-    animation: sheet-up 0.22s ease-out;
+    animation: sheet-up var(--dur-overlay) var(--ease-out);
+  }
+
+  dialog.dialog:not([open]) {
+    transform: translateY(24px);
   }
 
   dialog.dialog::backdrop {
@@ -106,8 +143,15 @@ dialog.dialog::backdrop {
   }
 }
 
+/* Menos movimento: a folha e a caixa não sobem; só acendem (a regra geral de base.css desliga o resto). */
 @media (prefers-reduced-motion: reduce) {
   dialog.dialog {
-    animation: none;
+    animation: dialog-fade var(--dur-state) linear !important;
+  }
+}
+
+@keyframes dialog-fade {
+  from {
+    opacity: 0;
   }
 }

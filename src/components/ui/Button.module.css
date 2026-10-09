@@ -10,8 +10,9 @@
   font-size: 14px;
   background: none;
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background var(--dur-press),
+    border-color var(--dur-press),
+    transform var(--dur-press) var(--ease-out);
   white-space: nowrap;
   /* Nunca mais largo que a coluna: um rótulo com título de livro longo é cortado com reticências (BackButton). */
   max-width: 100%;
@@ -76,6 +77,11 @@
 
 .ghost:active {
   border-color: var(--rose);
+}
+
+/* Retorno de toque: o botão cede um pouco sob o dedo (no iPhone o dedo cobre a troca de cor). */
+.btn:active:not(:disabled, [aria-disabled='true']) {
+  transform: scale(0.97);
 }
 
 @media (pointer: coarse) {
