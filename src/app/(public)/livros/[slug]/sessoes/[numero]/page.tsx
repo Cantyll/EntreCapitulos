@@ -139,7 +139,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
             </div>
           </div>
 
-          <div className={styles.spoilerBar}>
+          <div className={styles.spoilerBar} data-print="hide">
             <Icon name="eyeOff" />
             <div className={styles.spoilerText}>
               <b>Spoilers até o capítulo {session.chapterTo}.</b>{' '}
@@ -154,7 +154,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
           </div>
 
           {dividers.length > 0 && (
-            <ul className={styles.pills} aria-label="Capítulos desta sessão">
+            <ul className={styles.pills} aria-label="Capítulos desta sessão" data-print="hide">
               {dividers.map((d) => (
                 <li key={d.attrs.chapter}>
                   <a href={`#ch-${d.attrs.chapter}`} className={styles.pill}>
@@ -229,7 +229,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
             </section>
           )}
 
-          <nav className={styles.nav} aria-label="Outras sessões">
+          <nav className={styles.nav} aria-label="Outras sessões" data-print="hide">
             {older && (
               <Link href={sessionHref(book.slug, older.number)} className={styles.navItem}>
                 <Icon name="left" />
@@ -285,7 +285,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
           </Suspense>
         </article>
 
-        <aside className={styles.side} aria-label="Sobre o livro">
+        <aside className={styles.side} aria-label="Sobre o livro" data-print="hide">
           <div className={styles.sticky}>
             <Link href={bookHref(book.slug)} className={styles.sideBook}>
               <BookCover

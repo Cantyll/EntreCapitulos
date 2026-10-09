@@ -77,7 +77,7 @@ export function AdminTabBar({ pendingComments, role }: { pendingComments: number
   }
 
   return (
-    <div className={styles.root}>
+    <div className={styles.root} data-print="hide">
       <nav className={styles.bar} aria-label="Painel" data-tour="admin-nav" data-admin-tabbar="">
         <ul className={styles.list}>
           {left.map(renderTab)}

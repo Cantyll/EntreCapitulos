@@ -12,7 +12,7 @@ export function SiteFooter() {
       <Container>
         <div className={styles.inner}>
           <Logo size="sm" />
-          <nav className={styles.nav} aria-label="Rodapé">
+          <nav className={styles.nav} aria-label="Rodapé" data-print="hide">
             <Link href="/sessoes">Sessões</Link>
             <Link href="/estante">Estante</Link>
             <Link href="/sobre">Regras da comunidade</Link>

@@ -83,3 +83,11 @@
     min-height: var(--tap);
   }
 }
+
+/* Impressão: o navegador não imprime fundos por padrão, e o texto claro do botão cheio sumia no papel. */
+@media print {
+  .btn {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

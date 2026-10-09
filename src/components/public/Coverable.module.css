@@ -59,3 +59,37 @@
     border-color: var(--rose);
   }
 }
+
+.printNote {
+  display: none;
+}
+
+/*
+ * Impressão: o texto borrado não serve no papel (e imprimir não é revelar). Sai só um aviso no lugar do trecho, e o
+ * leitor que quiser o capítulo impresso o mostra na tela antes.
+ */
+@media print {
+  .covered {
+    display: none;
+  }
+
+  .veil {
+    position: static;
+    display: block;
+    padding: 0;
+  }
+
+  .reveal {
+    display: none;
+  }
+
+  .printNote {
+    display: block;
+    padding: 10px 14px;
+    border: 1px dashed var(--line-2);
+    border-radius: var(--r-sm);
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 13px;
+  }
+}

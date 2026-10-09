@@ -12,7 +12,7 @@ export function AdminTopbar({ pendingComments }: { pendingComments: number }) {
       : 'Notificações';
 
   return (
-    <header className={styles.top} data-admin-topbar="">
+    <header className={styles.top} data-admin-topbar="" data-print="hide">
       <AdminTitle className={styles.title} />
       {/* Ordem visual e de Tab: [?] [sino]. O sino não muda de lugar (etapa 8k). */}
       <div className={styles.tools}>

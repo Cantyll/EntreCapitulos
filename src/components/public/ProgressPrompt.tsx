@@ -26,7 +26,10 @@ export function ProgressPrompt({
     return <ProgressSelect bookSlug={bookSlug} total={total} progress={progress} label={label} />;
   }
   return (
-    <div className={embedded ? `${styles.prompt} ${styles.embedded}` : styles.prompt}>
+    <div
+      className={embedded ? `${styles.prompt} ${styles.embedded}` : styles.prompt}
+      data-print="hide"
+    >
       <p className={styles.question}>{PROGRESS_PROMPT}</p>
       <p className={styles.help}>
         Os capítulos depois do que você leu ficam cobertos até você mostrar. Escolha para começar.

@@ -34,7 +34,7 @@ export function ProgressSelect({
     chapter === 0 ? 'Ainda não comecei' : chapter === total ? 'Li o livro todo' : `Capítulo ${chapter}`;
 
   return (
-    <div className={[styles.wrap, className].filter(Boolean).join(' ')}>
+    <div className={[styles.wrap, className].filter(Boolean).join(' ')} data-print="hide">
       <label htmlFor={id} className={styles.label}>
         {label}
       </label>

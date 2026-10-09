@@ -15,7 +15,7 @@ type AdminSidebarProps = { pendingComments: number; role: Role; displayName: str
 
 export function AdminSidebar({ pendingComments, role, displayName }: AdminSidebarProps) {
   return (
-    <aside className={styles.side}>
+    <aside className={styles.side} data-print="hide">
       <div className={styles.brand}>
         <Logo size="sm" href="/painel" />
         <span className={styles.tag}>Painel</span>
