@@ -237,11 +237,14 @@ Uma paleta de papel e tinta, com um único tom de destaque que muda com a capa d
 
 - **Contêiner:** largura máxima de 1160px, centralizado, com margem lateral de 28px (18px abaixo de 760px).
 - **Grades de duas colunas:** a home usa conteúdo + coluna lateral de 320px (vão de 52px); a página da sessão usa o relato (coluna de até 700px) + lateral de 290px com a fita e o índice de capítulos. Abaixo de 1020px tudo vira uma coluna.
-- **Pontos de quebra:** 1020px (duas colunas viram uma; o painel troca a barra lateral pela barra inferior), 760px (margens menores, navegação do site em faixa rolável abaixo do logotipo) e 640px (prosa menor). A fita de capítulos, a página Sobre, Membros e a lista de Sessões do painel usam consultas de contêiner (`@container`), não a largura da janela: em Membros, a tabela só aparece com 800px de lista (abaixo disso, cartões, dois por linha no tablet) e o cartão de cargos fica embaixo da lista, com os três cargos lado a lado; em Sessões, a tabela só aparece com 900px de lista, com as ações numa linha. O editor de sessão põe as opções ao lado do texto só quando o texto fica com 560px ou mais; no iPad deitado, com a barra lateral do painel, elas vão para baixo.
+- **Pontos de quebra:** 1020px (duas colunas viram uma; o painel troca a barra lateral pela barra inferior), 760px (margens menores, navegação do site em faixa rolável abaixo do logotipo) e 640px (prosa menor). A fita de capítulos, a página Sobre, Membros e a lista de Sessões do painel usam consultas de contêiner (`@container`), não a largura da janela: em Membros, a tabela só aparece com 800px de lista (abaixo disso, cartões, dois por linha no tablet) e o cartão de cargos fica embaixo da lista, com os três cargos lado a lado; em Sessões, a tabela só aparece com 900px de lista, com as ações numa linha; em Livros, com 720px de lista (abaixo disso, cartões com capa, estado, progresso e o editar sempre à vista). O editor de sessão põe as opções ao lado do texto só quando o texto fica com 560px ou mais; no iPad deitado, com a barra lateral do painel, elas vão para baixo.
+- **Tela larga:** o conteúdo do painel para em 1240px (`--panel-max`), e o "?" e o sino do topo param no mesmo ponto, em vez de irem para a borda da tela. Na página do livro, a capa acompanha a coluna (180px entre 761 e 1020px).
 - **Tela baixa (até 500px de altura, o celular deitado):** o cabeçalho do site e o topo do painel deixam de ser fixos e rolam com a página; em pé, continuam fixos.
 - **Medida do texto de ajuda:** parágrafos de ajuda e explicação param em uns 70 caracteres por linha, mesmo em coluna larga.
 - **Ritmo:** cartões com 22px de respiro interno; seções separadas por 44px; o topo da home com 52px acima e 46px abaixo; títulos de página com 40px acima.
 - **Toque (`pointer: coarse`):** todo alvo cresce para 44x44px, campos passam a 16px de fonte e o hover dá lugar ao estado pressionado (`:active`).
+- **Impressão:** sai o texto da página. Cabeçalho, menu do rodapé, "Voltar", barras e lateral do painel, convites, controles de leitura e a discussão sem comentários levam `data-print="hide"` (ou uma regra `@media print` do próprio módulo); as grades de duas colunas viram uma. O trecho coberto pelo filtro de spoiler não sai borrado: no lugar dele vai um aviso tracejado ("Trecho coberto pelo filtro de spoiler. Para imprimi-lo, mostre-o na tela antes."). Título não fica sozinho no pé da página, e a fita, o mapa de capítulos e os botões imprimem com cor.
+- **Alto contraste (cores forçadas do Windows):** o sistema apaga fundos e sombras, então o que só se distinguia pelo fundo ganha cores do sistema: item atual do menu, aba escolhida e botão ligado em `Highlight` com texto `HighlightText` (com `forced-color-adjust: none`, senão o navegador desenha uma placa atrás das letras); interruptor com contorno e bolinha em `ButtonText`, ligado em `Highlight`; na fita e no mapa, sessão em `CanvasText`, a última em `Highlight`, o lido sem sessão em `GrayText`, a próxima tracejada e o que falta ler só contornado. O foco do título do editor (uma sombra) vira contorno.
 - **Telas do iPhone:** áreas seguras (`env(safe-area-inset-*)`) no documento, no cabeçalho fixo e nas barras inferiores; altura útil com `100dvh`, nunca `100vh`; a barra inferior do painel tem 64px mais a área segura.
 
 ## Elevation & Depth
@@ -316,7 +319,7 @@ Pílulas leves, de peso 500, que se distinguem pela tinta, não pelo tamanho.
 
 ### Navigation
 
-- **Site:** cabeçalho fixo de 70px em vidro fosco (Papel a 90%, desfoque de 12px) com filete inferior; logotipo à esquerda, links em pílula de 14px em Tinta secundária, item ativo em pílula de Realce com texto Tinta profunda. Abaixo de 760px os links viram uma faixa rolável sob o logotipo.
+- **Site:** cabeçalho fixo de 70px em vidro fosco (Papel a 90%, desfoque de 12px) com filete inferior; logotipo à esquerda, links em pílula de 14px em Tinta secundária, item ativo em pílula de Realce com texto Tinta profunda. Abaixo de 760px os links viram uma faixa rolável sob o logotipo, como uma frase que continua na outra página: o lado que ainda tem itens some num esfumado de 24px e o item atual aparece inteiro ao abrir a página (`ScrollStrip`). O mesmo vale para as abas de livros em Sessões e para a barra de formatação do editor no celular.
 - **Painel no computador:** barra lateral branca, fixa, com filete à direita; itens de 14px com cantos de 10px, hover em Papel tingido, ativo em Realce, contagem de pendentes em pílula de Tinta de destaque com texto branco.
 - **Painel no celular:** barra inferior em vidro fosco (Folha a 94%, desfoque de 14px), cinco células com ícone e rótulo de 11px, alinhadas pela base, acima da área segura.
 - **Voltar:** toda página interna tem um link "Voltar" visível para a página pai (o app instalado não tem botão voltar).
@@ -336,7 +339,7 @@ O livro inteiro numa linha: um segmento por capítulo, agrupado por sessão.
 
 ### Cobertura de spoiler
 
-- O trecho coberto fica desfocado (7px) e a 70% de opacidade, inerte, com altura mínima de 150px. No centro, um cartão-botão de Folha (cantos de 16px, Folha apoiada, ícone de olho fechado em Tinta de destaque) lembra até que capítulo a pessoa disse ter lido; a ação, embaixo, vem em 13px peso 600 Tinta profunda. Revelar remove o desfoque em 0,25s, sem animação quando a pessoa pede menos movimento.
+- O trecho coberto fica desfocado (7px) e a 70% de opacidade, inerte, com altura mínima de 150px. No centro, um cartão-botão de Folha (cantos de 16px, Folha apoiada, ícone de olho fechado em Tinta de destaque) lembra até que capítulo a pessoa disse ter lido; a ação, embaixo, vem em 13px peso 600 Tinta profunda. Revelar remove o desfoque em 0,25s, sem animação quando a pessoa pede menos movimento. Na impressão, o trecho coberto sai como aviso tracejado, nunca borrado.
 
 ### Capa do livro
 
@@ -355,6 +358,8 @@ O livro inteiro numa linha: um segmento por capítulo, agrupado por sessão.
 - **Do** mostrar estado por forma e texto, além da cor: na fita, cheio, escuro, contornado e trilha têm forma própria e legenda.
 - **Do** manter `-webkit-backdrop-filter` junto de `backdrop-filter` nas barras de vidro fosco e as áreas seguras do iPhone em barras fixas.
 - **Do** rodar o teste de contraste com os temas derivados quando um texto novo cair sobre um fundo do tema.
+- **Do** usar `ScrollStrip` em toda faixa que rola de lado (sem barra de rolagem à vista, nada diria que há mais itens).
+- **Do** marcar com `data-print="hide"` o que não serve no papel e conferir em alto contraste todo estado que só muda o fundo.
 
 ### Don't:
 
