@@ -23,7 +23,7 @@ import styles from './pencil.module.css';
  * - `mark`: o itálico vira marca-texto (só CSS; aqui só ganha o `data-drawn`);
  * - `arrow`: seta do elemento até o retrato (`data-pencil-to`, um seletor dentro da raiz).
  *
- * Cada traço se desenha quando o trecho aparece na tela (IntersectionObserver), uma vez só. Os caminhos são refeitos
+ * Cada traço se desenha quando o trecho aparece na tela (conferido a cada rolagem), uma vez só. Os caminhos são refeitos
  * quando a raiz muda de tamanho, e o que já foi desenhado volta desenhado, sem animar de novo. Tudo é DOM direto (nada
  * de estado do React): a camada não muda o HTML do conteúdo e o texto continua o mesmo para o leitor de tela. Sem
  * JavaScript, a página é a mesma de antes, sem os traços.
@@ -177,20 +177,22 @@ export function PencilMarks() {
       if (group) group.dataset.drawn = '';
     };
 
-    const observer =
-      typeof IntersectionObserver === 'function'
-        ? new IntersectionObserver(
-            (entries) => {
-              for (const entry of entries) {
-                if (!entry.isIntersecting) continue;
-                const target = targets.find((t) => t.el === entry.target);
-                if (target) markDrawn(target);
-                observer?.unobserve(entry.target);
-              }
-            },
-            { rootMargin: '0px 0px -12% 0px', threshold: 0.6 },
-          )
-        : null;
+    // Um traço se desenha quando o topo do trecho passa de 88% da altura da janela, inclusive quando a rolagem pulou
+    // por cima dele (ir direto ao fim da página não deixa traço para trás). Conferir a posição a cada rolagem é mais
+    // previsível que um IntersectionObserver com limiar: o WebKit às vezes não avisa de um trecho que passou depressa.
+    let check = 0;
+    const reveal = () => {
+      cancelAnimationFrame(check);
+      check = requestAnimationFrame(() => {
+        const limit = window.innerHeight * 0.88;
+        for (const t of targets) {
+          if (!drawn.has(t.key) && t.el.getBoundingClientRect().top < limit) markDrawn(t);
+        }
+      });
+    };
+    // Captura: também ouve a rolagem de contêineres (a pré-visualização do painel).
+    window.addEventListener('scroll', reveal, { capture: true, passive: true });
+    window.addEventListener('resize', reveal, { passive: true });
 
     const refresh = () => {
       cancelAnimationFrame(frame);
@@ -199,9 +201,8 @@ export function PencilMarks() {
         build();
         for (const t of targets) {
           if (drawn.has(t.key)) t.el.dataset.drawn = '';
-          else if (observer) observer.observe(t.el);
-          else markDrawn(t);
         }
+        reveal();
       });
     };
 
@@ -218,7 +219,9 @@ export function PencilMarks() {
 
     return () => {
       cancelAnimationFrame(frame);
-      observer?.disconnect();
+      cancelAnimationFrame(check);
+      window.removeEventListener('scroll', reveal, { capture: true });
+      window.removeEventListener('resize', reveal);
       resize?.disconnect();
       mutations.disconnect();
     };

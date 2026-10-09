@@ -54,11 +54,11 @@ test.describe('página Sobre escrita a lápis', () => {
       .first()
       .evaluate((el) => getComputedStyle(el).animationName);
     expect(animation).toBe('none');
-    const transition = await page
-      .locator('[data-about-root] > svg g[data-drawn] path')
-      .first()
-      .evaluate((el) => getComputedStyle(el).transitionDuration);
-    expect(transition).toBe('0s');
+    // `toHaveCSS` espera: a camada é refeita quando a fonte chega, e um caminho antigo sai do DOM.
+    await expect(page.locator('[data-about-root] > svg g[data-drawn] path').first()).toHaveCSS(
+      'transition-duration',
+      '0s',
+    );
     await context.close();
   });
 });
