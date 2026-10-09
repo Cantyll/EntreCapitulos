@@ -249,6 +249,79 @@
   padding: 20px 0;
 }
 
+/*
+ * Marca-texto do comentário que a pessoa acabou de publicar (o mesmo da chegada a um capítulo, em
+ * render.module.css): o Papel tingido corre por trás da linha da esquerda para a direita, fica um instante e
+ * esmaece. Mais claro que o do capítulo de propósito: a Tinta de nota dos metadados só tem 4,5:1 garantido sobre o
+ * Papel tingido. Fica atrás de tudo e não mexe no lugar de nada.
+ */
+.justPosted {
+  position: relative;
+  isolation: isolate;
+}
+
+.justPosted::before {
+  content: '';
+  position: absolute;
+  inset: 6px -10px;
+  z-index: -1;
+  border-radius: var(--r-sm);
+  background: var(--soft);
+  transform-origin: left center;
+  animation: posted-sweep 2.6s 120ms both;
+}
+
+@keyframes posted-sweep {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+    animation-timing-function: var(--ease-out);
+  }
+
+  20% {
+    transform: none;
+    opacity: 1;
+  }
+
+  70% {
+    transform: none;
+    opacity: 1;
+    animation-timing-function: var(--ease-in);
+  }
+
+  100% {
+    transform: none;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .justPosted::before {
+    animation: posted-glow 2.6s both !important;
+  }
+}
+
+@keyframes posted-glow {
+  0% {
+    opacity: 0;
+  }
+
+  10%,
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@media print {
+  .justPosted::before {
+    display: none;
+  }
+}
+
 .repliesBlock {
   margin: -8px 0 12px;
   padding-left: 18px;
@@ -343,9 +416,55 @@
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .bodyCovered {
-    transition: filter 0.25s ease;
+/*
+ * A mesma névoa dos capítulos (Coverable.module.css), menor: o comentário coberto e o descoberto são árvores
+ * diferentes, então o movimento é uma animação de entrada, e só quando a cobertura muda com a página aberta.
+ */
+.bodyUnveil {
+  animation: body-unveil var(--dur-unveil) var(--ease-out) both;
+}
+
+@keyframes body-unveil {
+  from {
+    filter: blur(6px);
+    opacity: 0.6;
+  }
+}
+
+.bodyVeil {
+  animation: body-veil var(--dur-state) var(--ease-out) both;
+}
+
+@keyframes body-veil {
+  from {
+    filter: none;
+    opacity: 1;
+  }
+}
+
+.coverIn {
+  animation: cover-in var(--dur-state) var(--ease-out) both;
+}
+
+@keyframes cover-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bodyUnveil {
+    animation: body-unveil-fade var(--dur-state) linear !important;
+  }
+
+  .coverIn {
+    animation: cover-in var(--dur-state) linear !important;
+  }
+}
+
+@keyframes body-unveil-fade {
+  from {
+    opacity: 0.6;
   }
 }
 

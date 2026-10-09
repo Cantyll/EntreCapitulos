@@ -59,6 +59,19 @@
       color-mix(in srgb, color-mix(in srgb, var(--rose-deep) 70%, black) 55%, transparent);
   --scrim: color-mix(in srgb, var(--ink) 42%, transparent);
 
+  /*
+   * Movimento ("Movimento" no DESIGN.md). Chegada desacelera (nada de mola), saída é mais curta que a entrada.
+   * Retorno de toque 120ms; troca de estado 200ms; folhas e diálogos 240ms (saída 160ms); a névoa do spoiler
+   * se desfaz em 480ms, o único movimento longo do site.
+   */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --dur-press: 120ms;
+  --dur-state: 200ms;
+  --dur-overlay: 240ms;
+  --dur-exit: 160ms;
+  --dur-unveil: 480ms;
+
   /* Fontes. As variáveis --font-* vêm de next/font (src/app/layout.tsx). */
   --serif: var(--font-newsreader), Georgia, 'Times New Roman', serif;
   --sans:
