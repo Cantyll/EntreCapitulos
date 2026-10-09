@@ -27,8 +27,8 @@ import { RichText } from './RichText';
  * (`COMMUNITY_RULES`, em código, versionados com os Termos) e "Leia como aplicativo" (etapa 8e) NÃO são editáveis nem
  * ocultáveis: não há campo no conteúdo para eles. Estatísticas, "Como funciona" e a chamada final se ocultam.
  *
- * "Escrito a lápis" (impeccable overdrive): o título se escreve palavra por palavra (só CSS, `titleWords` dá o ritmo)
- * e `PencilMarks` desenha à mão o que leva `data-pencil`: o sublinhado do título e da chamada final, o negrito do texto,
+ * "Escrito a lápis" (impeccable overdrive e animate): `PencilMarks` escreve o título palavra por palavra (`titleWords`
+ * dá o ritmo) e depois desenha à mão, um traço por vez, o que leva `data-pencil`: o sublinhado do título e da chamada final, o negrito do texto,
  * os números de "Como funciona" e a seta da nota da autora até o retrato. O itálico do texto vira marca-texto. Tudo é
  * enfeite: sem JavaScript, ou com menos movimento, o conteúdo e a ordem são os mesmos.
  */
@@ -53,20 +53,17 @@ export function AboutView({
       <PencilMarks />
       <section className={styles.about} aria-labelledby="sobre-titulo">
         <h1 id="sobre-titulo" className={styles.title} data-about="presentation">
-          <span
-            className={styles.titleInk}
-            data-pencil="underline"
-            data-pencil-lines="last"
-            data-pencil-delay={title.total}
-          >
+          <span className={styles.titleInk} data-pencil="underline" data-pencil-lines="last">
             {title.words.map((word, i) => (
               <span key={i}>
                 {i > 0 && ' '}
                 <span
                   className={styles.word}
+                  data-pen-word=""
                   style={{ '--d': `${word.delay}ms`, '--t': `${word.duration}ms` } as CSSProperties}
                 >
-                  {word.text}
+                  <span className={styles.ink}>{word.text}</span>
+                  <span className={styles.tip} aria-hidden="true" />
                 </span>
               </span>
             ))}
@@ -92,11 +89,7 @@ export function AboutView({
           <h2>{AUTHOR.name}</h2>
           {content.bio !== '' && (
             <p className={styles.bio}>
-              <span
-                data-pencil="arrow"
-                data-pencil-to="[data-about-portrait]"
-                data-pencil-delay={title.total}
-              >
+              <span data-pencil="arrow" data-pencil-to="[data-about-portrait]">
                 {content.bio}
               </span>
             </p>
@@ -145,9 +138,7 @@ export function AboutView({
             {content.howItWorks.steps.map((step, i) => (
               <li key={i} className={styles.step}>
                 <span className={styles.n} aria-hidden="true">
-                  <span data-pencil="circle" data-pencil-delay={i * 180}>
-                    {i + 1}
-                  </span>
+                  <span data-pencil="circle">{i + 1}</span>
                 </span>
                 <h3>{step.title}</h3>
                 <p>{step.text}</p>

@@ -141,8 +141,11 @@ function smooth(points: readonly (readonly [number, number])[]): string {
   return d;
 }
 
-/** Ritmo da escrita do título: milissegundos por letra, e uma pausa curta entre as palavras. */
-export const TITLE_PACE = { perChar: 55, gap: 70, start: 250 } as const;
+/**
+ * Ritmo da escrita do título: milissegundos por letra e uma pausa curta entre as palavras (a mão levanta o lápis). A
+ * contagem começa quando `PencilMarks` dá a partida, com a página já desenhada, e não no carregamento.
+ */
+export const TITLE_PACE = { perChar: 55, gap: 70, start: 0 } as const;
 
 export type TitleWord = { text: string; delay: number; duration: number };
 
@@ -165,6 +168,25 @@ export function titleWords(title: string): { words: TitleWord[]; total: number }
     return word;
   });
   return { words, total: Math.round(t) };
+}
+
+/**
+ * Ritmo dos traços, na ordem da leitura: o próximo começa quando o anterior chega a `overlap` da duração, mais um
+ * respiro (`gap`); com fila, tudo anda a `hurry` da velocidade normal. O sublinhado demora conforme o comprimento.
+ */
+export const PEN = {
+  gap: 60,
+  overlap: 0.6,
+  hurry: 0.6,
+  circle: 560,
+  arrow: 700,
+  mark: 620,
+} as const;
+
+/** Duração de um traço em milissegundos (`width` = comprimento do sublinhado, em px). */
+export function strokeMs(kind: 'underline' | 'circle' | 'arrow' | 'mark', width = 0): number {
+  if (kind === 'underline') return Math.round(Math.min(800, 320 + Math.max(0, width) * 1.2));
+  return PEN[kind];
 }
 
 /** Destaque curto (até duas palavras e 16 letras) ganha círculo; o resto, sublinhado. */
