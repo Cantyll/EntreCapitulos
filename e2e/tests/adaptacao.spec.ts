@@ -30,12 +30,18 @@ async function noHorizontalScroll(page: Page, label: string) {
 test.describe('adaptação a telas', () => {
   test('a fita de capítulos é só desenho; as sessões abrem pelas pílulas', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
+
+    // Na home ("A página aberta") a fita fica no pé da página da esquerda, sem pílulas: as sessões abrem pelo sumário.
     await page.goto('/');
-    const pills = page.getByRole('list', { name: 'Sessões da fita' });
-    await expect(pills).toBeVisible();
-    // Nenhum segmento de capítulo é link: eram alvos de 10x16px.
+    await expect(page.getByRole('list', { name: 'Legenda da fita' })).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Sessões da fita' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: /^Capítulo \d+, sessão \d+$/ })).toHaveCount(0);
 
+    // Na lateral da sessão, a fita compacta leva às sessões pelas pílulas.
+    await page.goto(sessionPath(WORLD.readingSlug, WORLD.sessions.public.number));
+    const pills = page.getByRole('list', { name: 'Sessões da fita' });
+    await expect(pills).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Capítulo \d+, sessão \d+$/ })).toHaveCount(0);
     const links = pills.getByRole('link');
     expect(await links.count()).toBeGreaterThan(0);
     for (const link of await links.all()) {
@@ -45,12 +51,7 @@ test.describe('adaptação a telas', () => {
       );
     }
     await links.first().click();
-    await expect(page).toHaveURL(new RegExp(`${SEED_BOOK}/sessoes/\\d+$`));
-
-    // A fita compacta da lateral da sessão também.
-    await page.goto(sessionPath(WORLD.readingSlug, WORLD.sessions.public.number));
-    await expect(page.getByRole('list', { name: 'Sessões da fita' })).toBeVisible();
-    await expect(page.getByRole('link', { name: /^Capítulo \d+, sessão \d+$/ })).toHaveCount(0);
+    await expect(page).toHaveURL(new RegExp(`/livros/${WORLD.readingSlug}/sessoes/\\d+$`));
   });
 
   test('Membros: cartões no iPad deitado, tabela no computador, cargos embaixo da lista', async ({
