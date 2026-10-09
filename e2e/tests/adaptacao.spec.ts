@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 
 import { expect, test } from '../support/fixtures';
+import { untilHydrated } from '../support/hydration';
 import { createAdmin } from '../support/users';
 import { WORLD, sessionPath } from '../support/world';
 
@@ -98,9 +99,13 @@ test.describe('adaptação a telas', () => {
     const text = page.locator('[data-editor-root] > div').first();
     const options = page.getByRole('complementary', { name: 'Opções da sessão' });
 
+    // "Carregando o editor…" some quando o editor fica pronto, e a coluna encolhe: medir antes dava uma sobreposição falsa.
+    const loading = page.getByText('Carregando o editor…');
+
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.goto('/painel/sessoes/nova');
     await expect(options).toBeVisible();
+    await expect(loading).toBeHidden();
     const textBox = await box(text);
     expect(textBox.width).toBeGreaterThanOrEqual(600);
     expect((await box(options)).y).toBeGreaterThanOrEqual(textBox.y + textBox.height);
@@ -110,6 +115,7 @@ test.describe('adaptação a telas', () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/painel/sessoes/nova');
     await expect(options).toBeVisible();
+    await expect(loading).toBeHidden();
     const wide = await box(text);
     expect((await box(options)).x).toBeGreaterThanOrEqual(wide.x + wide.width);
   });
@@ -137,5 +143,168 @@ test.describe('adaptação a telas', () => {
     await expect
       .poll(async () => (await box(panel.locator('[data-admin-topbar]'))).y)
       .toBeLessThan(0);
+  });
+});
+
+/*
+ * Segunda passada (adapt): larguras médias, tela de 2560px, faixas que rolam de lado, impressão e alto contraste.
+ */
+test.describe('adaptação a telas: segunda passada', () => {
+  test('livro entre 761 e 1020px: a capa cabe na coluna e não cobre o título', async ({ page }) => {
+    for (const width of [800, 900, 1020]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(SEED_BOOK);
+      const cover = await box(page.getByRole('img', { name: /^Capa de / }).first());
+      const title = await box(page.getByRole('heading', { level: 1 }));
+      expect(cover.x + cover.width, `capa sobre o título em ${width}px`).toBeLessThanOrEqual(
+        title.x,
+      );
+      await noHorizontalScroll(page, `livro ${width}`);
+    }
+  });
+
+  test('Livros do painel: cartões com o editar à vista no celular, tabela no computador', async ({
+    openAs,
+  }) => {
+    test.slow();
+    const { page } = await openAs(await createAdmin());
+    const list = page.locator('[data-tour="books-list"]:visible');
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/painel/livros');
+    await expect(list).toHaveCount(1);
+    await expect(list.getByRole('table')).toHaveCount(0);
+    const edits = list.getByRole('link', { name: /^Editar / });
+    expect(await edits.count()).toBeGreaterThan(0);
+    for (const edit of (await edits.all()).slice(0, 5)) {
+      const { x, width } = await box(edit);
+      expect(x + width, 'editar fora da tela').toBeLessThanOrEqual(390);
+    }
+    await noHorizontalScroll(page, 'livros 390');
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/painel/livros');
+    await expect(list.getByRole('table')).toBeVisible();
+    // A tabela cabe na lista, sem rolar de lado (uma palavra enorme no título quebra).
+    expect(await list.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  });
+
+  test('menu no celular: o item atual aparece inteiro e a borda esfumada avisa que há mais', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const nav = page.getByRole('navigation', { name: 'Principal' });
+
+    // "Sobre o clube" é o último item: antes ficava cortado na borda, sem aviso.
+    await page.goto('/sobre');
+    const current = nav.locator('[aria-current="page"]');
+    await expect(nav).toHaveAttribute('data-fade', 'start');
+    let navBox = await box(nav);
+    let item = await box(current);
+    expect(item.x).toBeGreaterThanOrEqual(navBox.x);
+    expect(item.x + item.width).toBeLessThanOrEqual(navBox.x + navBox.width);
+
+    // Na página do livro sobra menu à direita; o item que recebe o foco sai do esfumado.
+    await page.goto(SEED_BOOK);
+    await expect(nav).toHaveAttribute('data-fade', /end|both/);
+    const last = nav.getByRole('link', { name: 'Sobre o clube' });
+    await last.focus();
+    await expect(nav).toHaveAttribute('data-fade', 'start');
+    // No fim da faixa não há esfumado à direita: o item inteiro dentro dela basta.
+    navBox = await box(nav);
+    item = await box(last);
+    expect(item.x + item.width).toBeLessThanOrEqual(navBox.x + navBox.width);
+  });
+
+  test('título da sessão: cresce com o texto e o Enter vai para o relato', async ({ openAs }) => {
+    test.slow();
+    const { page } = await openAs(await createAdmin());
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/painel/sessoes/nova');
+    const title = page.getByLabel('Título da sessão');
+    await untilHydrated(title);
+    // Com o editor pronto: antes disso o título está desativado e o React ainda pode refazê-lo.
+    await expect(title).toBeEnabled();
+    const oneLine = (await box(title)).height;
+
+    // Só o valor do DOM, sem passar pelo React: digitar criaria um rascunho (estado global do banco).
+    await title.evaluate((el: HTMLTextAreaElement) => {
+      el.value = 'Um título bem comprido para ver a caixa crescer em vez de rolar escondida';
+    });
+    // A largura muda (girar o aparelho): onde field-sizing não existe, o hook mede de novo.
+    await page.setViewportSize({ width: 380, height: 844 });
+    await expect.poll(async () => (await box(title)).height).toBeGreaterThan(oneLine * 2);
+    expect(await title.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await title.evaluate((el: HTMLTextAreaElement) => {
+      el.value = '';
+    });
+
+    await title.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('textbox', { name: 'Relato da sessão' })).toBeFocused();
+    await expect(title).toHaveValue('');
+  });
+
+  test('tela de 2560px: o "?" e o sino param onde o conteúdo do painel para', async ({
+    openAs,
+  }) => {
+    const { page } = await openAs(await createAdmin());
+    await page.setViewportSize({ width: 2560, height: 1200 });
+    await page.goto('/painel/sessoes');
+    const bell = await box(
+      page.locator('[data-admin-topbar]').getByRole('link', { name: /^Notificações/ }),
+    );
+    const main = await box(page.locator('main#conteudo'));
+    // O conteúdo termina 34px antes da borda do <main> (o preenchimento dele).
+    expect(Math.abs(bell.x + bell.width - (main.x + main.width - 34))).toBeLessThanOrEqual(2);
+  });
+
+  test('impressão: sai o texto, sem menus nem controles, e o trecho coberto vira aviso', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(sessionPath(WORLD.readingSlug, WORLD.sessions.public.number));
+    await expect(page.locator('[inert]').first()).toBeAttached();
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.getByRole('banner')).toBeHidden();
+    await expect(page.getByRole('link', { name: 'Pular para o conteúdo' })).toBeHidden();
+    await expect(page.getByRole('link', { name: /^Voltar/ })).toBeHidden();
+    await expect(page.getByRole('complementary', { name: 'Sobre o livro' })).toBeHidden();
+    await expect(page.getByRole('navigation', { name: 'Outras sessões' })).toBeHidden();
+    await expect(page.locator('[inert]').first()).toBeHidden();
+    await expect(page.getByText('Trecho coberto pelo filtro de spoiler').first()).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    // Na tela, o aviso de impressão não aparece (nem para o leitor de tela).
+    await page.emulateMedia({ media: 'screen' });
+    await expect(page.getByText('Trecho coberto pelo filtro de spoiler').first()).toBeHidden();
+  });
+
+  test('alto contraste: item atual, aba e interruptor continuam à vista', async ({
+    openAs,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'só o Chromium emula as cores forçadas');
+    const { page } = await openAs(await createAdmin());
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.emulateMedia({ forcedColors: 'active' });
+    const differsFromPage = (el: Element) =>
+      getComputedStyle(el).backgroundColor !== getComputedStyle(document.body).backgroundColor;
+
+    await page.goto('/sessoes');
+    const current = page
+      .getByRole('navigation', { name: 'Principal' })
+      .locator('[aria-current="page"]');
+    expect(await current.evaluate(differsFromPage)).toBe(true);
+    expect(await current.evaluate((el) => getComputedStyle(el).forcedColorAdjust)).toBe('none');
+
+    await page.goto('/painel/sessoes/nova');
+    const tab = page.getByRole('tab', { selected: true });
+    expect(await tab.evaluate(differsFromPage)).toBe(true);
+    const toggle = page.getByRole('switch', { name: 'Abrir comentários' });
+    expect(await toggle.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe('solid');
+    expect(await toggle.evaluate((el) => getComputedStyle(el, '::after').backgroundColor)).not.toBe(
+      await toggle.evaluate((el) => getComputedStyle(el).backgroundColor),
+    );
   });
 });
