@@ -7,6 +7,7 @@ import {
   markKind,
   seededRng,
   seedFrom,
+  strokeMs,
   titleWords,
   underlinePath,
 } from './pencil';
@@ -108,5 +109,19 @@ describe('ênfases do texto padrão', () => {
         : [],
     );
     expect(marked).toEqual(SOBRE.emphasis.map((e) => `${e.mark}:${e.text}`));
+  });
+});
+
+describe('strokeMs', () => {
+  it('sublinhado demora conforme o comprimento, até um teto', () => {
+    expect(strokeMs('underline', 0)).toBe(320);
+    expect(strokeMs('underline', 100)).toBeGreaterThan(strokeMs('underline', 10));
+    expect(strokeMs('underline', 5000)).toBe(800);
+  });
+
+  it('círculo, seta e marca-texto têm duração fixa', () => {
+    expect(strokeMs('circle')).toBe(560);
+    expect(strokeMs('arrow')).toBe(700);
+    expect(strokeMs('mark')).toBe(620);
   });
 });
