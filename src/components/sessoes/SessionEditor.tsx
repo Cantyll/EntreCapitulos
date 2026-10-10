@@ -45,7 +45,7 @@ export type EditorSession = {
   status: 'draft' | 'published';
   /** `updated_at` como texto opaco; `null` enquanto a sessão não existe no banco. */
   updatedAt: string | null;
-  commentCount: number;
+  liveCommentCount: number;
 };
 
 type Dialog = null | 'publish' | 'unpublish' | 'delete';
@@ -336,7 +336,7 @@ export function SessionEditor({
 
   const saving = state.status === 'saving';
   const hasUnsent = state.dirty;
-  const canUnpublish = published && state.token !== null && session.commentCount === 0;
+  const canUnpublish = published && state.token !== null && session.liveCommentCount === 0;
 
   return (
     <div className={styles.grid} data-editor-root data-unsaved={hasUnsent ? 'true' : undefined}>
@@ -616,10 +616,10 @@ export function SessionEditor({
                     Voltar para rascunho
                   </Button>
                 ) : (
-                  session.commentCount > 0 && (
+                  session.liveCommentCount > 0 && (
                     <p className={styles.muted}>
-                      Esta sessão já tem comentários e não volta para rascunho. Para encerrar a
-                      discussão, feche os comentários abaixo.
+                      Esta sessão tem comentários aprovados ou esperando moderação e não volta para
+                      rascunho. Remova-os em Comentários antes; os já removidos não impedem.
                     </p>
                   )
                 )}

@@ -147,6 +147,7 @@ colunas "anon", "authenticated" e "PUBLIC" dizem quem pode executar pela API.
 | `publish_session(p_session_id uuid)` | não | não | `"" (vazio)` | não | sim | não |
 | `publish_site_page(p_slug text, p_expected_updated_at text)` | não | sim | `"" (vazio)` | não | sim | não |
 | `purge_account_deletions()` | não | não | `"" (vazio)` | não | não | não |
+| `reading_sessions_guard_delete()` | sim | não | `"" (vazio)` | não | não | não |
 | `reading_sessions_set_published_at()` | sim | não | `"" (vazio)` | não | não | não |
 | `restore_site_page_revision(p_slug text, p_revision_id bigint, p_expected_updated_at text)` | não | sim | `"" (vazio)` | não | sim | não |
 | `retract_comment(p_comment_id uuid)` | não | sim | `"" (vazio)` | não | sim | não |

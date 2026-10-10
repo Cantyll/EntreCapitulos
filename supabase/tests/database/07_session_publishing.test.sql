@@ -113,17 +113,65 @@ select lives_ok($$select public.publish_session('20000000-0000-4000-8000-0000000
 reset role;
 select is((select published_at from public.reading_sessions where number = 2), (select published_at from before_unpublish), 'the original published_at survives');
 
--- Comments block the way back to draft, whatever their status. No signed-in user while seeding
--- the comment (the profile_incomplete trigger only judges a signed-in user).
+-- Live comments (pending or approved, not under a removed parent) block the way back to draft; removed
+-- ones do not. No signed-in user while seeding the comments (the profile_incomplete trigger only judges
+-- a signed-in user).
 select set_config('request.jwt.claims', '', true);
-insert into public.comments (session_id, author_id, body, status) values
-  ('20000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-0000000000b1', 'Oi', 'removed');
+insert into public.comments (id, session_id, author_id, body, status) values
+  ('30000000-0000-4000-8000-000000000011', '20000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-0000000000b1', 'Pendente', 'pending');
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a1", "role": "authenticated"}', true);
 select throws_ok($$select public.unpublish_session('20000000-0000-4000-8000-000000000002')$$, 'P0001',
-  'session_has_comments: a session with comments cannot go back to draft', 'a session with comments stays published');
+  'session_has_comments: a session with comments cannot go back to draft', 'a pending comment keeps the session published');
 reset role;
 select is((select status from public.reading_sessions where number = 2), 'published', 'the session is still published');
+
+update public.comments set status = 'approved' where id = '30000000-0000-4000-8000-000000000011';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a1", "role": "authenticated"}', true);
+select throws_ok($$select public.unpublish_session('20000000-0000-4000-8000-000000000002')$$, 'P0001',
+  'session_has_comments: a session with comments cannot go back to draft', 'an approved comment keeps the session published');
+reset role;
+
+-- A removed comment does not count; neither does a reply left under a removed parent (it is invisible).
+select set_config('request.jwt.claims', '', true);
+insert into public.comments (id, session_id, author_id, parent_id, body, status) values
+  ('30000000-0000-4000-8000-000000000012', '20000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-0000000000b1',
+   '30000000-0000-4000-8000-000000000011', 'Resposta', 'approved');
+update public.comments set status = 'removed' where id = '30000000-0000-4000-8000-000000000011';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a1", "role": "authenticated"}', true);
+select lives_ok($$select public.unpublish_session('20000000-0000-4000-8000-000000000002')$$,
+  'removed comments (and replies hidden under them) do not keep the session published');
+reset role;
+select is((select status from public.reading_sessions where number = 2), 'draft', 'the session is a draft again');
+
+-- Deleting the draft: a live comment refuses it (23503, like the old RESTRICT); with only hidden ones it
+-- goes away together with them, and nobody but the foreign key can delete comments.
+select is((select proisstrict from pg_proc where proname = 'reading_sessions_guard_delete'), false, 'the guard trigger function exists');
+select function_privs_are('public', 'reading_sessions_guard_delete', array[]::text[], 'authenticated', array[]::text[],
+  'nobody calls the guard trigger function directly');
+select is((select prosecdef from pg_proc where proname = 'reading_sessions_guard_delete'), false, 'the guard is security invoker');
+select set_config('request.jwt.claims', '', true);
+update public.reading_sessions set status = 'published' where number = 2;
+insert into public.comments (id, session_id, author_id, body, status) values
+  ('30000000-0000-4000-8000-000000000013', '20000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-0000000000b1', 'Ainda aqui', 'pending');
+update public.reading_sessions set status = 'draft' where number = 2;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a1", "role": "authenticated"}', true);
+select throws_ok($$delete from public.reading_sessions where id = '20000000-0000-4000-8000-000000000002'$$,
+  '23503', 'has_comments: a session with comments cannot be deleted', 'a live comment refuses the deletion');
+reset role;
+update public.comments set status = 'removed' where id = '30000000-0000-4000-8000-000000000013';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-4000-8000-0000000000a1", "role": "authenticated"}', true);
+select lives_ok($$delete from public.reading_sessions where id = '20000000-0000-4000-8000-000000000002'$$,
+  'the administrator deletes a draft that only has removed comments');
+reset role;
+select is((select count(*)::int from public.comments where session_id = '20000000-0000-4000-8000-000000000002'), 0,
+  'the hidden comments went away with the session');
+select is((select approved_comment_count from public.profiles where id = '00000000-0000-4000-8000-0000000000b1'), 0,
+  'the approved counter stays right after the cascade');
 
 select * from finish();
 rollback;

@@ -208,6 +208,34 @@ test.describe.serial('painel da administração', () => {
     ).toBe('1');
   });
 
+  test('o erro do diálogo na lista de Sessões quebra linha dentro da caixa', async ({ openAs }) => {
+    // A tabela põe `white-space: nowrap` nas ações da linha e o diálogo é filho delas: sem `white-space: normal` no
+    // diálogo a mensagem de erro ficava numa linha só e a caixa ganhava rolagem horizontal.
+    const sessionId = editUrl.split('/').pop()!;
+    const { page } = await openAs(admin);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/painel/sessoes');
+    await page.getByRole('button', { name: 'Voltar para rascunho' }).first().click();
+    // Um comentário em análise chega depois de a lista abrir: o botão aparece e o servidor recusa.
+    sql(
+      `insert into public.comments (session_id, author_id, body, status) values (${lit(sessionId)}, ${lit(admin.id)}, 'Para o diálogo', 'pending');`,
+    );
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Voltar para rascunho' }).click();
+    const error = dialog.getByRole('alert');
+    await expect(error).toContainText('comentários aprovados');
+    const fits = await dialog.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const message = el.querySelector('[role="alert"]')!.getBoundingClientRect();
+      return {
+        noScroll: el.scrollWidth <= el.clientWidth,
+        inside: message.left >= box.left && message.right <= box.right,
+      };
+    });
+    expect(fits).toEqual({ noScroll: true, inside: true });
+    sql(`update public.comments set status = 'removed' where session_id = ${lit(sessionId)};`);
+  });
+
   test('voltar para rascunho é recusado quando a sessão já tem comentários', async ({ openAs }) => {
     // A administração abre a sessão ANTES do primeiro comentário: a tela ainda oferece o botão, e é o
     // servidor que recusa (a tela só esconde o botão quando já sabe dos comentários).
@@ -230,11 +258,15 @@ test.describe.serial('painel da administração', () => {
 
     await back.click();
     await page.getByRole('dialog').getByRole('button', { name: 'Voltar para rascunho' }).click();
-    await expect(page.getByRole('alert').filter({ hasText: 'já tem comentários' })).toBeVisible();
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'tem comentários aprovados' }),
+    ).toBeVisible();
 
     // Recarregando, a tela já sabe: sem botão e com a explicação.
     await page.reload();
-    await expect(page.getByText(/já tem comentários e não volta para rascunho/)).toBeVisible();
+    await expect(
+      page.getByText(/tem comentários aprovados ou esperando moderação e não volta/),
+    ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Voltar para rascunho' })).toHaveCount(0);
   });
 
@@ -298,5 +330,29 @@ test.describe.serial('painel da administração', () => {
     await second.getByRole('button', { name: 'Carregar a versão do servidor' }).click();
     await expect(second.getByLabel('Título da sessão')).toHaveValue('Título pela primeira aba');
     await expect(second.getByText('Esta sessão foi alterada em outro lugar')).toHaveCount(0);
+  });
+
+  test('comentário removido não segura a sessão: ela volta para rascunho e pode ser excluída', async ({
+    openAs,
+  }) => {
+    // A moderação (ou a própria pessoa) removeu o único comentário: só resta a linha escondida.
+    sql(
+      `update public.comments set status = 'removed' where session_id = ${lit(editUrl.split('/').pop()!)};`,
+    );
+    const { page } = await openAs(admin);
+    await page.goto(editUrl);
+    await page.getByRole('button', { name: 'Voltar para rascunho' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Voltar para rascunho' }).click();
+    await expect(page).toHaveURL(/\/painel\/sessoes(\?.*)?$/);
+
+    await page.goto(editUrl);
+    await page.getByRole('button', { name: 'Excluir rascunho' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Excluir de vez' }).click();
+    await expect(page).toHaveURL(/\/painel\/sessoes(\?.*)?$/);
+    expect(
+      sql(
+        `select count(*) from public.reading_sessions where id = ${lit(editUrl.split('/').pop()!)};`,
+      ),
+    ).toBe('0');
   });
 });

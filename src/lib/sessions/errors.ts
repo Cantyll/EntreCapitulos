@@ -10,12 +10,12 @@ export const SESSION_MESSAGES = {
   book_not_found: 'O livro desta sessão não foi encontrado.',
   invalid_state: 'A sessão já mudou de estado em outro lugar. Atualize a página.',
   session_has_comments:
-    'Esta sessão já tem comentários e não pode voltar para rascunho. Para tirar a discussão do ar, feche os comentários.',
+    'Esta sessão tem comentários aprovados ou esperando moderação e não pode voltar para rascunho. Remova esses comentários em Comentários antes. Os já removidos não impedem.',
   chapter_beyond_total: 'A sessão passa do total de capítulos do livro. Corrija o total do livro.',
   overlap: 'Esses capítulos já pertencem a outra sessão.',
   number_taken: 'Outra sessão acabou de ficar com esse número. Tente de novo.',
   has_comments:
-    'Esta sessão tem comentários e não pode ser excluída. Feche os comentários se quiser encerrar a discussão.',
+    'Esta sessão tem comentários aprovados ou esperando moderação e não pode ser excluída. Os já removidos não impedem.',
   migration_pending: 'Falta aplicar a atualização do banco (Database deploy). Veja o README.',
   generic: 'Não foi possível salvar agora. Tente de novo em instantes.',
 } as const;
