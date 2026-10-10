@@ -208,6 +208,34 @@ test.describe.serial('painel da administração', () => {
     ).toBe('1');
   });
 
+  test('o erro do diálogo na lista de Sessões quebra linha dentro da caixa', async ({ openAs }) => {
+    // A tabela põe `white-space: nowrap` nas ações da linha e o diálogo é filho delas: sem `white-space: normal` no
+    // diálogo a mensagem de erro ficava numa linha só e a caixa ganhava rolagem horizontal.
+    const sessionId = editUrl.split('/').pop()!;
+    const { page } = await openAs(admin);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/painel/sessoes');
+    await page.getByRole('button', { name: 'Voltar para rascunho' }).first().click();
+    // Um comentário em análise chega depois de a lista abrir: o botão aparece e o servidor recusa.
+    sql(
+      `insert into public.comments (session_id, author_id, body, status) values (${lit(sessionId)}, ${lit(admin.id)}, 'Para o diálogo', 'pending');`,
+    );
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Voltar para rascunho' }).click();
+    const error = dialog.getByRole('alert');
+    await expect(error).toContainText('comentários aprovados');
+    const fits = await dialog.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const message = el.querySelector('[role="alert"]')!.getBoundingClientRect();
+      return {
+        noScroll: el.scrollWidth <= el.clientWidth,
+        inside: message.left >= box.left && message.right <= box.right,
+      };
+    });
+    expect(fits).toEqual({ noScroll: true, inside: true });
+    sql(`update public.comments set status = 'removed' where session_id = ${lit(sessionId)};`);
+  });
+
   test('voltar para rascunho é recusado quando a sessão já tem comentários', async ({ openAs }) => {
     // A administração abre a sessão ANTES do primeiro comentário: a tela ainda oferece o botão, e é o
     // servidor que recusa (a tela só esconde o botão quando já sabe dos comentários).

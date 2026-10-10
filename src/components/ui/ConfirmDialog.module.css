@@ -9,6 +9,9 @@ dialog.dialog {
   border-radius: var(--r);
   background: var(--surface);
   color: var(--ink);
+  /* O diálogo é filho de quem o renderiza e herda dele: a tabela de Sessões põe `nowrap` nas ações da linha, e sem isto
+     a mensagem de erro ficava numa linha só e a caixa ganhava rolagem horizontal. */
+  white-space: normal;
   box-shadow: var(--shadow);
   /* Entra subindo 8px e acendendo (240ms); sai mais depressa (160ms). A saída precisa do `display` e do `overlay`
      discretos (Safari 17.4 ou mais novo); antes disso o diálogo só some, como sempre. */
