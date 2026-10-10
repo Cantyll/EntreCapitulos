@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Instrument_Sans, Newsreader } from 'next/font/google';
 import type { ReactNode } from 'react';
 
+import { NavigationProgress } from '@/components/ui/NavigationProgress';
 import { BRAND_COLORS, SITE_DESCRIPTION, SITE_NAME } from '@/lib/brand';
 import { tokensToStyle } from '@/lib/theme';
 import { getSiteTheme } from '@/lib/theme/server';
@@ -65,7 +66,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       className={`${newsreader.variable} ${instrumentSans.variable}`}
       style={theme ? tokensToStyle(theme) : undefined}
     >
-      <body>{children}</body>
+      <body>
+        <NavigationProgress />
+        {children}
+      </body>
     </html>
   );
 }

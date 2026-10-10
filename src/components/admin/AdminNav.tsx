@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { Icon } from '@/components/ui/Icon';
+import { LinkPending } from '@/components/ui/LinkPending';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { cx } from '@/lib/cx';
 import type { Role } from '@/lib/auth/roles';
@@ -28,6 +29,7 @@ export function AdminNav({ pendingComments, role }: { pendingComments: number; r
           >
             <Icon name={item.icon} />
             {item.label}
+            <LinkPending />
             {item.pendingBadge && pendingComments > 0 && (
               <span className={styles.count}>
                 {pendingComments}

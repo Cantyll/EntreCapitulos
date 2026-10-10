@@ -72,8 +72,13 @@
   font-weight: 600;
 }
 
-.on .pill {
+.on .pill,
+.tab:has([data-pending='true']) .pill {
   background: var(--rose-tint);
+}
+
+.tab:has([data-pending='true']) {
+  color: var(--rose-deep);
 }
 
 .tab:active .pill {
@@ -116,6 +121,7 @@
   transition: background 0.15s;
 }
 
+.create:has([data-pending='true']) .createIcon,
 .create:active .createIcon {
   background: var(--rose-deep);
 }
@@ -226,6 +232,7 @@
   font-size: 15px;
 }
 
+.sheetLink:has([data-pending='true']),
 .sheetLink:active {
   background: var(--soft);
 }

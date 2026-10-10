@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { useTour } from '@/components/tour/TourProvider';
 import { IconButton } from '@/components/ui/IconButton';
+import { LinkPending } from '@/components/ui/LinkPending';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import type { Role } from '@/lib/auth/roles';
 import { cx } from '@/lib/cx';
@@ -71,6 +72,7 @@ export function AdminTabBar({ pendingComments, role }: { pendingComments: number
             )}
           </span>
           <span>{item.label}</span>
+          <LinkPending />
         </Link>
       </li>
     );
@@ -88,6 +90,7 @@ export function AdminTabBar({ pendingComments, role }: { pendingComments: number
                   <Icon name="pen" size="lg" />
                 </span>
                 <span>Nova sessão</span>
+                <LinkPending />
               </Link>
             </li>
           )}
@@ -139,6 +142,7 @@ export function AdminTabBar({ pendingComments, role }: { pendingComments: number
                   >
                     <Icon name={item.icon} />
                     {item.label}
+                    <LinkPending />
                   </Link>
                 </li>
               );

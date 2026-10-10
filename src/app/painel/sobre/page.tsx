@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 
 import { AdminPage } from '@/components/admin/AdminPage';
+import { PanelSkeleton } from '@/components/admin/PanelSkeleton';
 import { AboutEditor } from '@/components/sobre/editor/AboutEditor';
 import { requireRole } from '@/lib/auth/session';
 import { aboutFacts } from '@/lib/about';
@@ -19,6 +21,21 @@ export const metadata: Metadata = { title: 'Página Sobre' };
 export default async function AboutAdminPage() {
   await requireRole('admin');
 
+  // Esqueleto: Suspense da própria página, depois do `requireRole` (ver a página de Livros).
+  return (
+    <Suspense
+      fallback={
+        <AdminPage back={{ href: '/painel', label: 'Voltar para a Visão geral' }}>
+          <PanelSkeleton variant="editor" />
+        </AdminPage>
+      }
+    >
+      <AboutContent />
+    </Suspense>
+  );
+}
+
+async function AboutContent() {
   const supabase = await createClient();
   const [state, shelf] = await Promise.all([loadAboutEditorState(supabase), loadShelf()]);
 

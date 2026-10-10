@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { LinkPending } from '@/components/ui/LinkPending';
 import { ScrollStrip } from '@/components/ui/ScrollStrip';
 import { cx } from '@/lib/cx';
 import { getPublicNav } from '@/lib/navigation';
@@ -24,6 +25,7 @@ export function SiteNav({ currentBookSlug }: { currentBookSlug: string | null })
             aria-current={active ? 'page' : undefined}
           >
             {item.label}
+            <LinkPending />
           </Link>
         );
       })}

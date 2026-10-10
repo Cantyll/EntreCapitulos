@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ComponentProps } from 'react';
 
+import { LinkPending } from '@/components/ui/LinkPending';
 import { cx } from '@/lib/cx';
 
 import styles from './Button.module.css';
@@ -57,9 +58,15 @@ export function ButtonLink({
   block,
   danger,
   className,
+  children,
   ...rest
 }: ButtonStyleProps & ComponentProps<typeof Link>) {
-  return <Link className={buttonClass({ variant, size, block, danger, className })} {...rest} />;
+  return (
+    <Link className={buttonClass({ variant, size, block, danger, className })} {...rest}>
+      {children}
+      <LinkPending />
+    </Link>
+  );
 }
 
 /** Link com cara de botão para um ARQUIVO (download) ou endereço fora das páginas: `<a>` comum, sem o roteador. */

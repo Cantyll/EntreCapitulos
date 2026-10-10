@@ -12,7 +12,8 @@
   transition:
     background var(--dur-press),
     border-color var(--dur-press),
-    transform var(--dur-press) var(--ease-out);
+    transform var(--dur-press) var(--ease-out),
+    opacity var(--dur-press);
   white-space: nowrap;
   /* Nunca mais largo que a coluna: um rótulo com título de livro longo é cortado com reticências (BackButton). */
   max-width: 100%;
@@ -77,6 +78,12 @@
 
 .ghost:active {
   border-color: var(--rose);
+}
+
+/* Link com cara de botão tocado, esperando a página nova: cede como se estivesse apertado e esmaece um pouco. */
+.btn:has([data-pending='true']) {
+  transform: scale(0.97);
+  opacity: 0.8;
 }
 
 /* Retorno de toque: o botão cede um pouco sob o dedo (no iPhone o dedo cobre a troca de cor). */
