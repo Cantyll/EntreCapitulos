@@ -669,7 +669,7 @@ describe('unpublishSession e deleteDraftSession', () => {
     }));
     const refused = await unpublishSession(supabase, row.id);
     expect(refused).toEqual({ ok: false, message: SESSION_MESSAGES.session_has_comments });
-    expect(SESSION_MESSAGES.session_has_comments).toContain('feche os comentários');
+    expect(SESSION_MESSAGES.session_has_comments).toContain('Os já removidos não impedem');
     db.rpcHandlers.set('unpublish_session', () => ({
       data: null,
       error: { code: 'PGRST202', message: 'x' },

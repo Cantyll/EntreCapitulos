@@ -230,11 +230,15 @@ test.describe.serial('painel da administração', () => {
 
     await back.click();
     await page.getByRole('dialog').getByRole('button', { name: 'Voltar para rascunho' }).click();
-    await expect(page.getByRole('alert').filter({ hasText: 'já tem comentários' })).toBeVisible();
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'tem comentários aprovados' }),
+    ).toBeVisible();
 
     // Recarregando, a tela já sabe: sem botão e com a explicação.
     await page.reload();
-    await expect(page.getByText(/já tem comentários e não volta para rascunho/)).toBeVisible();
+    await expect(
+      page.getByText(/tem comentários aprovados ou esperando moderação e não volta/),
+    ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Voltar para rascunho' })).toHaveCount(0);
   });
 
@@ -298,5 +302,29 @@ test.describe.serial('painel da administração', () => {
     await second.getByRole('button', { name: 'Carregar a versão do servidor' }).click();
     await expect(second.getByLabel('Título da sessão')).toHaveValue('Título pela primeira aba');
     await expect(second.getByText('Esta sessão foi alterada em outro lugar')).toHaveCount(0);
+  });
+
+  test('comentário removido não segura a sessão: ela volta para rascunho e pode ser excluída', async ({
+    openAs,
+  }) => {
+    // A moderação (ou a própria pessoa) removeu o único comentário: só resta a linha escondida.
+    sql(
+      `update public.comments set status = 'removed' where session_id = ${lit(editUrl.split('/').pop()!)};`,
+    );
+    const { page } = await openAs(admin);
+    await page.goto(editUrl);
+    await page.getByRole('button', { name: 'Voltar para rascunho' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Voltar para rascunho' }).click();
+    await expect(page).toHaveURL(/\/painel\/sessoes(\?.*)?$/);
+
+    await page.goto(editUrl);
+    await page.getByRole('button', { name: 'Excluir rascunho' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Excluir de vez' }).click();
+    await expect(page).toHaveURL(/\/painel\/sessoes(\?.*)?$/);
+    expect(
+      sql(
+        `select count(*) from public.reading_sessions where id = ${lit(editUrl.split('/').pop()!)};`,
+      ),
+    ).toBe('0');
   });
 });

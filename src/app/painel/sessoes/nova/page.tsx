@@ -62,7 +62,7 @@ export default async function NewSessionPage({
             number: reopened.number,
             status: reopened.status,
             updatedAt: reopened.updatedAt,
-            commentCount: reopened.commentCount,
+            liveCommentCount: reopened.liveCommentCount,
           }}
           snapshot={reopened.snapshot}
           notes={reopened.notes}
@@ -142,7 +142,7 @@ export default async function NewSessionPage({
           number: context.nextNumber,
           status: 'draft',
           updatedAt: null,
-          commentCount: 0,
+          liveCommentCount: 0,
         }}
         snapshot={{
           title: '',
