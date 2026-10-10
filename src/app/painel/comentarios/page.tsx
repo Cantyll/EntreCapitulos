@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { AdminPage } from '@/components/admin/AdminPage';
+import { PanelSkeleton } from '@/components/admin/PanelSkeleton';
 import { InstallGate } from '@/components/install/InstallGate';
 import { ModerationBoard, type BoardItem } from '@/components/moderacao/ModerationBoard';
 import styles from '@/components/moderacao/moderation.module.css';
-import { ROLE_LABELS } from '@/lib/auth/roles';
+import { ROLE_LABELS, type Role } from '@/lib/auth/roles';
 import { requireRole } from '@/lib/auth/session';
 import { getModerationPage } from '@/lib/comments/admin-queries';
 import {
@@ -42,6 +44,27 @@ export default async function CommentsAdminPage({
   // A moderadora (`moderator`) também entra: é a única página do painel que ela abre.
   const user = await requireRole('staff');
 
+  // Esqueleto: Suspense da própria página, depois do `requireRole` (ver a página de Livros).
+  return (
+    <Suspense
+      fallback={
+        <AdminPage>
+          <PanelSkeleton />
+        </AdminPage>
+      }
+    >
+      <CommentsContent user={{ role: user.role }} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function CommentsContent({
+  user,
+  searchParams,
+}: {
+  user: { role: Role };
+  searchParams: PageProps<'/painel/comentarios'>['searchParams'];
+}) {
   const query = await searchParams;
   const tab = parseModerationTab(query.aba);
   const page = parsePageNumber(query.pagina);

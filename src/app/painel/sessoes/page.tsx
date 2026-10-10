@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 
 import { AdminPage } from '@/components/admin/AdminPage';
+import { PanelSkeleton } from '@/components/admin/PanelSkeleton';
 import { parseFilter, SessionsList } from '@/components/sessoes/SessionsList';
 import styles from '@/components/sessoes/sessoes.module.css';
 import { logFailure } from '@/lib/auth/log';
@@ -21,9 +23,27 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
+/*
+ * O esqueleto é um Suspense da própria página, depois do `requireRole`: o 403 de quem não tem papel sai antes de
+ * qualquer coisa ser enviada. Um `loading.tsx` aqui o transformaria em 200 (o esqueleto sai antes da checagem).
+ */
 export default async function SessionsAdminPage({ searchParams }: { searchParams: SearchParams }) {
   await requireRole('admin');
 
+  return (
+    <Suspense
+      fallback={
+        <AdminPage>
+          <PanelSkeleton />
+        </AdminPage>
+      }
+    >
+      <SessionsContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function SessionsContent({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const filter = parseFilter(one(params.filtro));
   const notice = SESSION_NOTICES.find((value) => value === one(params.aviso));

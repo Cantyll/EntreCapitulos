@@ -1,0 +1,53 @@
+/*
+ * A linha de lápis da navegação. Fica sobre o cabeçalho (acima de tudo, exceto diálogos) e dentro da área segura do
+ * aparelho. Só `transform` e `opacity` animam. `loading`: cresce devagar até 80% e espera; `done`: completa e some.
+ * A opacidade só sobe depois de 90 ms, para uma navegação instantânea não piscar a linha.
+ */
+.bar {
+  position: fixed;
+  top: var(--safe-top);
+  left: 0;
+  right: 0;
+  z-index: 70;
+  height: 2px;
+  background: var(--rose-deep);
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bar[data-state='loading'] {
+  opacity: 1;
+  transform: scaleX(0.8);
+  transition:
+    transform 7s cubic-bezier(0.1, 0.6, 0.2, 1),
+    opacity 120ms linear 90ms;
+}
+
+.bar[data-state='done'] {
+  opacity: 0;
+  transform: scaleX(1);
+  transition:
+    transform 160ms var(--ease-out),
+    opacity 240ms linear 120ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Sem crescer: a linha inteira esmaece para dentro e para fora. */
+  .bar[data-state='loading'] {
+    transform: none;
+    transition: opacity 120ms linear 90ms;
+  }
+
+  .bar[data-state='done'] {
+    transform: none;
+    transition: opacity 200ms linear;
+  }
+}
+
+@media (forced-colors: active) {
+  .bar {
+    background: Highlight;
+  }
+}

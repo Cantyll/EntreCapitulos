@@ -29,7 +29,8 @@
   }
 }
 
-.link.on {
+.link.on,
+.link:has([data-pending='true']) {
   background: var(--rose-tint);
   color: var(--rose-deep);
   font-weight: 500;
