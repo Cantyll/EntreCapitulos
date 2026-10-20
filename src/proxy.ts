@@ -8,6 +8,7 @@ import { panelUnavailableResponse } from '@/lib/auth/panel-unavailable';
 import { signInPath } from '@/lib/auth/safe-next';
 import type { Database } from '@/lib/supabase/database.types';
 import { getTurnstileSiteKey } from '@/lib/auth/features';
+import { isMaintenanceMode, maintenanceResponse } from '@/lib/maintenance';
 import { buildCsp, generateNonce, parseReportOnly, type CspHeader } from '@/lib/security/csp';
 import { getSupabaseEnv } from '@/lib/supabase/env';
 
@@ -29,6 +30,9 @@ import { getSupabaseEnv } from '@/lib/supabase/env';
  *    e o mesmo valor vai no cabeçalho da requisição, de onde o Next tira o nonce para os seus scripts: o
  *    nonce do cabeçalho nunca diverge do que o Next recebe. Se montar a política falhar, o site segue sem ela
  *    (e o log diz só o nome do erro): a CSP é uma proteção a mais e nunca derruba a navegação.
+ *
+ * 4. Com `MAINTENANCE_MODE=true` (standby, src/lib/maintenance.ts) responde a página de pausa em TODA rota, antes de
+ *    qualquer consulta ao Supabase.
  */
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -37,6 +41,13 @@ export async function proxy(request: NextRequest) {
   request.headers.set(PATH_HEADER, `${pathname}${search}`);
 
   const csp = applyCsp(request);
+
+  // Standby: nada abaixo roda (nem o Supabase é consultado). A CSP vai na resposta como em qualquer outra.
+  if (isMaintenanceMode(process.env.MAINTENANCE_MODE)) {
+    const response = maintenanceResponse();
+    if (csp) response.headers.set(csp.name, csp.value);
+    return response;
+  }
 
   const isPanel = pathname === '/painel' || pathname.startsWith('/painel/');
 
