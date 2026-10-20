@@ -445,3 +445,58 @@ O tour guiado do painel está descrito no README ("Tutorial do painel"). Aqui, o
 - **Fazer o cartão aparecer de novo para alguém (raro; só pelo SQL Editor, emergência):** `update public.profiles set tour_seen_version = 0 where id = '<uuid>';` (o uuid está no endereço do perfil em Painel → Membros). A função do banco nunca diminui o número; o SQL Editor contorna isso.
 - **Funcionalidade nova no painel:** o passo do tour e o `TOUR_VERSION` sobem juntos (README). O teste `tests/tour-targets.test.ts` falha se um passo apontar para um elemento que não existe.
 - **Ordem para aplicar a etapa 8k:** (1) **backup manual**; (2) **merge**; (3) **Database deploy com dry run**, com **exatamente UMA** migration (`…_tour_progress`); (4) Database deploy de verdade; (5) **backup manual e Prova de restauração de novo**.
+
+## 19. Standby: site fora do ar por meses (modo de manutenção)
+
+Para quando ninguém vai cuidar do site por um tempo. **Escolha feita pelo dono em 20/10/2026: "Manutenção"**, isto é: o site responde uma página "Estamos em uma pausa" (HTTP 503) em TODA rota, **o Supabase continua ativo e o backup diário continua rodando**. Tudo no projeto é gratuito hoje (Vercel, Supabase, Resend, R2 e GitHub Actions), então suspender **não economiza dinheiro**: o objetivo é não perder dados e não receber alarmes falsos.
+
+**Por que não pausar o Supabase:** um projeto gratuito pausado só pode ser religado dentro de um prazo (a documentação do Supabase diz **90 dias** no anúncio de 2024 e **1 ano** no texto atual de "Project Pausing": trate como 90 dias), e os backups do R2 expiram em 14 e 56 dias se o backup diário parar. Pausar troca "nenhum prazo" por "um prazo que você precisa lembrar". Se mesmo assim quiser a pausa total, veja o fim desta seção.
+
+**Como funciona:** a variável de servidor `MAINTENANCE_MODE=true` faz o `src/proxy.ts` responder `src/lib/maintenance.ts` antes de qualquer consulta ao Supabase. Vale para o site, o painel, o login e `/conta/dados`. O `manifest`, os ícones e o `robots.txt` continuam normais. Para desligar: apague a variável (ou mude para `false`) e faça Redeploy. Como a CSP continua na resposta, nada muda na segurança.
+
+### Antes de ligar
+
+1. **Confirme que o backup está verde:** Actions → **Backup do banco** → a última execução tem de estar com ✓ e recente.
+2. **Guarde uma cópia duradoura do backup (recomendado).** O R2 apaga `daily/` em 14 dias e `weekly/` em 56; se o GitHub desligar o agendamento (veja "Riscos"), em 56 dias não sobra nada no bucket. Rode **Backup do banco → Run workflow** com **force_weekly** ligado; no painel da Cloudflare, **R2 → o bucket → Objects**, baixe `weekly/AAAA-MM-DD.tar.gpg` e guarde-o **com a frase-senha** (`BACKUP_PASSPHRASE`) num lugar privado e independente (gerenciador de senhas ou drive pessoal). O arquivo é criptografado, mas contém dados pessoais: **nunca no repositório** (seção 15, "Restaurar"). Guarde também as **imagens originais das capas**, que não entram no backup.
+3. **PR #43 (comentário removido impedia voltar a sessão para rascunho):** **não aplique antes do standby.** É uma correção de uma situação rara e a migration mexe em regra do banco; aplicar sem ninguém para acompanhar é pior que esperar. Deixe o PR em rascunho e mescle e aplique **depois de religar** (passo 5 de "Religar").
+
+### Ligar o modo de manutenção
+
+1. **Mescle a PR do modo de manutenção** (quando o CI estiver verde). A Vercel publica sozinha; o site continua normal, porque a variável ainda não existe.
+2. **Vercel → projeto `entrecapitulos` → Settings → Environment Variables:** crie `MAINTENANCE_MODE` = `true`, marcando **só Production**. **Deployments →** o último de produção → **⋯ → Redeploy.** A variável só vale para deploys novos.
+3. **Confira numa janela anônima:** `https://entrecapitulos.blog.br` e `/painel` mostram "Estamos em uma pausa". No iPhone, o app instalado na Tela de Início mostra a mesma página.
+4. **Actions → Smoke test da produção → ⋯ → Disable workflow.** Ele abriria o site todo dia e falharia (e-mail de falha diário). **Deixe ligados:** Backup do banco e Prova de restauração do backup.
+5. **Domínio:** não mexa na zona de DNS da Vercel nem remova o domínio do projeto (os registros do Resend moram ali). A anuidade do domínio `.blog.br` é paga no registrador (provavelmente o Registro.br; a Vercel não o vendeu): **confira a data de vencimento e ligue a renovação automática**. Se o domínio vencer, o site e o login por e-mail saem do ar de vez.
+6. **Resend, Supabase, Cloudflare:** nada a fazer. Sem site, ninguém pede código de login, então o Resend não envia e-mail.
+7. **Lembrete mensal (2 minutos):** Actions → Backup do banco → a última execução é de menos de 2 dias e está verde; e **Settings → Notifications → Actions** manda as falhas para um e-mail que você lê.
+
+### O que acontece enquanto está no ar a página de pausa
+
+- Visitantes e quem abre o link do WhatsApp veem a página; busca e compartilhamento mostram o título "Em pausa". Um 503 com `Retry-After` diz aos buscadores que é temporário, mas semanas assim podem tirar páginas do índice (não verificado).
+- Ninguém entra no painel, publica sessão, comenta nem modera. Sessões, comentários, contas e progresso de leitura ficam intactos no banco.
+- Quem estava logado volta a entrar com o código por e-mail se a sessão expirar.
+- O banco continua gratuito e ativo, e o backup diário continua criando cópias novas (14 dias de diárias e 56 de semanais, sempre a mais recente).
+
+### Religar
+
+1. **Vercel → Settings → Environment Variables:** apague `MAINTENANCE_MODE` (ou mude para `false`) → **Redeploy** do último deploy de produção. Abra o site numa janela anônima.
+2. **Actions → Smoke test da produção → Enable workflow** e **Run workflow**: tem de terminar verde.
+3. **Confira o Supabase:** o projeto está ativo? Se aparecer como pausado, siga a seção 10 ("Restaurar um projeto pausado") e, se o prazo tiver passado, a seção 15 ("Restaurar").
+4. **Peça um código em `/entrar`**, entre e faça um comentário de teste (confirma o Resend e o banco). Entre no painel e abra uma sessão.
+5. **Agora sim, a PR #43:** **Backup do banco** manual → mescle → **Database deploy com dry run** (exatamente UMA migration nova) → Database deploy de verdade → backup e Prova de restauração de novo (seção 2).
+6. **Dependabot:** revise os PRs acumulados com o CI verde (seção 14). Atualizações de `github-actions` pedem os dois testes da seção 14.
+7. **Rotação de chaves:** a seção 15 sugere trocar o token do R2 a cada ~6 meses; se o standby passar disso, faça a rotação agora.
+
+### Riscos e prazos que continuam correndo
+
+| Risco | Quando | O que fazer |
+| --- | --- | --- |
+| O GitHub desliga workflows agendados em repositório público depois de 60 dias sem atividade | 60 dias sem commit nem PR mesclado | No lembrete mensal, abra Actions: se aparecer o aviso de agendamento desligado, clique em **Enable workflow**. Um PR do Dependabot mesclado conta como atividade (a regra exata do GitHub não foi conferida) |
+| Sem backup novo, o R2 apaga tudo | 14 dias (`daily/`) e 56 dias (`weekly/`) depois do último backup | Por isso a cópia duradoura do passo "Antes de ligar" |
+| Supabase pausa sozinho com pouca atividade | 7 dias sem uso (o backup diário ajuda, sem garantia) | Se pausar, restaure na hora (seção 10); o prazo para restaurar é de 90 dias a 1 ano |
+| Domínio vence | Data no registrador (não conferida) | Renovação automática ligada |
+| Token do Supabase ou do R2 criado com validade | Data de criação do token | O backup passa a falhar e o e-mail de falha avisa; troque o token (seção 6) |
+
+### Se preferir a pausa total (não recomendado)
+
+A pausa da Vercel (`vercel project pause`, ou **Settings** do projeto no painel; o menu exato não foi conferido) bloqueia a produção e devolve **503 `DEPLOYMENT_PAUSED`** em inglês, sem a mensagem do clube; `unpause` religa. A pausa do Supabase (**Project Settings → General → Pause project**, não verificado) para banco, login e API; **antes dela**, faça o backup manual e baixe a cópia duradoura, e **desligue também o Backup do banco e a Prova de restauração** (eles falhariam todo dia). Para religar: **Restore project** no Supabase, dentro do prazo.

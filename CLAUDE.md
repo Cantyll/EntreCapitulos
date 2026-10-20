@@ -531,6 +531,13 @@ Direção escolhida pelo dono entre três ("Escrito a lápis"), aprovada por pri
 - **Sem animação:** menos movimento mostra tudo pronto (o CSS não esconde o título); impressão mostra os traços e o título (`!important` vence o tracejado inline); cores forçadas usam `CanvasText` e `Mark`.
 - **Testes:** `src/lib/about/pencil.test.ts` e `e2e/tests/sobre-lapis.spec.ts`. **NÃO verificado:** Safari real e app instalado depois da mudança (o WebKit do Playwright roda só no CI; conferir com um vídeo no iPhone).
 
+## Standby (modo de manutenção)
+
+Para deixar o site fora do ar por meses sem pausar o banco (decisão do dono em 20/10/2026, ver `docs/operacao.md`, seção 19). Sem migration.
+
+- **`MAINTENANCE_MODE=true`** (variável de SERVIDOR, não `NEXT_PUBLIC_`; mudar na Vercel e fazer Redeploy): o `src/proxy.ts` responde `maintenanceResponse()` (`src/lib/maintenance.ts`, página autônoma "Estamos em uma pausa", 503, `no-store`, `Retry-After`, `noindex`) em TODA rota, **antes de qualquer consulta ao Supabase** e depois da CSP, que vai na resposta. Só o texto `true` liga (`isMaintenanceMode`). Sem a variável, nada muda. Teste: `src/lib/maintenance.test.ts`.
+- Em standby o `smoke-prod.yml` deve ficar desligado (ele abriria o site todo dia); Backup e Prova de restauração continuam. A página não promete data de volta.
+
 ## Dados de exemplo
 
 O livro atual é **O Livro de Azrael**, de Amber V. Nicole. O total de capítulos (52) é uma estimativa a confirmar. Os outros livros e membros do protótipo são fictícios e servem só como seed de desenvolvimento. **Nunca inventar citações do livro:** trechos reais são inseridos pela Agatha no editor.
