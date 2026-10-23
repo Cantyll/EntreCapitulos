@@ -62,7 +62,7 @@ export default async function EditSessionPage({ params }: { params: Promise<{ id
           number: data.number,
           status: data.status,
           updatedAt: data.updatedAt,
-          commentCount: data.commentCount,
+          liveCommentCount: data.liveCommentCount,
         }}
         snapshot={data.snapshot}
         notes={data.notes}

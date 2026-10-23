@@ -8,6 +8,7 @@ import type { SessionSnapshot } from '@/lib/session-editor/snapshot';
 import type { Database } from '@/lib/supabase/database.types';
 
 import type { NoteItem, QuestionItem } from './items';
+import { liveCommentsBySession } from './live-comments';
 import { rowToSnapshot } from './service';
 
 type Client = SupabaseClient<Database>;
@@ -23,7 +24,10 @@ export type SessionListItem = {
   status: SessionStatus;
   bookTitle: string;
   bookSlug: string;
+  /** Comentários aprovados (os que as leitoras veem). */
   commentCount: number;
+  /** Aprovados ou em análise, fora os removidos: se for maior que zero, a sessão não volta para rascunho. */
+  liveCommentCount: number;
   /** Publicada: a data da publicação. Rascunho: a última alteração. */
   date: string;
 };
@@ -39,13 +43,17 @@ export async function getAdminSessions(supabase: Client): Promise<SessionListIte
 
   // Contagem à parte: uma falha aqui não derruba a lista, só zera a coluna.
   const counts = new Map<string, number>();
+  let live = new Map<string, number>();
   try {
     const { data: rows, error: countError } = await supabase
       .from('comments')
-      .select('session_id')
-      .eq('status', 'approved');
+      .select('id, session_id, parent_id, status');
     if (countError) throw countError;
-    for (const row of rows ?? []) counts.set(row.session_id, (counts.get(row.session_id) ?? 0) + 1);
+    for (const row of rows ?? []) {
+      if (row.status === 'approved')
+        counts.set(row.session_id, (counts.get(row.session_id) ?? 0) + 1);
+    }
+    live = liveCommentsBySession(rows ?? []);
   } catch (countError) {
     logFailure('sessions: contagem de comentários', countError);
   }
@@ -63,6 +71,7 @@ export async function getAdminSessions(supabase: Client): Promise<SessionListIte
       bookTitle: book?.title ?? '',
       bookSlug: book?.slug ?? '',
       commentCount: counts.get(row.id) ?? 0,
+      liveCommentCount: live.get(row.id) ?? 0,
       date: (published ? row.published_at : null) ?? row.updated_at,
     };
   });
@@ -87,7 +96,7 @@ export type EditorData = {
   notes: NoteItem[];
   questions: QuestionItem[];
   /** Comentários de qualquer status: com algum, a sessão não volta para rascunho. */
-  commentCount: number;
+  liveCommentCount: number;
 };
 
 export type EditorLoad =
@@ -111,7 +120,7 @@ export async function getEditorData(supabase: Client, id: string): Promise<Edito
   const [notes, questions, comments] = await Promise.all([
     supabase.from('session_notes').select('*').eq('session_id', id).order('position'),
     supabase.from('session_questions').select('*').eq('session_id', id).order('position'),
-    supabase.from('comments').select('id', { count: 'exact', head: true }).eq('session_id', id),
+    supabase.from('comments').select('id, session_id, parent_id, status').eq('session_id', id),
   ]);
   if (notes.error) throw notes.error;
   if (questions.error) throw questions.error;
@@ -144,7 +153,7 @@ export async function getEditorData(supabase: Client, id: string): Promise<Edito
         text: q.text,
         position: q.position,
       })),
-      commentCount: comments.count ?? 0,
+      liveCommentCount: liveCommentsBySession(comments.data ?? []).get(id) ?? 0,
     },
   };
 }

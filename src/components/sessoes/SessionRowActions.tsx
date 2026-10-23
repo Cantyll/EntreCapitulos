@@ -65,7 +65,7 @@ export function SessionRowActions({ session }: { session: SessionListItem }) {
       >
         <Icon name="edit" size="sm" />
       </IconLink>
-      {published && session.commentCount === 0 && (
+      {published && session.liveCommentCount === 0 && (
         <Button variant="ghost" size="sm" onClick={() => setDialog('unpublish')}>
           Voltar para rascunho
         </Button>
